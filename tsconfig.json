@@ -13,5 +13,12 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src", "vite.config.ts", "playwright.config.ts", "tests"]
+  "include": [
+    "src",
+    "server",
+    "shared",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "tests"
+  ]
 }

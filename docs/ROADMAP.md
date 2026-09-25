@@ -1,48 +1,28 @@
-# QuizzGame — progression du projet
+# Akasha — feuille de route
 
-## Direction
+## Périmètre actuel : 1v1 One Piece
 
-Application Android de quiz avec progression RPG, inspirée des idées du projet : duels classiques et classés (10 questions, 20 secondes), survie, Daily, guildes, raids et tournois avec une variante Rumble. Le nom définitif reste ouvert.
+Décision du 25 septembre 2026 : Akasha remplace le nom de travail QuizzGame. Palette beige/verte, emblème réservé à l’icône du téléphone. Une seule fonctionnalité mise en avant : le duel entre amis sur One Piece.
 
-## Étape 1 · Prototype solo
+La version 0.2 fournit les salons, invitations, readiness, dix questions communes, chronomètre serveur, correction, scores, abandon et reprise. Les anciennes expéditions, défis quotidiens, survie, monnaies et progressions ne font plus partie du parcours actuel.
 
-Implémenté : trois modes solo, six univers, 60 questions, progression, profil, succès, historique, sauvegarde locale et projet Android. Tests du moteur et parcours navigateur sur petits écrans. CI prévue pour compiler un APK à chaque changement de `main`.
+## Prochaine étape : test entre amis
 
-Limites : pas de serveur ni de comptes ; la survie utilise la banque disponible ; aucune protection compétitive contre la modification des données locales. La vérification sur téléphone Android physique et avec TalkBack reste à faire. L’intégration native ne transforme pas les tests navigateur en tests sur appareil.
+1. Valider l’APK sur les deux téléphones.
+2. Finaliser l’accès HTTPS au serveur maison et tester depuis deux domiciles.
+3. Tester les interruptions réseau et les retours de veille Android.
+4. Recueillir les retours : lisibilité, rythme, difficulté et compréhension du score.
+5. Enrichir progressivement les questions One Piece, avec revue des ambiguïtés et des spoilers.
 
-## Étape 2 · Contenu et comptes
+## Base à consolider ensuite
 
-1. Choisir le fournisseur de comptes et de base de données, après évaluation des coûts et de la région d’hébergement.
-2. Créer les tables profils, thèmes, questions, choix, parties, réponses et mouvements d’XP.
-3. Migrer la sauvegarde locale vers un compte sans attribuer de classement compétitif à des résultats non vérifiés.
-4. Préparer une interface d’administration avec brouillons, validation éditoriale, difficultés, sources et signalements.
-5. Ajouter progressivement Pokémon, Dragon Ball, séries, musique, Marvel, DC, sport et automobile.
+- Signature Android stable, distribution et mises à jour.
+- Vrais comptes et récupération du profil sur un nouveau téléphone.
+- Sauvegardes automatiques surveillées et restauration vérifiée.
+- Suivi des erreurs, accessibilité TalkBack, tests sur plusieurs appareils.
+- Adresse publique dédiée lorsque l’accès privé de test devient insuffisant.
+- Stockage éditorial des questions et outils de relecture.
 
-Validation : connexion et récupération de compte, synchronisation sur deux appareils, migration testée, questions versionnées et vérifiées.
+L’hébergement actuel est prévu pour un seul processus et PostgreSQL. Multiplier les instances nécessitera un coordinateur de duels partagé ; la base seule ne synchronise pas les serveurs de jeu. Les sessions de test expirent au bout de 30 jours et les duels de plus de sept jours sont nettoyés au démarrage.
 
-## Étape 3 · Duels et rangs
-
-Le serveur devra choisir les questions, masquer les bonnes réponses jusqu’à la résolution, décider des délais et attribuer les points. Les clients envoient des choix, pas des scores. Traiter les déconnexions, reprises, abandons et égalités avant de lancer le classé.
-
-1. Salons privés et duel classique 1v1.
-2. Matchmaking et reconnexion.
-3. Tests de deux clients simultanés et anti-rejeu.
-4. Rangs bronze, argent, or et saisons avec règles publiques.
-
-Validation : même question et même échéance chez les deux joueurs ; aucune récompense doublée ; classement recalculable depuis les résultats serveur.
-
-## Étape 4 · Communauté et événements
-
-Guildes, titres par catégorie, raids de boss, tournois puis pouvoirs Rumble. Le chat nécessite des signalements, blocages, limitations de fréquence et modération ; une simple liste de mots interdits ne suffit pas.
-
-## Décisions techniques
-
-- React + TypeScript : interface tactile avec moteur indépendant de l’affichage.
-- Capacitor : projet Android natif embarquant le jeu, accès au cycle de vie et au stockage natif.
-- Préférences natives : adaptées à un petit profil ; une base locale deviendra préférable pour une banque volumineuse et les synchronisations.
-- Aucun compte, analytique, achat ou API extérieure dans le prototype.
-- Tests automatisés du moteur, des parcours et compilation APK dans GitHub Actions.
-
-## Avant une diffusion régulière
-
-Signature de distribution stable conservée hors du dépôt, stratégie de migrations, tests de mise à jour sans perte de progression, validation sur Android réel, accessibilité TalkBack, relecture du contenu et suivi des exigences Google Play. Ne pas ajouter de monétisation tant que le cycle de jeu n’a pas été essayé.
+Les autres thèmes et mécaniques RPG seront réintroduits seulement sur décision explicite, progressivement. Les idées historiques restent dans Notion et l’historique Git.

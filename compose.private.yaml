@@ -1,0 +1,28 @@
+# Private remote access. Use this OR compose.public.yaml.
+services:
+  app:
+    ports: !reset []
+    network_mode: service:tailscale
+    depends_on:
+      tailscale:
+        condition: service_started
+  tailscale:
+    image: tailscale/tailscale:stable
+    restart: unless-stopped
+    hostname: akasha
+    entrypoint: [tailscaled]
+    command:
+      [
+        "--tun=userspace-networking",
+        "--state=/var/lib/tailscale/tailscaled.state",
+        "--socket=/tmp/tailscaled.sock",
+      ]
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - tailscale_state:/var/lib/tailscale
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+volumes:
+  tailscale_state:

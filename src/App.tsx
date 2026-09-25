@@ -1,1233 +1,743 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { App as NativeApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
 import {
-  Anchor,
-  ArrowLeft,
   ArrowRight,
-  Atom,
-  BookOpen,
   Check,
-  ChevronRight,
+  ChevronLeft,
   Compass,
-  Crown,
-  Flame,
-  Gamepad2,
-  Gem,
-  Globe2,
-  Heart,
-  Landmark,
-  Leaf,
-  Medal,
-  Moon,
-  Mountain,
-  ScrollText,
-  Search,
+  Copy,
   Settings2,
-  Shield,
-  Sparkles,
-  Star,
-  Sun,
   Swords,
   Trophy,
-  UserRound,
-  VolumeX,
+  Wifi,
   X,
-  Film,
-  type LucideIcon,
 } from "lucide-react";
-import { themes, questions, themeById, type ThemeId } from "./data";
 import {
-  answerQuestion,
-  correctCount,
-  dailyAvailable,
-  initialState,
-  levelInfo,
-  livesLeft,
-  modeNames,
-  nextQuestion,
-  questionFor,
-  startGame,
-  type Mode,
-  type State,
-} from "./game";
-import { loadState, saveState } from "./storage";
-import Artwork from "./Artwork";
+  command,
+  connect,
+  createSession,
+  loadProfile,
+  saveProfile,
+  serverUrl,
+  type DuelSocket,
+  type Profile,
+} from "./client";
+import type { RoomView } from "../shared/protocol";
 
-const themeIcons: Record<string, LucideIcon> = {
-  anchor: Anchor,
-  gamepad: Gamepad2,
-  film: Film,
-  landmark: Landmark,
-  globe: Globe2,
-  atom: Atom,
-};
-const avatarIcons = { leaf: Leaf, flame: Flame, moon: Moon };
-type Tab = "home" | "themes" | "journal" | "profile";
-const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
-  { id: "home", label: "Aventure", icon: Compass },
-  { id: "themes", label: "Thèmes", icon: BookOpen },
-  { id: "journal", label: "Journal", icon: ScrollText },
-  { id: "profile", label: "Mon héros", icon: UserRound },
-];
-
-function Modal({
-  title,
-  children,
-  onClose,
-}: {
-  title: string;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  const ref = useRef<HTMLDialogElement>(null);
+export default function App() {
+  const [profile, setProfile] = useState<Profile | null>(null),
+    [room, setRoom] = useState<RoomView | null>(null);
+  const [name, setName] = useState(""),
+    [code, setCode] = useState(""),
+    [online, setOnline] = useState(false),
+    [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [settings, setSettings] = useState(false),
+    [address, setAddress] = useState("");
+  const [quitting, setQuitting] = useState(false),
+    [copied, setCopied] = useState(false),
+    [now, setNow] = useState(Date.now());
+  const socket = useRef<DuelSocket | null>(null),
+    offset = useRef(0),
+    pending = useRef(false),
+    roomRef = useRef(room);
+  roomRef.current = room;
   useEffect(() => {
-    const dialog = ref.current!;
-    dialog.showModal();
-    return () => dialog.close();
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className="sheet"
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="sheet-handle" />
-      <div className="section-heading">
-        <h2>{title}</h2>
-        <button className="icon-button" onClick={onClose} aria-label="Fermer">
-          <X size={22} />
-        </button>
-      </div>
-      {children}
-    </dialog>
-  );
-}
-function Meter({
-  value,
-  max,
-  label,
-}: {
-  value: number;
-  max: number;
-  label: string;
-}) {
-  return (
-    <div
-      className="meter"
-      role="progressbar"
-      aria-valuenow={value}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-label={label}
-    >
-      <span style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
-    </div>
-  );
-}
-function App() {
-  const [state, setState] = useState<State>(initialState);
-  const stateRef = useRef(state);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState("");
-  const [tab, setTab] = useState<Tab>("home");
-  const [setup, setSetup] = useState<Mode | null>(null);
-  const [selected, setSelected] = useState<ThemeId[]>(themes.map((t) => t.id));
-  const [query, setQuery] = useState("");
-  const [quitting, setQuitting] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [now, setNow] = useState(Date.now());
-  const navigationRef = useRef({ tab, setup, quitting });
-  navigationRef.current = { tab, setup, quitting };
-  const headingRef = useRef<HTMLHeadingElement>(null);
-  const game = state.active;
-  const level = levelInfo(state.xp);
-  const Avatar = avatarIcons[state.avatar];
-
+    window.scrollTo(0, 0);
+  }, [room?.code, room?.phase === "finished", room?.phase === "cancelled"]);
   useEffect(() => {
-    let alive = true;
-    void loadState().then((result) => {
-      if (alive) {
-        stateRef.current = result.state;
-        setState(result.state);
-        setError(result.error ?? "");
-        setReady(true);
-      }
-    });
+    let mounted = true;
+    loadProfile()
+      .then((p) => {
+        if (mounted) {
+          setProfile(p);
+          setName(p.credentials?.name ?? "");
+          setAddress(p.server);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (mounted) {
+          setError("Impossible de charger le profil. Relance l’application.");
+          setLoading(false);
+        }
+      });
     return () => {
-      alive = false;
+      mounted = false;
     };
   }, []);
-  function update(transform: (s: State) => State) {
-    const next = transform(stateRef.current);
-    if (next === stateRef.current) return;
-    stateRef.current = next;
-    setState(next);
-    void saveState(next).catch(() =>
-      setError(
-        "La progression n’a pas pu être enregistrée. Vérifie l’espace disponible sur ton appareil.",
-      ),
-    );
-  }
   useEffect(() => {
-    const timer = window.setInterval(() => {
-      const time = Date.now();
-      setNow(time);
-      const current = stateRef.current.active;
-      if (
-        current?.phase === "question" &&
-        current.deadline !== null &&
-        time >= current.deadline
-      )
-        update((s) =>
-          answerQuestion(s, current.questionIds[current.index], null, time),
+    if (!profile?.credentials) return;
+    const s = connect(profile);
+    socket.current = s;
+    let disposed = false;
+    const sync = async () => {
+      const sent = Date.now();
+      try {
+        const result = await command<{ serverNow: number }>(s, "sync");
+        offset.current = result.serverNow - (sent + Date.now()) / 2;
+      } catch {
+        /* Automatic reconnect will retry. */
+      }
+    };
+    s.on("connect", () => {
+      setOnline(true);
+      setError("");
+      void sync();
+    });
+    s.on("disconnect", () => setOnline(false));
+    s.on("connect_error", (e) => {
+      setOnline(false);
+      if (e.message === "SESSION_EXPIRED") {
+        const next = { ...profile, credentials: null };
+        void saveProfile(next).then(() => {
+          if (!disposed) {
+            setProfile(next);
+            setRoom(null);
+            setError(
+              "Ton profil de test a expiré. Choisis ton pseudo pour revenir.",
+            );
+          }
+        });
+      } else
+        setError(
+          "Serveur injoignable. Vérifie ta connexion ou l’adresse dans les réglages.",
         );
-    }, 200);
-    return () => window.clearInterval(timer);
+    });
+    s.on("room:state", (state: RoomView | null) => {
+      offset.current = state ? state.serverNow - Date.now() : offset.current;
+      setRoom(state);
+    });
+    s.connect();
+    const timer = setInterval(() => void sync(), 15000);
+    const visibility = () => {
+      if (document.visibilityState === "visible") {
+        if (s.connected) void sync();
+        else s.connect();
+      }
+    };
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      disposed = true;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", visibility);
+      s.removeAllListeners();
+      s.disconnect();
+      socket.current = null;
+      setOnline(false);
+    };
+  }, [profile]);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now() + offset.current), 100);
+    return () => clearInterval(timer);
   }, []);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const listener = NativeApp.addListener("backButton", () => {
-      const nav = navigationRef.current;
-      if (nav.quitting) {
-        setQuitting(false);
-        return;
-      }
-      if (nav.setup) {
-        setSetup(null);
-        return;
-      }
-      if (
-        stateRef.current.active &&
-        stateRef.current.active.phase !== "finished"
-      )
-        setQuitting(true);
-      else if (stateRef.current.active || nav.tab !== "home") {
-        update((s) => ({ ...s, active: null }));
-        setTab("home");
-      } else void NativeApp.minimizeApp();
+      if (roomRef.current) setQuitting(true);
+      else NativeApp.minimizeApp();
     });
     return () => {
-      void listener.then((handle) => handle.remove());
+      void listener.then((l) => l.remove());
     };
   }, []);
-  useEffect(() => {
-    headingRef.current?.focus();
-  }, [game?.index, game?.phase]);
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(""), 3000);
-    return () => clearTimeout(timer);
-  }, [notice]);
-
-  function openSetup(mode: Mode, theme?: ThemeId) {
-    setSelected(theme ? [theme] : themes.map((t) => t.id));
-    setSetup(mode);
-  }
-  function launch() {
-    if (!setup) return;
+  async function run(action: () => Promise<void>) {
+    if (pending.current) return;
+    pending.current = true;
+    setBusy(true);
+    setError("");
     try {
-      update((s) =>
-        startGame(s, setup, selected, Date.now(), crypto.randomUUID()),
-      );
-      setSetup(null);
+      await action();
     } catch (e) {
-      setError((e as Error).message);
+      setError(
+        e instanceof Error ? e.message : "Une erreur est survenue. Réessaie.",
+      );
+    } finally {
+      pending.current = false;
+      setBusy(false);
     }
   }
-  function toggleFavorite(id: ThemeId) {
-    if (state.favorites.includes(id) && state.favorites.length === 1) {
-      setNotice("Garde au moins un thème favori pour ton défi quotidien.");
-      return;
-    }
-    update((s) => ({
-      ...s,
-      favorites: s.favorites.includes(id)
-        ? s.favorites.filter((t) => t !== id)
-        : [...s.favorites, id],
-    }));
+  async function enter() {
+    await run(async () => {
+      const server = serverUrl(profile!.server);
+      const credentials = await createSession(server, name.trim());
+      const next = { server, credentials };
+      await saveProfile(next);
+      setProfile(next);
+    });
   }
-  const dailyDone = !dailyAvailable(state, new Date(now));
-  const earned = [
-    {
-      icon: Compass,
-      title: "Premier pas",
-      text: "Terminer une première partie",
-      done: state.played >= 1,
-    },
-    {
-      icon: Star,
-      title: "Sans faute",
-      text: "Réussir une partie parfaite",
-      done: state.perfect >= 1,
-    },
-    {
-      icon: Flame,
-      title: "L’instinct de survie",
-      text: "10 bonnes réponses en survie",
-      done: state.bestSurvival >= 10,
-    },
-    {
-      icon: Crown,
-      title: "La voie de l’érudit",
-      text: "Atteindre le niveau 5",
-      done: level.level >= 5,
-    },
-  ];
-  if (!ready)
+  async function changeServer() {
+    await run(async () => {
+      const server = serverUrl(address);
+      const next = {
+        server,
+        credentials: server === profile?.server ? profile.credentials : null,
+      };
+      await saveProfile(next);
+      setProfile(next);
+      setRoom(null);
+      setSettings(false);
+    });
+  }
+  async function leave() {
+    await run(async () => {
+      await command(socket.current, "room:leave");
+      setQuitting(false);
+    });
+  }
+  const me = room?.players.find((p) => p.id === profile?.credentials?.id),
+    opponent = room?.players.find((p) => p.id !== profile?.credentials?.id);
+  const seconds = room
+    ? Math.max(0, Math.ceil((room.deadline - now) / 1000))
+    : 0;
+  const ended = room?.phase === "finished" || room?.phase === "cancelled";
+  const isQuestion = room?.phase === "question" || room?.phase === "reveal";
+  const result =
+    room?.phase === "cancelled"
+      ? "Salon fermé"
+      : room?.winnerId === me?.id
+        ? "Victoire !"
+        : room?.winnerId
+          ? "Bien joué !"
+          : "Égalité parfaite";
+  if (loading)
     return (
-      <div className="loading">
-        <Gem size={42} />
-        <p>Ton aventure se prépare…</p>
-      </div>
+      <main className="loading">
+        Akasha<span>Préparation de ton escale…</span>
+      </main>
     );
-
   return (
-    <>
-      {error && (
-        <div className="error-banner" role="alert">
-          <span>{error}</span>
-          <button onClick={() => setError("")} aria-label="Masquer le message">
-            <X size={18} />
-          </button>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="wordmark">
+          AKASHA<span>LE SAVOIR FAIT LA FORCE</span>
         </div>
-      )}
-      {notice && (
-        <div className="toast" role="status">
-          {notice}
-        </div>
-      )}
-      {game ? (
-        <div className="game-shell">
-          <header className="game-header">
+        <button
+          className="icon-button"
+          aria-label="Réglages de connexion"
+          onClick={() => {
+            setAddress(profile?.server ?? "");
+            setSettings(true);
+          }}
+        >
+          <Settings2 size={20} />
+        </button>
+      </header>
+      <main>
+        {error && !settings && !quitting && (
+          <div className="notice error" role="alert">
+            {error}
             <button
               className="icon-button"
-              aria-label="Quitter la partie"
-              onClick={() =>
-                game.phase === "finished"
-                  ? update((s) => ({ ...s, active: null }))
-                  : setQuitting(true)
-              }
+              aria-label="Fermer le message"
+              onClick={() => setError("")}
             >
-              <ArrowLeft />
+              <X size={16} />
             </button>
-            <div>
-              <span className="eyebrow">L’AVENTURE DU SAVOIR</span>
-              <strong>{modeNames[game.mode]}</strong>
-            </div>
-            <Gem className="accent" />
-          </header>
-          {game.phase === "finished" ? (
-            <main className="result page-enter">
-              <div className="result-emblem">
-                <Trophy size={48} />
+          </div>
+        )}
+        {room && !online && (
+          <div className="notice" role="status">
+            <Wifi size={18} /> Reconnexion en cours… Le duel continue sur le
+            serveur.
+          </div>
+        )}
+        {!room && (
+          <>
+            <section className="intro">
+              <div className="eyebrow">
+                <span className="dot" /> QUIZ · DUEL ENTRE AMIS
               </div>
-              <span className="eyebrow">UNE PAGE DE TON HISTOIRE</span>
-              <h1 ref={headingRef} tabIndex={-1}>
-                {correctCount(game) === game.answers.length
-                  ? "Un parcours parfait !"
-                  : correctCount(game) >= game.answers.length / 2
-                    ? "Bien joué, aventurier."
-                    : "Chaque essai te fait grandir."}
+              <h1>
+                À deux.
+                <br />À armes <em>égales.</em>
               </h1>
               <p>
-                {game.mode === "survival" && livesLeft(game) > 0
-                  ? "Toute la banque sélectionnée a été parcourue !"
-                  : "L’aventure continue. Ton savoir aussi."}
+                Un univers. Dix questions.
+                <br />
+                Qui connaît le mieux Grand Line ?
               </p>
-              <div className="score-orb">
-                <b>{correctCount(game)}</b>
-                <span>sur {game.answers.length} réponses</span>
+            </section>
+            <section className="theme-card" aria-label="Thème One Piece">
+              <div className="chart" aria-hidden="true">
+                <div className="orbit orbit-one" />
+                <div className="orbit orbit-two" />
+                <Compass size={113} strokeWidth={0.65} />
+                <span className="north">N</span>
+                <span className="coord">22° 00′ N · GRAND LINE</span>
               </div>
-              <div className="reward-row">
-                <div>
-                  <Sparkles />
-                  <b>+{game.xp} XP</b>
-                  <span>Expérience</span>
+              <div className="theme-content">
+                <span className="pill">LE THÈME DU MOMENT</span>
+                <h2>One Piece</h2>
+                <p>
+                  Le cap est donné.
+                  <br />À toi de faire la différence.
+                </p>
+                <div className="theme-meta">
+                  <span>10 questions</span>
+                  <i />
+                  <span>20 s par question</span>
                 </div>
-                <div>
-                  <Gem />
-                  <b>+{game.coins}</b>
-                  <span>Pièces</span>
-                </div>
               </div>
-              <div className="panel level-result">
-                <span>
-                  Niveau {level.level} · {level.title}
-                </span>
-                <Meter
-                  value={level.current}
-                  max={250}
-                  label="Progression du niveau"
-                />
-                <small>{level.current} / 250 XP avant le prochain niveau</small>
-              </div>
-              <button
-                className="primary full"
-                onClick={() => {
-                  update((s) => ({ ...s, active: null }));
-                  setTab("home");
+            </section>
+            {!profile?.credentials ? (
+              <form
+                className="entry"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!profile?.server) {
+                    setSettings(true);
+                    return;
+                  }
+                  void enter();
                 }}
               >
-                Revenir à l’aventure <ArrowRight size={18} />
+                <label htmlFor="pseudo">Ton nom d’aventurier</label>
+                <input
+                  id="pseudo"
+                  autoComplete="nickname"
+                  placeholder="Ton pseudo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  minLength={2}
+                  maxLength={20}
+                  required
+                />
+                <button className="button primary" disabled={busy}>
+                  {busy ? "Connexion…" : "Prendre le large"}
+                  <ArrowRight size={20} />
+                </button>
+                {!profile?.server && (
+                  <p className="muted">
+                    Configure l’adresse de ton serveur pour commencer.
+                  </p>
+                )}
+              </form>
+            ) : (
+              <section className="entry">
+                <div className="welcome">
+                  <p>
+                    À toi de jouer, <strong>{profile.credentials.name}</strong>.
+                  </p>
+                  <span className={online ? "connection online" : "connection"}>
+                    {online ? "En ligne" : "Connexion…"}
+                  </span>
+                </div>
+                <button
+                  className="button primary"
+                  disabled={!online || busy}
+                  onClick={() =>
+                    void run(async () => {
+                      await command(socket.current, "room:create");
+                    })
+                  }
+                >
+                  <Swords size={20} />
+                  Créer un duel
+                  <ArrowRight size={20} />
+                </button>
+                <div className="divider">
+                  <span>ou rejoins ton ami</span>
+                </div>
+                <form
+                  className="join-form"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void run(async () => {
+                      await command(socket.current, "room:join", { code });
+                    });
+                  }}
+                >
+                  <label className="sr-only" htmlFor="code">
+                    Code du salon
+                  </label>
+                  <input
+                    id="code"
+                    placeholder="CODE DU SALON"
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    maxLength={6}
+                    minLength={6}
+                    required
+                    value={code}
+                    onChange={(e) =>
+                      setCode(
+                        e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""),
+                      )
+                    }
+                  />
+                  <button
+                    className="button secondary"
+                    disabled={!online || busy || code.length !== 6}
+                  >
+                    Rejoindre
+                  </button>
+                </form>
+              </section>
+            )}
+            <footer className="home-footer">
+              <span>1 CONTRE 1</span>
+              <span>La même question. Le même temps.</span>
+            </footer>
+          </>
+        )}
+        {room && (
+          <>
+            <div className="duel-nav">
+              <button className="text-button" onClick={() => setQuitting(true)}>
+                <ChevronLeft size={18} />
+                {ended ? "Accueil" : "Quitter"}
               </button>
-              <details className="corrections">
-                <summary>Revoir mes {game.answers.length} réponses</summary>
-                {game.answers.map((a) => {
-                  const q = questions.find((q) => q.id === a.questionId)!;
-                  return (
-                    <article key={a.questionId}>
-                      <span
-                        className={a.correct ? "correct-text" : "wrong-text"}
-                      >
-                        {a.correct
-                          ? "✓ Bonne réponse"
-                          : a.selected === null
-                            ? "⌛ Temps écoulé"
-                            : "✕ À retenir"}
-                      </span>
-                      <h3>{q.text}</h3>
-                      <p>{q.choices[q.correct]}</p>
-                      <small>{q.explanation}</small>
-                    </article>
-                  );
-                })}
-              </details>
-            </main>
-          ) : (
-            (() => {
-              const q = questionFor(game);
-              const answer = game.answers[game.index];
-              const feedback = game.phase === "feedback";
-              const seconds =
-                game.deadline === null
-                  ? null
-                  : Math.min(
-                      20,
-                      Math.max(0, Math.ceil((game.deadline - now) / 1000)),
-                    );
-              const last =
-                game.index + 1 >= game.questionIds.length ||
-                (game.mode === "survival" && livesLeft(game) === 0);
-              return (
-                <main className="quiz page-enter">
-                  <div className="quiz-status">
-                    <span>
-                      Question <b>{String(game.index + 1).padStart(2, "0")}</b>{" "}
-                      / {game.questionIds.length}
-                    </span>
-                    {game.mode === "survival" ? (
-                      <span
-                        className="hearts"
-                        aria-label={`${livesLeft(game)} vies restantes`}
-                      >
-                        {[1, 2, 3].map((n) => (
-                          <Heart
-                            key={n}
-                            size={19}
-                            fill={
-                              n <= livesLeft(game) ? "currentColor" : "none"
-                            }
-                            opacity={n <= livesLeft(game) ? 1 : 0.3}
-                          />
-                        ))}
-                      </span>
+              <span>
+                ONE PIECE <i> / </i> DUEL 1V1
+              </span>
+            </div>
+            {room.phase === "lobby" && (
+              <>
+                <section className="lobby-title">
+                  <span className="eyebrow">LE POINT DE RENDEZ-VOUS</span>
+                  <h1>
+                    Ton équipage
+                    <br />
+                    se rassemble.
+                  </h1>
+                  <p>Partage ce code à ton ami pour qu’il te rejoigne.</p>
+                </section>
+                <button
+                  className="invite-code"
+                  aria-label={`Copier le code ${room.code}`}
+                  onClick={() =>
+                    void run(async () => {
+                      try {
+                        await navigator.clipboard.writeText(room.code);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                      } catch {
+                        throw new Error(
+                          "Copie ce code manuellement : " + room.code,
+                        );
+                      }
+                    })
+                  }
+                >
+                  <span>CODE DU SALON</span>
+                  <strong data-testid="room-code">{room.code}</strong>
+                  <small>
+                    {copied ? (
+                      <>
+                        <Check size={15} />
+                        Copié
+                      </>
                     ) : (
-                      <span>
-                        <Check size={16} /> {correctCount(game)} réussies
-                      </span>
+                      <>
+                        <Copy size={15} />
+                        Copier le code
+                      </>
+                    )}
+                  </small>
+                </button>
+              </>
+            )}
+            <section className="players" aria-label="Joueurs et scores">
+              {[me, opponent].map((p, i) => (
+                <div className={`player ${i === 0 ? "you" : ""}`} key={i}>
+                  <div className="avatar">
+                    {p ? p.name.slice(0, 1).toUpperCase() : <span>?</span>}
+                    {p && (
+                      <b className={p.online ? "online-dot" : "offline-dot"} />
                     )}
                   </div>
-                  <Meter
-                    value={game.index + (feedback ? 1 : 0)}
-                    max={game.questionIds.length}
-                    label="Avancement du quiz"
-                  />
-                  <div className="question-meta">
-                    <span className="pill">{themeById(q.theme).name}</span>
-                    <span
-                      className={`timer ${seconds !== null && seconds <= 5 && !feedback ? "urgent" : ""}`}
-                      role="timer"
-                      aria-label={
-                        seconds === null
-                          ? "Sans chrono"
-                          : `${seconds} secondes restantes`
-                      }
-                    >
-                      {feedback
-                        ? "Réponse validée"
-                        : seconds === null
-                          ? "À ton rythme"
-                          : `${seconds} s`}
+                  <strong>{p?.name ?? "Ton ami"}</strong>
+                  <small>
+                    {!p
+                      ? "En attente…"
+                      : room.phase === "lobby"
+                        ? p.ready
+                          ? "Prêt à jouer"
+                          : p.online
+                            ? "Dans le salon"
+                            : "Hors ligne"
+                        : i === 0
+                          ? "TOI"
+                          : p.online
+                            ? "ADVERSAIRE"
+                            : "HORS LIGNE"}
+                  </small>
+                  {room.phase !== "lobby" && (
+                    <span className="score">
+                      {(p?.score ?? 0).toLocaleString("fr-FR")}{" "}
+                      <small>PTS</small>
                     </span>
-                  </div>
-                  <h1 className="question" ref={headingRef} tabIndex={-1}>
-                    {q.text}
-                  </h1>
-                  <div className="answers">
-                    {game.orders[game.index].map((choice, i) => (
-                      <button
-                        key={choice}
-                        disabled={feedback}
-                        className={`answer ${feedback && choice === q.correct ? "is-correct" : ""} ${feedback && answer.selected === choice && !answer.correct ? "is-wrong" : ""}`}
-                        onClick={() =>
-                          update((s) =>
-                            answerQuestion(s, q.id, choice, Date.now()),
-                          )
-                        }
-                      >
-                        <span className="answer-letter">
-                          {String.fromCharCode(65 + i)}
-                        </span>
-                        <span>{q.choices[choice]}</span>
-                        {feedback && choice === q.correct && (
-                          <Check size={20} />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                  {feedback ? (
-                    <div
-                      className={`feedback ${answer.correct ? "success" : ""}`}
-                      role="status"
-                    >
-                      <strong>
-                        {answer.correct
-                          ? "Bien vu ! +15 XP à la fin de la partie"
-                          : answer.selected === null
-                            ? "Le temps est écoulé."
-                            : "Presque… Voici ce qu’il faut retenir."}
-                      </strong>
-                      <p>{q.explanation}</p>
-                      <button
-                        className="primary full"
-                        onClick={() =>
-                          update((s) => nextQuestion(s, Date.now()))
-                        }
-                      >
-                        {last ? "Découvrir mes résultats" : "Question suivante"}
-                        <ArrowRight size={18} />
-                      </button>
-                    </div>
+                  )}
+                </div>
+              ))}
+              <span className="versus">VS</span>
+            </section>
+            {room.phase === "lobby" && (
+              <section className="lobby-bottom">
+                <button
+                  className="button primary"
+                  disabled={!online || busy || !opponent?.online || !!me?.ready}
+                  onClick={() =>
+                    void run(async () => {
+                      await command(socket.current, "room:ready");
+                    })
+                  }
+                >
+                  {me?.ready ? (
+                    <>
+                      <Check size={20} />
+                      Tu es prêt
+                    </>
                   ) : (
-                    <p className="quiz-hint">
-                      <Shield size={14} /> Une seule réponse. Fais confiance à
-                      ton savoir.
+                    <>
+                      Je suis prêt
+                      <ArrowRight size={20} />
+                    </>
+                  )}
+                </button>
+                <p>
+                  {me?.ready
+                    ? "On attend le feu vert de ton ami."
+                    : opponent
+                      ? "Le duel commence quand vous êtes tous les deux prêts."
+                      : "Le duel sera disponible à l’arrivée de ton ami."}
+                </p>
+                <div className="rules">
+                  <span>10 questions</span>
+                  <span>+1 000 par bonne réponse</span>
+                  <span>Aucun bonus de vitesse</span>
+                </div>
+              </section>
+            )}
+            {room.phase === "countdown" && (
+              <section className="countdown" role="status">
+                <span className="eyebrow">PRÊTS À PRENDRE LA MER ?</span>
+                <strong>{seconds || 1}</strong>
+                <p>Votre duel commence…</p>
+              </section>
+            )}
+            {isQuestion && room.question && (
+              <section className="question-section">
+                <div className="question-meta">
+                  <span>
+                    QUESTION <b>{String(room.round).padStart(2, "0")}</b> /{" "}
+                    {room.total}
+                  </span>
+                  <span className={`timer ${seconds <= 5 ? "urgent" : ""}`}>
+                    {room.phase === "reveal" ? "SUITE DANS " : ""}
+                    {seconds} s
+                  </span>
+                </div>
+                <div className="time-track">
+                  <div
+                    style={{
+                      width: `${Math.min(100, (seconds / (room.phase === "reveal" ? 4.5 : 20)) * 100)}%`,
+                    }}
+                  />
+                </div>
+                <h1 className="question-title">{room.question.text}</h1>
+                <div className="answers">
+                  {room.question.choices.map((choice, i) => {
+                    const correct = room.correction?.correct === i;
+                    const wrong =
+                      room.phase === "reveal" &&
+                      room.selected === i &&
+                      !correct;
+                    return (
+                      <button
+                        key={`${room.round}-${i}`}
+                        className={`answer ${room.selected === i ? "selected" : ""} ${correct ? "correct" : ""} ${wrong ? "wrong" : ""}`}
+                        disabled={
+                          !online ||
+                          busy ||
+                          room.phase !== "question" ||
+                          room.submitted ||
+                          seconds === 0
+                        }
+                        onClick={() =>
+                          void run(async () => {
+                            await command(socket.current, "room:answer", {
+                              round: room.round,
+                              choice: i,
+                            });
+                          })
+                        }
+                      >
+                        <span className="letter">{"ABCD"[i]}</span>
+                        <span>{choice}</span>
+                        {correct ? (
+                          <Check size={20} />
+                        ) : wrong ? (
+                          <X size={20} />
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div aria-live="polite" className="round-status">
+                  {room.phase === "reveal" ? (
+                    <>
+                      <strong>
+                        {room.correction?.answers[me!.id]?.points
+                          ? "+1 000 points · Bien joué !"
+                          : room.selected === null
+                            ? "Temps écoulé"
+                            : "La bonne réponse"}
+                      </strong>
+                      <p>{room.correction?.explanation}</p>
+                      <small>
+                        {opponent?.name} :{" "}
+                        {room.correction?.answers[opponent?.id ?? ""]?.points
+                          ? "+1 000 points"
+                          : "0 point"}
+                      </small>
+                    </>
+                  ) : room.submitted ? (
+                    <p>
+                      <Check size={17} />
+                      Réponse envoyée. À ton ami de jouer…
+                    </p>
+                  ) : (
+                    <p>
+                      {opponent?.answered
+                        ? "Ton ami a répondu. À toi !"
+                        : "Une seule réponse. Fais-toi confiance."}
                     </p>
                   )}
-                </main>
-              );
-            })()
-          )}
-        </div>
-      ) : (
-        <div className="app-shell">
-          <aside className="sidebar">
-            <a
-              href="#"
-              className="brand"
-              onClick={(e) => {
+                </div>
+              </section>
+            )}
+            {ended && (
+              <section className="results">
+                <div className="trophy">
+                  <Trophy size={42} strokeWidth={1.3} />
+                </div>
+                <span className="eyebrow">
+                  {room.reason === "forfeit"
+                    ? "DUEL INTERROMPU"
+                    : room.phase === "cancelled"
+                      ? "RENDEZ-VOUS TERMINÉ"
+                      : "LE VERDICT"}
+                </span>
+                <h1>{result}</h1>
+                <p>
+                  {room.reason === "expired"
+                    ? "Le salon a expiré. Un nouveau départ ?"
+                    : room.reason === "forfeit"
+                      ? "Un joueur a quitté le duel."
+                      : room.winnerId === me?.id
+                        ? "Tu connais le cap. À quand la revanche ?"
+                        : room.winnerId
+                          ? "La prochaine traversée sera peut-être la tienne."
+                          : "Vous connaissez Grand Line aussi bien l’un que l’autre."}
+                </p>
+                <button
+                  className="button primary"
+                  disabled={!online || busy}
+                  onClick={() => void leave()}
+                >
+                  Retour à l’accueil
+                  <ArrowRight size={20} />
+                </button>
+              </section>
+            )}
+          </>
+        )}
+      </main>
+      {settings && (
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+          >
+            <button
+              className="icon-button close"
+              aria-label="Fermer les réglages"
+              onClick={() => setSettings(false)}
+            >
+              <X />
+            </button>
+            <span className="eyebrow">AKASHA · CONNEXION</span>
+            <h2 id="settings-title">Votre point de rencontre.</h2>
+            <p>Les deux joueurs doivent utiliser la même adresse.</p>
+            <form
+              onSubmit={(e) => {
                 e.preventDefault();
-                setTab("home");
+                void changeServer();
               }}
             >
-              <span className="brand-mark">
-                <Gem size={26} />
-              </span>
-              <span>
-                QuizzGame<small>L’AVENTURE DU SAVOIR</small>
-              </span>
-            </a>
-            <p className="nav-label">TON UNIVERS</p>
-            <nav aria-label="Navigation principale">
-              {tabs.map((t) => (
-                <button
-                  key={t.id}
-                  className={tab === t.id ? "nav-item active" : "nav-item"}
-                  aria-current={tab === t.id ? "page" : undefined}
-                  onClick={() => setTab(t.id)}
-                >
-                  <t.icon size={21} />
-                  <span>{t.label}</span>
-                  {tab === t.id && <span className="nav-dot" />}
-                </button>
-              ))}
-            </nav>
-            <div className="sidebar-note">
-              <Mountain size={30} />
-              <p>
-                Les grandes aventures
-                <br />
-                commencent par une question.
-              </p>
-              <span>VERSION 0.1 · HORS LIGNE</span>
-            </div>
-            <button
-              className="sidebar-profile"
-              onClick={() => setTab("profile")}
-            >
-              <span className="avatar small">
-                <Avatar size={22} />
-              </span>
-              <span>
-                {state.name}
-                <small>
-                  Niveau {level.level} · {level.title}
-                </small>
-              </span>
-              <ChevronRight size={16} />
-            </button>
-          </aside>
-          <div className="main-column">
-            <header className="topbar">
-              <div className="mobile-brand">
-                <Gem size={23} /> QuizzGame
-              </div>
-              <span className="breadcrumb">
-                Ton univers <ChevronRight size={13} />{" "}
-                {tabs.find((t) => t.id === tab)?.label}
-              </span>
-              <div className="topbar-right">
-                <span className="offline">
-                  <i /> Hors ligne
-                </span>
-                <span className="currency">
-                  <Gem size={17} /> {state.coins}
-                </span>
-                <button
-                  className="avatar small"
-                  aria-label="Ouvrir mon profil"
-                  onClick={() => setTab("profile")}
-                >
-                  <Avatar size={20} />
-                </button>
-              </div>
-            </header>
-            <main className="content" id="main">
-              {tab === "home" && (
-                <div className="page-enter">
-                  <div className="welcome">
-                    <div>
-                      <span className="eyebrow">
-                        CHAQUE QUESTION EST UN NOUVEAU DÉPART
-                      </span>
-                      <h1>
-                        À toi l’aventure<span className="accent">.</span>
-                      </h1>
-                      <p>
-                        Bienvenue, {state.name}. Le savoir est ton meilleur
-                        pouvoir.
-                      </p>
-                    </div>
-                    <span className="chapter">
-                      CHAPITRE 01 <span>Les premiers pas</span>
-                    </span>
-                  </div>
-                  <div className="home-grid">
-                    <section className="hero">
-                      <Artwork />
-                      <div className="hero-copy">
-                        <span className="hero-tag">
-                          <Sparkles size={13} /> TON VOYAGE COMMENCE ICI
-                        </span>
-                        <h2>
-                          Un monde à découvrir.
-                          <br />
-                          <em>Un héros à devenir.</em>
-                        </h2>
-                        <p>
-                          Explore tes univers préférés,
-                          <br />
-                          relève des défis et gagne de l’expérience.
-                        </p>
-                        <button
-                          className="primary"
-                          onClick={() => openSetup("expedition")}
-                        >
-                          Partir à l’aventure <ArrowRight size={18} />
-                        </button>
-                        <small>10 questions · Tous les niveaux</small>
-                      </div>
-                      <span className="art-caption">
-                        LES TERRES DU SAVOIR <span>01 / ∞</span>
-                      </span>
-                    </section>
-                    <section className="panel hero-profile">
-                      <div className="section-heading">
-                        <span className="eyebrow">TON PERSONNAGE</span>
-                        <span className="pill">NIV. {level.level}</span>
-                      </div>
-                      <div className="avatar large">
-                        <Avatar size={42} />
-                        <span>{level.level}</span>
-                      </div>
-                      <h2>{state.name}</h2>
-                      <p>{level.title}</p>
-                      <div className="xp-label">
-                        <span>Expérience</span>
-                        <b>
-                          {level.current}
-                          <small> / 250 XP</small>
-                        </b>
-                      </div>
-                      <Meter
-                        value={level.current}
-                        max={250}
-                        label="Expérience du héros"
-                      />
-                      <div className="mini-stats">
-                        <div>
-                          <b>{state.played}</b>
-                          <span>Parties</span>
-                        </div>
-                        <div>
-                          <b>
-                            {state.answered
-                              ? Math.round(
-                                  (state.correct / state.answered) * 100,
-                                )
-                              : 0}
-                            %
-                          </b>
-                          <span>Réussite</span>
-                        </div>
-                        <div>
-                          <b>{earned.filter((e) => e.done).length}</b>
-                          <span>Succès</span>
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                  <div className="section-heading section-space">
-                    <div>
-                      <h2>Choisis ta prochaine quête</h2>
-                      <p>Une petite pause. Une grande aventure.</p>
-                    </div>
-                    <Swords size={23} className="muted" />
-                  </div>
-                  <div className="modes">
-                    <button
-                      className="mode-card daily"
-                      onClick={() => openSetup("daily")}
-                      disabled={dailyDone}
-                    >
-                      <span className="mode-icon">
-                        <Sun size={25} />
-                      </span>
-                      <span className="mode-body">
-                        <span className="mode-eyebrow">
-                          {dailyDone ? "À DEMAIN" : "UNE FOIS PAR JOUR"}
-                        </span>
-                        <strong>Le défi du jour</strong>
-                        <span>10 questions sur tes thèmes favoris.</span>
-                        <span className="mode-footer">
-                          {dailyDone
-                            ? "Défi déjà tenté aujourd’hui"
-                            : "20 s / question"}{" "}
-                          <ArrowRight size={16} />
-                        </span>
-                      </span>
-                    </button>
-                    <button
-                      className="mode-card survival"
-                      onClick={() => openSetup("survival")}
-                    >
-                      <span className="mode-icon">
-                        <Flame size={25} />
-                      </span>
-                      <span className="mode-body">
-                        <span className="mode-eyebrow">
-                          REPOUSSE TES LIMITES
-                        </span>
-                        <strong>Survie</strong>
-                        <span>Trois vies. Jusqu’où iras-tu ?</span>
-                        <span className="mode-footer">
-                          Record : {state.bestSurvival} bonnes réponses{" "}
-                          <ArrowRight size={16} />
-                        </span>
-                      </span>
-                    </button>
-                    <div className="mode-card future">
-                      <span className="mode-icon">
-                        <Swords size={25} />
-                      </span>
-                      <span className="mode-body">
-                        <span className="mode-eyebrow">PROCHAINE ÉTAPE</span>
-                        <strong>L’arène des duels</strong>
-                        <span>Affronte d’autres aventuriers en 1v1.</span>
-                        <span className="mode-footer">
-                          Multijoueur en préparation <Shield size={15} />
-                        </span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="section-heading section-space">
-                    <div>
-                      <h2>Des univers à explorer</h2>
-                      <p>Deviens incollable sur ce que tu aimes.</p>
-                    </div>
-                    <button
-                      className="text-button"
-                      onClick={() => setTab("themes")}
-                    >
-                      Tout voir <ArrowRight size={16} />
-                    </button>
-                  </div>
-                  <div className="theme-preview">
-                    {themes.slice(0, 4).map((t) => {
-                      const Icon = themeIcons[t.symbol];
-                      return (
-                        <button
-                          key={t.id}
-                          className="theme-tile"
-                          onClick={() => openSetup("expedition", t.id)}
-                          style={{ "--theme": t.color } as React.CSSProperties}
-                        >
-                          <div className="theme-tile-art">
-                            <Icon size={39} />
-                            <span className="orb-line" />
-                            <span className="tile-number">
-                              0{themes.indexOf(t) + 1}
-                            </span>
-                          </div>
-                          <span className="theme-tile-label">
-                            <strong>{t.name}</strong>
-                            <small>
-                              10 questions <ChevronRight size={14} />
-                            </small>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <footer className="page-footer">
-                    <Leaf size={14} />
-                    <span>
-                      Un peu plus curieux. Un peu plus fort. Chaque jour.
-                    </span>
-                  </footer>
+              {error && (
+                <div className="notice error" role="alert">
+                  {error}
                 </div>
               )}
-              {tab === "themes" && (
-                <div className="page-enter">
-                  <div className="welcome">
-                    <div>
-                      <span className="eyebrow">
-                        LA CURIOSITÉ N’A PAS DE FRONTIÈRES
-                      </span>
-                      <h1>Tes univers.</h1>
-                      <p>
-                        Explore un thème ou ajoute-le à tes favoris pour le défi
-                        du jour.
-                      </p>
-                    </div>
-                  </div>
-                  <label className="search">
-                    <Search size={20} />
-                    <input
-                      placeholder="Chercher un univers…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      aria-label="Chercher un thème"
-                    />
-                  </label>
-                  <div className="theme-grid">
-                    {themes
-                      .filter((t) =>
-                        t.name
-                          .toLocaleLowerCase("fr")
-                          .includes(query.toLocaleLowerCase("fr")),
-                      )
-                      .map((t) => {
-                        const Icon = themeIcons[t.symbol];
-                        return (
-                          <article
-                            key={t.id}
-                            className="theme-card"
-                            style={
-                              { "--theme": t.color } as React.CSSProperties
-                            }
-                          >
-                            <div className="theme-card-art">
-                              <Icon size={46} />
-                              <button
-                                className={`favorite ${state.favorites.includes(t.id) ? "selected" : ""}`}
-                                aria-label={`${state.favorites.includes(t.id) ? "Retirer" : "Ajouter"} ${t.name} ${state.favorites.includes(t.id) ? "des" : "aux"} favoris`}
-                                aria-pressed={state.favorites.includes(t.id)}
-                                onClick={() => toggleFavorite(t.id)}
-                              >
-                                <Star
-                                  size={19}
-                                  fill={
-                                    state.favorites.includes(t.id)
-                                      ? "currentColor"
-                                      : "none"
-                                  }
-                                />
-                              </button>
-                            </div>
-                            <div className="theme-card-copy">
-                              <span className="eyebrow">
-                                10 QUESTIONS · DÉCOUVERTE
-                              </span>
-                              <h2>
-                                {t.name}{" "}
-                                {state.mastered.includes(t.id) && (
-                                  <Medal size={20} className="accent" />
-                                )}
-                              </h2>
-                              <p>{t.subtitle}</p>
-                              <button
-                                className="secondary full"
-                                onClick={() => openSetup("expedition", t.id)}
-                              >
-                                Explorer <ArrowRight size={17} />
-                              </button>
-                            </div>
-                          </article>
-                        );
-                      })}
-                  </div>
-                  {!themes.some((t) =>
-                    t.name
-                      .toLocaleLowerCase("fr")
-                      .includes(query.toLocaleLowerCase("fr")),
-                  ) && (
-                    <div className="empty-state">
-                      <Search size={32} />
-                      <h2>Aucun univers trouvé</h2>
-                      <p>
-                        Essaie un autre mot, ou explore les six thèmes
-                        disponibles.
-                      </p>
-                      <button
-                        className="secondary"
-                        onClick={() => setQuery("")}
-                      >
-                        Voir tous les thèmes
-                      </button>
-                    </div>
-                  )}
-                  <p className="footnote">
-                    60 questions embarquées pour cette première version.
-                    D’autres thèmes de ta liste arriveront ensuite.
-                  </p>
-                </div>
-              )}
-              {tab === "journal" && (
-                <div className="page-enter">
-                  <div className="welcome">
-                    <div>
-                      <span className="eyebrow">
-                        CHAQUE VICTOIRE LAISSE UNE TRACE
-                      </span>
-                      <h1>Ton journal.</h1>
-                      <p>Les étapes de ton aventure, petites et grandes.</p>
-                    </div>
-                  </div>
-                  <h2>Les marques du héros</h2>
-                  <div className="achievements">
-                    {earned.map((a) => (
-                      <article
-                        key={a.title}
-                        className={`achievement ${a.done ? "unlocked" : ""}`}
-                      >
-                        <span className="achievement-icon">
-                          <a.icon size={26} />
-                        </span>
-                        <div>
-                          <h3>{a.title}</h3>
-                          <p>{a.text}</p>
-                          <small>{a.done ? "Débloqué" : "À accomplir"}</small>
-                        </div>
-                        {a.done && <Check size={18} />}
-                      </article>
-                    ))}
-                  </div>
-                  <div className="section-heading section-space">
-                    <h2>Tes dernières expéditions</h2>
-                    <span className="pill">{state.played} parties</span>
-                  </div>
-                  {state.history.length ? (
-                    <div className="history-list">
-                      {state.history.map((h) => (
-                        <article className="history-row" key={h.id}>
-                          <span className="history-icon">
-                            <Swords size={22} />
-                          </span>
-                          <div>
-                            <strong>{modeNames[h.mode]}</strong>
-                            <small>
-                              {new Date(
-                                `${h.date}T12:00:00`,
-                              ).toLocaleDateString("fr-FR", {
-                                day: "numeric",
-                                month: "long",
-                              })}{" "}
-                              · {h.correct}/{h.total} réponses
-                            </small>
-                          </div>
-                          <b>+{h.xp} XP</b>
-                        </article>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="empty-state">
-                      <ScrollText size={36} />
-                      <h3>La première page est à écrire.</h3>
-                      <p>Termine une partie pour commencer ton histoire.</p>
-                      <button
-                        className="primary"
-                        onClick={() => openSetup("expedition")}
-                      >
-                        Écrire mon premier chapitre <ArrowRight size={17} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {tab === "profile" && (
-                <div className="page-enter">
-                  <div className="welcome">
-                    <div>
-                      <span className="eyebrow">LE HÉROS, C’EST TOI</span>
-                      <h1>À ton image.</h1>
-                      <p>Un nom, un emblème, et tout un monde devant toi.</p>
-                    </div>
-                  </div>
-                  <div className="profile-grid">
-                    <section className="panel profile-editor">
-                      <div className="avatar large">
-                        <Avatar size={42} />
-                      </div>
-                      <h2>
-                        Niveau {level.level} · {level.title}
-                      </h2>
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          const data = new FormData(e.currentTarget);
-                          const name = String(data.get("name")).trim();
-                          if (name) {
-                            update((s) => ({ ...s, name }));
-                            setNotice("Ton nom de héros est enregistré.");
-                          }
-                        }}
-                      >
-                        <label className="field-label" htmlFor="name">
-                          Ton nom d’aventurier
-                        </label>
-                        <input
-                          id="name"
-                          name="name"
-                          maxLength={24}
-                          minLength={1}
-                          required
-                          defaultValue={state.name}
-                          className="text-input"
-                        />
-                        <span className="field-label">Ton emblème</span>
-                        <div className="avatar-options">
-                          {(["leaf", "flame", "moon"] as const).map((id, i) => {
-                            const Icon = avatarIcons[id];
-                            return (
-                              <button
-                                type="button"
-                                key={id}
-                                className={
-                                  state.avatar === id ? "selected" : ""
-                                }
-                                aria-pressed={state.avatar === id}
-                                aria-label={["Feuille", "Flamme", "Lune"][i]}
-                                onClick={() =>
-                                  update((s) => ({ ...s, avatar: id }))
-                                }
-                              >
-                                <Icon size={26} />
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <button className="primary full" type="submit">
-                          Enregistrer mon nom <Check size={18} />
-                        </button>
-                      </form>
-                    </section>
-                    <div>
-                      <section className="panel settings">
-                        <h2>
-                          <Settings2 size={21} /> À ton rythme
-                        </h2>
-                        <label className="toggle-row">
-                          <span>
-                            <strong>Chronomètre</strong>
-                            <small>
-                              20 secondes en expédition et survie.
-                              <br />
-                              Toujours actif pour le défi quotidien.
-                            </small>
-                          </span>
-                          <input
-                            type="checkbox"
-                            checked={state.timed}
-                            onChange={(e) =>
-                              update((s) => ({ ...s, timed: e.target.checked }))
-                            }
-                          />
-                        </label>
-                        <div className="setting-note">
-                          <VolumeX size={19} />
-                          <span>
-                            Une aventure silencieuse pour jouer partout.
-                          </span>
-                        </div>
-                      </section>
-                      <section className="panel privacy">
-                        <Shield size={25} />
-                        <h3>Ton aventure reste avec toi.</h3>
-                        <p>
-                          Ton profil et tes parties sont enregistrés sur cet
-                          appareil, sans compte et sans publicité. Désinstaller
-                          l’application peut effacer ta progression.
-                        </p>
-                        <p>
-                          Les pièces sont des récompenses de jeu. Elles n’ont
-                          pas encore de boutique associée.
-                        </p>
-                        <span className="eyebrow">
-                          QUIZZGAME · PROTOTYPE ANDROID 0.1
-                        </span>
-                      </section>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </main>
-          </div>
-          <nav className="bottom-nav" aria-label="Navigation mobile">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                aria-current={tab === t.id ? "page" : undefined}
-                className={tab === t.id ? "active" : ""}
-                onClick={() => {
-                  setTab(t.id);
-                  window.scrollTo({ top: 0 });
-                }}
-              >
-                <t.icon size={21} />
-                <span>{t.label}</span>
+              <label htmlFor="server">Adresse du serveur</label>
+              <input
+                autoFocus
+                id="server"
+                type="url"
+                placeholder="https://akasha.exemple.fr"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                required
+                disabled={!!room}
+              />
+              {room && <p>Quitte le duel avant de changer de serveur.</p>}
+              <button className="button primary" disabled={!!room || busy}>
+                Enregistrer
               </button>
-            ))}
-          </nav>
+            </form>
+            <p className="fineprint">
+              Ton pseudo est enregistré sur ce téléphone. Version de test 0.2.
+            </p>
+          </section>
         </div>
       )}
-      {setup && (
-        <Modal title={modeNames[setup]} onClose={() => setSetup(null)}>
-          <p className="sheet-intro">
-            {setup === "daily"
-              ? "10 questions de tes thèmes favoris. Une seule tentative par jour sur cet appareil : elle est utilisée dès le départ."
-              : setup === "survival"
-                ? "Trois vies pour aller le plus loin possible, sans répéter une question. La partie s’arrête au bout de la banque sélectionnée."
-                : "Dix questions, de nouvelles découvertes et de l’expérience pour ton héros."}
-          </p>
-          <h3>
-            {setup === "daily" ? "Tes thèmes favoris" : "Choisis tes univers"}
-          </h3>
-          <div className="theme-chips">
-            {themes
-              .filter(
-                (t) => setup !== "daily" || state.favorites.includes(t.id),
-              )
-              .map((t) => (
-                <button
-                  key={t.id}
-                  disabled={setup === "daily"}
-                  aria-pressed={setup === "daily" || selected.includes(t.id)}
-                  className={
-                    setup === "daily" || selected.includes(t.id)
-                      ? "selected"
-                      : ""
-                  }
-                  onClick={() =>
-                    setSelected((s) =>
-                      s.includes(t.id)
-                        ? s.filter((id) => id !== t.id)
-                        : [...s, t.id],
-                    )
-                  }
-                >
-                  {t.name}
-                  {(setup === "daily" || selected.includes(t.id)) && (
-                    <Check size={14} />
-                  )}
-                </button>
-              ))}
-          </div>
-          <div className="setup-details">
-            <span>
-              <BookOpen size={16} />
-              {setup === "survival" ? selected.length * 10 : 10} questions
-            </span>
-            <span>
-              <Sun size={16} />
-              {setup === "daily" || state.timed
-                ? "20 s / question"
-                : "Sans chrono"}
-            </span>
-          </div>
-          <button
-            className="primary full"
-            disabled={
-              (setup !== "daily" && !selected.length) ||
-              (setup === "daily" && dailyDone)
-            }
-            onClick={launch}
-          >
-            Commencer {setup === "daily" ? "le défi" : "l’aventure"}
-            <ArrowRight size={18} />
-          </button>
-          <p className="footnote">
-            {setup === "daily"
-              ? "La partie peut être reprise après fermeture de l’application."
-              : "Tu peux désactiver le chrono dans Mon héros."}
-          </p>
-        </Modal>
-      )}
       {quitting && (
-        <Modal
-          title="Quitter cette aventure ?"
-          onClose={() => setQuitting(false)}
-        >
-          <p className="sheet-intro">
-            Quitter abandonne la partie sans récompense.
-            {game?.mode === "daily"
-              ? " Ta tentative quotidienne restera utilisée."
-              : ""}{" "}
-            Le chronomètre continue pendant cette décision.
-          </p>
-          <button className="primary full" onClick={() => setQuitting(false)}>
-            Continuer la partie
-          </button>
-          <button
-            className="danger-button full"
-            onClick={() => {
-              update((s) => ({ ...s, active: null }));
-              setQuitting(false);
-              setTab("home");
-            }}
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leave-title"
           >
-            Abandonner la partie
-          </button>
-        </Modal>
+            <h2 id="leave-title">
+              {ended ? "Revenir à l’accueil ?" : "Quitter le duel ?"}
+            </h2>
+            <p>
+              {ended
+                ? "Tu pourras créer un nouveau salon."
+                : room?.phase === "lobby"
+                  ? "Le salon sera fermé pour vous deux."
+                  : "Ton ami remportera le duel par abandon."}
+            </p>
+            {error && (
+              <div className="notice error" role="alert">
+                {error}
+              </div>
+            )}
+            <button
+              autoFocus
+              className="button primary"
+              disabled={!online || busy}
+              onClick={() => void leave()}
+            >
+              {ended ? "Revenir à l’accueil" : "Quitter le duel"}
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => setQuitting(false)}
+            >
+              Rester ici
+            </button>
+          </section>
+        </div>
       )}
-    </>
+    </div>
   );
 }
-export default App;

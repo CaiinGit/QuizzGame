@@ -1,70 +1,64 @@
-# QuizzGame · Android
+# Akasha · Android
 
-Une application de quiz avec une ambiance RPG : tes connaissances font progresser ton héros. **QuizzGame est un nom de travail.**
+Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
-## Première version
+## Version 0.2
 
-- **Expédition** : 10 questions sur les univers de ton choix.
-- **Survie** : trois vies, sans répétition, jusqu’au bout de la banque choisie (10 à 60 questions).
-- **Défi quotidien** : 10 questions sur tes favoris, une tentative par jour sur cet appareil.
-- 60 questions originales en français : One Piece, jeux vidéo, cinéma, histoire, géographie et sciences.
-- Corrections expliquées, XP, niveaux, pièces, quatre succès, maîtrise d’un thème et historique.
-- Personnalisation du nom et de l’emblème ; chrono facultatif hors défi quotidien.
-- Sauvegarde native Android, y compris pendant une partie. Aucune connexion nécessaire après installation.
+- Création d’un salon et invitation par code à six caractères.
+- Deux joueurs connectés, chacun confirme qu’il est prêt.
+- Dix questions communes, réponses mélangées de façon identique, vingt secondes par question.
+- 1 000 points par bonne réponse, sans avantage lié à la vitesse du réseau.
+- Corrections communes, scores et résultat calculés exclusivement par le serveur.
+- Reconnexion, sauvegarde des duels et reprise après redémarrage du serveur.
+- Abandon, égalité, salon complet ou expiré et erreurs de connexion gérés.
 
-Il s’agit d’un **prototype solo**, sans compte, serveur, boutique ni multijoueur. Les duels, guildes, tournois et raids sont dans la [feuille de route](docs/ROADMAP.md). Aucun classement ou joueur fictif n’est présenté comme réel.
+La banque initiale contient dix questions One Piece. Les anciens modes solo, niveaux, pièces, succès et autres thèmes ont été retirés du parcours. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
 
-## Installer sur un téléphone Android
+## Installer l’APK
 
 1. Ouvrir [Actions → Android - Tests et APK](https://github.com/CaiinGit/QuizzGame/actions/workflows/android.yml).
-2. Choisir une exécution réussie et télécharger l’artefact **QuizzGame-Android-debug** (connexion GitHub nécessaire).
-3. Extraire le ZIP puis transférer `app-debug.apk` sur le téléphone.
-4. Ouvrir le fichier, autoriser si demandé l’installation depuis cette source, puis installer.
+2. Ouvrir la dernière exécution réussie et télécharger **Akasha-Android-debug** (connexion GitHub requise).
+3. Extraire le ZIP, transférer `app-debug.apk` sur le téléphone, l’ouvrir et autoriser l’installation depuis cette source si Android le demande.
+4. Ouvrir Akasha. Si aucune adresse n’est préconfigurée, saisir l’URL HTTPS du serveur dans les réglages. Les deux joueurs doivent utiliser le même serveur.
 
-Cet APK de développement n’est pas une publication Google Play. Il utilise une signature de test ; deux exécutions CI peuvent utiliser des signatures différentes, nécessitant une désinstallation avant réinstallation, ce qui efface la progression. Une clé de signature stable et privée sera nécessaire avant les distributions régulières. Android 6+ est la cible minimale du projet ; la compatibilité réelle dépend aussi d’un Android System WebView récent. La validation sur téléphone physique reste à effectuer.
+L’identifiant Android reste `com.caiin.quizzgame` pour préserver la continuité du projet ; le nom affiché devient Akasha. Cet APK utilise une signature de développement, susceptible de changer entre deux compilations CI. Si Android refuse une mise à jour pour signature différente, désinstaller l’ancienne version avant installation efface ses données locales. Avant diffusion régulière, configurer une clé de signature stable privée.
 
-## Développer
+## Développement
 
-Node.js 20.11+ (Node 22 recommandé), npm. Pour compiler Android : JDK 21, Android SDK 35 / Android Studio 2024.2.1 ou ultérieur.
+Node.js 20.11+ (22 recommandé) et npm. Pour Android : JDK 21 et SDK Android 35.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-L’aperçu web local est disponible sur `http://127.0.0.1:5173`. Il sert au développement ; l’application Android embarque les fichiers compilés, sans dépendre de ce serveur.
+L’interface est disponible sur `http://127.0.0.1:5173`, le serveur sur le port 3001. En développement, PGlite conserve une base PostgreSQL embarquée dans `work/akasha-db`. En production, `DATABASE_URL` désigne PostgreSQL et `ALLOWED_ORIGINS` doit être défini.
 
 ```sh
-npm run check             # moteur de jeu + TypeScript + compilation
+npm run check
 npx playwright install chromium
-npm run test:e2e          # parcours au format téléphone
-npm run android:sync     # compilation et copie dans le projet Android
-npm run android:open     # ouverture dans Android Studio
+npm run test:e2e
+npm run android:sync
+npm run android:open
 ```
 
-Depuis `android/`, `./gradlew assembleDebug` (macOS/Linux) ou `./gradlew.bat assembleDebug` (Windows) produit `app/build/outputs/apk/debug/app-debug.apk`. Le SDK doit être indiqué dans `ANDROID_HOME` ou dans un fichier local `android/local.properties` non versionné.
+`VITE_SERVER_URL` permet d’intégrer une adresse HTTPS par défaut dans l’APK avant `android:sync`. Le réglage de connexion reste disponible dans l’application. Depuis `android/`, `./gradlew assembleDebug` crée `app/build/outputs/apk/debug/app-debug.apk`.
 
-## Architecture
+## Hébergement et architecture
 
-| Emplacement                     | Rôle                                                                   |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `src/game.ts`                   | Moteur déterministe, chrono, récompenses et validation des sauvegardes |
-| `src/data.ts`                   | Banque éditoriale française embarquée                                  |
-| `src/storage.ts`                | Sauvegarde sérialisée avec Capacitor Preferences                       |
-| `src/App.tsx`                   | Écrans, navigation et interactions                                     |
-| `src/Artwork.tsx`               | Illustration vectorielle originale intégrée                            |
-| `android/`                      | Application native Capacitor                                           |
-| `.github/workflows/android.yml` | Tests et production d’un APK de test                                   |
+Voir le [guide pour SERVEUR Valentin](docs/HEBERGEMENT.md) et la [feuille de route](docs/ROADMAP.md).
 
-Interface React/TypeScript et Vite, emballage natif Capacitor 7. Les polices système, illustrations et questions sont disponibles hors ligne. Les icônes proviennent de Lucide.
+| Dossier               | Rôle                                                           |
+| --------------------- | -------------------------------------------------------------- |
+| `src/`                | Interface React, connexion Socket.IO et profil local Capacitor |
+| `server/engine.ts`    | Règles, temps, réponses et scores contrôlés par le serveur     |
+| `server/questions.ts` | Banque privée : aucune correction embarquée dans l’APK         |
+| `server/database.ts`  | Sessions et états de duels persistés dans PostgreSQL           |
+| `shared/`             | Données publiques échangées avec l’application                 |
+| `tests/`              | Parcours avec deux navigateurs au format téléphone             |
+| `android/`            | Application native Android Capacitor 7                         |
+| `compose*.yaml`       | Services dédiés, accès privé Tailscale ou HTTPS public Caddy   |
 
-## Règles du prototype
+Une seule instance du serveur gère les mutations en série et confirme chaque changement après sauvegarde. Les jetons aléatoires des profils sont conservés sous forme hachée en base. Les réponses correctes sont envoyées uniquement pendant la correction. L’API limite les tailles de requête et le nombre de tentatives. PostgreSQL n’est pas exposé sur le réseau public.
 
-- 20 secondes par question chronométrée. Le délai absolu continue si l’application passe en arrière-plan ; une question expirée devient incorrecte à la reprise.
-- Les récompenses sont attribuées une seule fois à la fin : 15 XP par bonne réponse + 25 XP de fin ; 3 pièces par bonne réponse + 20 si parfait, sinon 5.
-- Un niveau tous les 250 XP. Une partie abandonnée ne donne rien.
-- Le défi utilise la date locale, se consomme dès son lancement et peut être repris. Sans serveur, l’horloge et le stockage de l’appareil ne peuvent pas être considérés comme fiables pour une compétition.
-- La sauvegarde est locale et versionnée. Un contenu illisible est conservé dans une copie de secours avant création d’un profil neuf ; les erreurs de stockage sont affichées.
-- Les pièces n’ont pas encore d’usage, les niveaux sont une progression solo et la banque de survie n’est pas infinie.
-
-Voir [l’architecture et les prochaines étapes](docs/ROADMAP.md). Avant diffusion publique : enrichissement et revue éditoriale des questions, tests sur appareils physiques, signature stable, accessibilité avec TalkBack et vérification des exigences Google Play.
+Les tests couvrent le moteur, deux vrais clients Socket.IO, la confidentialité des réponses, les doubles clics, les délais, les reconnexions et le redémarrage. La CI teste aussi le stockage PostgreSQL. La validation physique sur deux téléphones et réseaux différents reste nécessaire.

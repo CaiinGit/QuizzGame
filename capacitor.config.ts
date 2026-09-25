@@ -1,10 +1,10 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "com.caiin.quizzgame",
-  appName: "QuizzGame",
+  appName: "Akasha",
   webDir: "dist",
   android: {
-    backgroundColor: "#101c19",
+    backgroundColor: "#f3eddf",
     allowMixedContent: false,
     adjustMarginsForEdgeToEdge: "auto",
   },

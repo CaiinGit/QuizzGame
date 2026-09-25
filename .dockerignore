@@ -1,0 +1,10 @@
+node_modules
+dist
+android
+.git
+.env*
+work
+test-results
+playwright-report
+assets
+*.tsbuildinfo

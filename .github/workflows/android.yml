@@ -13,6 +13,16 @@ jobs:
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci-test-only
+          POSTGRES_DB: akasha_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +39,9 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - run: npm ci
       - run: npm run check
+        env:
+          TEST_DATABASE_URL: postgres://postgres:ci-test-only@127.0.0.1:5432/akasha_test
+          VITE_SERVER_URL: https://akasha.tail118128.ts.net
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npx cap sync android
@@ -37,7 +50,7 @@ jobs:
         run: bash gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
-          name: QuizzGame-Android-debug
+          name: Akasha-Android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30

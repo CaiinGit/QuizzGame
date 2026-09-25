@@ -13,15 +13,15 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <item name="android:statusBarColor">#101C19</item>
-        <item name="android:navigationBarColor">#101C19</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#F3EDDF</item>
+        <item name="android:navigationBarColor">#F3EDDF</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#101C19</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/quizzgame_icon</item>
+        <item name="windowSplashScreenBackground">#F3EDDF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/akasha_icon</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>
