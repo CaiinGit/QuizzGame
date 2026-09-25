@@ -6,10 +6,12 @@ Décision du 25 septembre 2026 : Akasha remplace le nom de travail QuizzGame. Pa
 
 La version 0.2 fournit les salons, invitations, readiness, dix questions communes, chronomètre serveur, correction, scores, abandon et reprise. Les anciennes expéditions, défis quotidiens, survie, monnaies et progressions ne font plus partie du parcours actuel.
 
+La version 0.3 ajoute l’accueil fantasy pixel avec portail frontal isolé et la navigation **Accueil · Mode · Profil**. Le parcours du duel devient **Classique → One Piece → Créer un duel**. Les personnages sont reportés ; aucun nouveau mode ni thème n’est ajouté.
+
 ## Prochaine étape : test entre amis
 
 1. Valider l’APK sur les deux téléphones.
-2. Finaliser l’accès HTTPS au serveur maison et tester depuis deux domiciles.
+2. Tester depuis deux domiciles via l’accès HTTPS privé Tailscale déjà activé.
 3. Tester les interruptions réseau et les retours de veille Android.
 4. Recueillir les retours : lisibilité, rythme, difficulté et compréhension du score.
 5. Enrichir progressivement les questions One Piece, avec revue des ambiguïtés et des spoilers.

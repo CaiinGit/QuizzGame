@@ -5,10 +5,8 @@ import {
   ArrowRight,
   Check,
   ChevronLeft,
-  Compass,
   Copy,
   Settings2,
-  Swords,
   Trophy,
   Wifi,
   X,
@@ -23,9 +21,44 @@ import {
   type DuelSocket,
   type Profile,
 } from "./client";
+import { Explore, BottomNavigation } from "./Explore";
+import { useNavigation } from "./navigation";
+type Intent =
+  | { event: "room:create"; data: Record<string, never> }
+  | { event: "room:join"; data: { code: string } };
 import type { RoomView } from "../shared/protocol";
 
 export default function App() {
+  const navigation = useNavigation();
+  const [identity, setIdentity] = useState(false),
+    [intent, setIntent] = useState<Intent | null>(null),
+    [synced, setSynced] = useState(false);
+  const backRef = useRef(() => {});
+  backRef.current = () => {
+    if (identity) {
+      setIdentity(false);
+      setIntent(null);
+    } else if (settings) setSettings(false);
+    else if (quitting) setQuitting(false);
+    else if (room) setQuitting(true);
+    else if (navigation.screen !== "accueil") navigation.back();
+    else void NativeApp.minimizeApp();
+  };
+  function navigate(screen: Parameters<typeof navigation.navigate>[0]) {
+    setIntent(null);
+    setError("");
+    navigation.navigate(screen);
+  }
+  function requestAction(action: Intent) {
+    setError("");
+    setIntent(action);
+    if (!profile?.credentials) setIdentity(true);
+    else if (!online)
+      setError(
+        "Connexion en cours. Le salon s’ouvrira dès que le serveur sera disponible.",
+      );
+  }
+
   const [profile, setProfile] = useState<Profile | null>(null),
     [room, setRoom] = useState<RoomView | null>(null);
   const [name, setName] = useState(""),
@@ -41,9 +74,12 @@ export default function App() {
     [now, setNow] = useState(Date.now());
   const socket = useRef<DuelSocket | null>(null),
     offset = useRef(0),
-    pending = useRef(false),
-    roomRef = useRef(room);
-  roomRef.current = room;
+    pending = useRef(false);
+  useEffect(() => {
+    setIntent(null);
+    setIdentity(false);
+    setError("");
+  }, [navigation.screen]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [room?.code, room?.phase === "finished", room?.phase === "cancelled"]);
@@ -70,6 +106,7 @@ export default function App() {
   }, []);
   useEffect(() => {
     if (!profile?.credentials) return;
+    setSynced(false);
     const s = connect(profile);
     socket.current = s;
     let disposed = false;
@@ -87,7 +124,10 @@ export default function App() {
       setError("");
       void sync();
     });
-    s.on("disconnect", () => setOnline(false));
+    s.on("disconnect", () => {
+      setOnline(false);
+      setSynced(false);
+    });
     s.on("connect_error", (e) => {
       setOnline(false);
       if (e.message === "SESSION_EXPIRED") {
@@ -109,6 +149,8 @@ export default function App() {
     s.on("room:state", (state: RoomView | null) => {
       offset.current = state ? state.serverNow - Date.now() : offset.current;
       setRoom(state);
+      setSynced(true);
+      if (state) setIntent(null);
     });
     s.connect();
     const timer = setInterval(() => void sync(), 15000);
@@ -136,13 +178,59 @@ export default function App() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const listener = NativeApp.addListener("backButton", () => {
-      if (roomRef.current) setQuitting(true);
-      else NativeApp.minimizeApp();
+      backRef.current();
     });
     return () => {
       void listener.then((l) => l.remove());
     };
   }, []);
+  useEffect(() => {
+    if (!intent || !profile?.credentials || !online || !synced || busy || room)
+      return;
+    setIntent(null);
+    void run(async () => {
+      await command(socket.current, intent.event, intent.data);
+    });
+  }, [intent, profile, online, synced, busy, room]);
+  useEffect(() => {
+    if (!identity && !settings && !quitting) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    const focusable = () =>
+      Array.from(
+        dialog?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled),input:not(:disabled),[tabindex="0"]',
+        ) ?? [],
+      );
+    if (dialog && !dialog.contains(document.activeElement))
+      focusable()[0]?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        backRef.current();
+      } else if (event.key === "Tab") {
+        const items = focusable(),
+          first = items[0],
+          last = items.at(-1);
+        if (!first) {
+          event.preventDefault();
+          return;
+        }
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => {
+      document.removeEventListener("keydown", keydown);
+      previous?.focus();
+    };
+  }, [identity, settings, quitting]);
   async function run(action: () => Promise<void>) {
     if (pending.current) return;
     pending.current = true;
@@ -161,14 +249,22 @@ export default function App() {
   }
   async function enter() {
     await run(async () => {
-      const server = serverUrl(profile!.server);
+      if (!profile?.server) {
+        setIdentity(false);
+        setSettings(true);
+        setIntent(null);
+        throw new Error("Renseigne l’adresse du serveur pour continuer.");
+      }
+      const server = serverUrl(profile.server);
       const credentials = await createSession(server, name.trim());
       const next = { server, credentials };
       await saveProfile(next);
       setProfile(next);
+      setIdentity(false);
     });
   }
   async function changeServer() {
+    setIntent(null);
     await run(async () => {
       const server = serverUrl(address);
       const next = {
@@ -185,6 +281,7 @@ export default function App() {
     await run(async () => {
       await command(socket.current, "room:leave");
       setQuitting(false);
+      navigate("accueil");
     });
   }
   const me = room?.players.find((p) => p.id === profile?.credentials?.id),
@@ -209,11 +306,11 @@ export default function App() {
       </main>
     );
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
+    >
       <header className="topbar">
-        <div className="wordmark">
-          AKASHA<span>LE SAVOIR FAIT LA FORCE</span>
-        </div>
+        <div className="wordmark">AKASHA</div>
         <button
           className="icon-button"
           aria-label="Réglages de connexion"
@@ -226,7 +323,7 @@ export default function App() {
         </button>
       </header>
       <main>
-        {error && !settings && !quitting && (
+        {error && !settings && !quitting && !identity && (
           <div className="notice error" role="alert">
             {error}
             <button
@@ -245,143 +342,31 @@ export default function App() {
           </div>
         )}
         {!room && (
-          <>
-            <section className="intro">
-              <div className="eyebrow">
-                <span className="dot" /> QUIZ · DUEL ENTRE AMIS
-              </div>
-              <h1>
-                À deux.
-                <br />À armes <em>égales.</em>
-              </h1>
-              <p>
-                Un univers. Dix questions.
-                <br />
-                Qui connaît le mieux Grand Line ?
-              </p>
-            </section>
-            <section className="theme-card" aria-label="Thème One Piece">
-              <div className="chart" aria-hidden="true">
-                <div className="orbit orbit-one" />
-                <div className="orbit orbit-two" />
-                <Compass size={113} strokeWidth={0.65} />
-                <span className="north">N</span>
-                <span className="coord">22° 00′ N · GRAND LINE</span>
-              </div>
-              <div className="theme-content">
-                <span className="pill">LE THÈME DU MOMENT</span>
-                <h2>One Piece</h2>
-                <p>
-                  Le cap est donné.
-                  <br />À toi de faire la différence.
-                </p>
-                <div className="theme-meta">
-                  <span>10 questions</span>
-                  <i />
-                  <span>20 s par question</span>
-                </div>
-              </div>
-            </section>
-            {!profile?.credentials ? (
-              <form
-                className="entry"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!profile?.server) {
-                    setSettings(true);
-                    return;
-                  }
-                  void enter();
-                }}
-              >
-                <label htmlFor="pseudo">Ton nom d’aventurier</label>
-                <input
-                  id="pseudo"
-                  autoComplete="nickname"
-                  placeholder="Ton pseudo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  minLength={2}
-                  maxLength={20}
-                  required
-                />
-                <button className="button primary" disabled={busy}>
-                  {busy ? "Connexion…" : "Prendre le large"}
-                  <ArrowRight size={20} />
-                </button>
-                {!profile?.server && (
-                  <p className="muted">
-                    Configure l’adresse de ton serveur pour commencer.
-                  </p>
-                )}
-              </form>
-            ) : (
-              <section className="entry">
-                <div className="welcome">
-                  <p>
-                    À toi de jouer, <strong>{profile.credentials.name}</strong>.
-                  </p>
-                  <span className={online ? "connection online" : "connection"}>
-                    {online ? "En ligne" : "Connexion…"}
-                  </span>
-                </div>
-                <button
-                  className="button primary"
-                  disabled={!online || busy}
-                  onClick={() =>
-                    void run(async () => {
-                      await command(socket.current, "room:create");
-                    })
-                  }
-                >
-                  <Swords size={20} />
-                  Créer un duel
-                  <ArrowRight size={20} />
-                </button>
-                <div className="divider">
-                  <span>ou rejoins ton ami</span>
-                </div>
-                <form
-                  className="join-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void run(async () => {
-                      await command(socket.current, "room:join", { code });
-                    });
-                  }}
-                >
-                  <label className="sr-only" htmlFor="code">
-                    Code du salon
-                  </label>
-                  <input
-                    id="code"
-                    placeholder="CODE DU SALON"
-                    autoCapitalize="characters"
-                    autoComplete="off"
-                    maxLength={6}
-                    minLength={6}
-                    required
-                    value={code}
-                    onChange={(e) =>
-                      setCode(
-                        e.target.value.toUpperCase().replace(/[^A-Z2-9]/g, ""),
-                      )
-                    }
-                  />
-                  <button
-                    className="button secondary"
-                    disabled={!online || busy || code.length !== 6}
-                  >
-                    Rejoindre
-                  </button>
-                </form>
-              </section>
-            )}
-            <footer className="home-footer">
-              <span>1 CONTRE 1</span>
-              <span>La même question. Le même temps.</span>
-            </footer>
-          </>
+          <Explore
+            screen={navigation.screen}
+            navigate={navigate}
+            back={() => {
+              setError("");
+              setIntent(null);
+              navigation.back();
+            }}
+            profile={profile}
+            online={online}
+            busy={busy || !!intent}
+            code={code}
+            setCode={setCode}
+            create={() => requestAction({ event: "room:create", data: {} })}
+            join={() => requestAction({ event: "room:join", data: { code } })}
+            chooseName={() => {
+              setIntent(null);
+              setIdentity(true);
+              setError("");
+            }}
+            settings={() => {
+              setAddress(profile?.server ?? "");
+              setSettings(true);
+            }}
+          />
         )}
         {room && (
           <>
@@ -647,6 +632,62 @@ export default function App() {
           </>
         )}
       </main>
+      {!room && (
+        <BottomNavigation screen={navigation.screen} navigate={navigate} />
+      )}
+      {identity && (
+        <div className="modal-backdrop">
+          <section
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="identity-title"
+          >
+            <button
+              className="icon-button close"
+              aria-label="Fermer le choix du pseudo"
+              onClick={() => {
+                setIdentity(false);
+                setIntent(null);
+              }}
+            >
+              <X />
+            </button>
+            <span className="eyebrow">AVANT TON PREMIER DUEL</span>
+            <h2 id="identity-title">Choisis ton pseudo</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void enter();
+              }}
+            >
+              {error && (
+                <div className="notice error" role="alert">
+                  {error}
+                </div>
+              )}
+              <label htmlFor="pseudo">Ton pseudo</label>
+              <input
+                autoFocus
+                id="pseudo"
+                autoComplete="nickname"
+                placeholder="Ton pseudo"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                minLength={2}
+                maxLength={20}
+                required
+                disabled={busy}
+              />
+              <button className="button primary" disabled={busy}>
+                {busy ? "Connexion…" : "Continuer"}
+                <ArrowRight size={18} />
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
+
       {settings && (
         <div className="modal-backdrop">
           <section
@@ -693,7 +734,7 @@ export default function App() {
               </button>
             </form>
             <p className="fineprint">
-              Ton pseudo est enregistré sur ce téléphone. Version de test 0.2.
+              Ton pseudo est enregistré sur ce téléphone. Version de test 0.3.
             </p>
           </section>
         </div>

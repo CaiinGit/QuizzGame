@@ -1,7 +1,7 @@
 {
   "name": "akasha",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "engines": {
     "node": ">=20.11"
@@ -45,6 +45,7 @@
     "@vitejs/plugin-react": "^4.4.0",
     "concurrently": "^9.2.4",
     "prettier": "^3.9.9",
+    "sharp": "^0.35.4",
     "tsx": "^4.23.15",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"

@@ -2,7 +2,14 @@
 
 Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
-## Version 0.2
+## Version 0.3
+
+- Accueil avec portail frontal isolé en pixel art, palette beige et verte.
+- Barre du bas : **Accueil · Mode · Profil**, masquée dans les salons et duels.
+- Parcours **Mode → Classique → One Piece → Créer un duel**.
+- Accès direct **Rejoindre un ami** depuis l’accueil ; pseudo demandé au premier besoin et mémorisé.
+- Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
+- Illustrations et provenance : [direction artistique](docs/ART.md).
 
 - Création d’un salon et invitation par code à six caractères.
 - Deux joueurs connectés, chacun confirme qu’il est prêt.
