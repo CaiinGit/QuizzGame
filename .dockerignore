@@ -8,3 +8,5 @@ test-results
 playwright-report
 assets
 *.tsbuildinfo
+backups
+source.tar.gz

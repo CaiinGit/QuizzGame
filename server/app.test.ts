@@ -32,7 +32,10 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
   try {
     async function start() {
       server = await createApp(
-        await connectDatabase(process.env.TEST_DATABASE_URL, directory),
+        await connectDatabase(
+          process.env.TEST_DATABASE_URL,
+          join(directory, "nested", "database"),
+        ),
         {
           testMode: true,
           times: {

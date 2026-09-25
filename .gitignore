@@ -10,3 +10,5 @@ work/
 *.tsbuildinfo
 *.jks
 *.keystore
+backups/
+source.tar.gz

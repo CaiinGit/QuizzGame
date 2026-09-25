@@ -43,10 +43,10 @@ Faire une sauvegarde avant mise à jour. Depuis `/srv/docker/akasha` :
 ```sh
 mkdir -p backups
 chmod 700 backups
-docker compose exec -T db pg_dump -U akasha -d akasha -Fc > "backups/akasha-$(date +%Y%m%d-%H%M%S).dump"
+docker compose -f compose.yaml -f compose.private.yaml exec -T db pg_dump -U akasha -d akasha -Fc > "backups/akasha-$(date +%Y%m%d-%H%M%S).dump"
 git pull --ff-only
-docker compose up -d --build
-docker compose ps
+docker compose -f compose.yaml -f compose.private.yaml up -d --build
+docker compose -f compose.yaml -f compose.private.yaml ps
 curl --fail http://127.0.0.1:3001/api/health
 ```
 

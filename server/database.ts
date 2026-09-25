@@ -1,5 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import pg from "pg";
+import { mkdir } from "node:fs/promises";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Room } from "./engine";
 export interface Sql {
@@ -19,6 +20,7 @@ export async function connectDatabase(
       close: () => pool.end(),
     };
   }
+  if (directory) await mkdir(directory, { recursive: true });
   const db = new PGlite(directory);
   await db.waitReady;
   return {
