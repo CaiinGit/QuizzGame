@@ -31,8 +31,8 @@ export function BottomNavigation({
         ? "mode"
         : "accueil";
   const items: { screen: Screen; label: string; icon: IconName }[] = [
-    { screen: "accueil", label: "Accueil", icon: "portal" },
     { screen: "mode", label: "Mode", icon: "swords" },
+    { screen: "accueil", label: "Accueil", icon: "portal" },
     { screen: "profil", label: "Profil", icon: "profile" },
   ];
   return (

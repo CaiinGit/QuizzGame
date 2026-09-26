@@ -6,7 +6,7 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
 - Bouton lune/soleil en haut à gauche : mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé sur l’appareil.
-- Barre du bas : **Accueil · Mode · Profil**, masquée dans les salons et duels.
+- Barre du bas : **Mode · Accueil · Profil**, masquée dans les salons et duels.
 - Parcours **Mode → Classique → One Piece → Créer un duel**.
 - Accès direct **Rejoindre un ami** depuis l’accueil ; pseudo demandé au premier besoin et mémorisé.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
