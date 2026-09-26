@@ -43,7 +43,7 @@ test("theme is in settings, follows navigation and survives reload", async ({
   );
   await expect(page.getByRole("navigation")).toHaveCSS(
     "background-color",
-    "rgb(48, 48, 48)",
+    "rgb(146, 170, 225)",
   );
   await settings.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
@@ -52,10 +52,7 @@ test("theme is in settings, follows navigation and survives reload", async ({
     path: "test-results/akasha-header-dark.png",
     fullPage: true,
   });
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Mode", exact: true })
-    .click();
+  await page.goto("/#mode");
   await expect(page.locator(".mode-card")).toHaveCSS(
     "background-color",
     "rgb(48, 48, 48)",

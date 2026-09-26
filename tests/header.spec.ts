@@ -5,7 +5,7 @@ test("player header fits small phones and future features do not invent balances
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Changer la photo de profil" }),
+    page.getByRole("button", { name: "Ouvrir mon profil" }),
   ).toBeVisible();
   await expect(page.locator(".wordmark")).toHaveCount(0);
   for (const viewport of [
@@ -65,8 +65,15 @@ test("photo selection, replacement, cancel and removal persist without server up
     if (request.method() === "POST") uploads.push(request.url());
   });
   await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Profil", exact: true }),
+  ).toBeVisible();
   const openPhoto = page.getByRole("button", {
-    name: "Changer la photo de profil",
+    name: "Modifier ma photo",
+    exact: true,
   });
   await openPhoto.click();
   const choose = page.getByRole("button", {
@@ -99,8 +106,7 @@ test("photo selection, replacement, cancel and removal persist without server up
     first!,
   );
   await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Profil", exact: true })
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
     .click();
   await expect(page.locator(".profile-photo img")).toHaveAttribute(
     "src",

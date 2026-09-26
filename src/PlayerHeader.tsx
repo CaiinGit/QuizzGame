@@ -14,10 +14,14 @@ export type HeaderPanel =
 
 export function PlayerHeader({
   photo,
+  profile,
+  profileDisabled,
   open,
   settings,
 }: {
   photo: string | null;
+  profile: () => void;
+  profileDisabled: boolean;
   open: (panel: HeaderPanel) => void;
   settings: () => void;
 }) {
@@ -25,8 +29,12 @@ export function PlayerHeader({
     <header className="player-header" aria-label="Espace joueur">
       <button
         className="header-photo"
-        aria-label="Changer la photo de profil"
-        onClick={() => open("photo")}
+        aria-label="Ouvrir mon profil"
+        onClick={profile}
+        disabled={profileDisabled}
+        title={
+          profileDisabled ? "Profil disponible après le duel" : "Mon profil"
+        }
       >
         <PortraitFrame>
           {photo ? (
@@ -141,7 +149,7 @@ export function PhotoEditor({
 export const headerPanels = {
   daily: {
     title: "Défi du jour",
-    text: "Le défi quotidien arrive bientôt. En attendant, retrouve les duels entre amis dans Mode.",
+    text: "Le défi quotidien arrive bientôt.",
   },
   favorites: {
     title: "Tes thèmes favoris",

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-type ArcadeIconName = "coin" | "trophy" | "gear" | "mail" | "daily";
+type ArcadeIconName =
+  "coin" | "trophy" | "gear" | "mail" | "daily" | "home" | "podium" | "chest";
 const ink = "#101426";
 
 /** Layered pixel shapes reproduce the bevels of the supplied header reference. */
@@ -14,6 +15,52 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
       shapeRendering="crispEdges"
       aria-hidden="true"
     >
+      {name === "home" && (
+        <>
+          <path
+            fill={ink}
+            d="M14 1h4v3h3v3h3v3h3v3h3v17H2V13h3v-3h3V7h3V4h3Z"
+          />
+          <path fill="#9d293a" d="M14 5h4v3h3v3h3v3h3v3H5v-3h3v-3h3V8h3Z" />
+          <path fill="#f45155" d="M14 5h4v3h3v3h3v3H8v-3h3V8h3Z" />
+          <path fill="#ff9390" d="M14 5h4v2h-3v3h-3v3H9v-2h2V8h3Z" />
+          <path fill="#bdd3e5" d="M5 17h22v10H5Z" />
+          <path fill="#f6faff" d="M5 17h20v8h-5v-8h-8v10H5Z" />
+          <path fill={ink} d="M13 20h7v7h-7Z" />
+          <path fill="#fff" d="M5 17h22v2H5Z" />
+        </>
+      )}
+      {name === "podium" && (
+        <>
+          <path
+            fill={ink}
+            d="M12 1h7v4h5v5h-4v5h-8v-4H8V5h4ZM10 15h12v7h9v9H1V21h9Z"
+          />
+          <path fill="#ecb332" d="M14 3h3v4h5l-4 3v4l-3-2-3 2v-4L9 7h5Z" />
+          <path fill="#fff08a" d="M14 3h3v4h-3v2h-3V7h3Z" />
+          <path fill="#8299b8" d="M4 24h8v4H4Zm8-7h8v11h-8Zm10 8h6v3h-6Z" />
+          <path fill="#d9e8f6" d="M4 23h7v3H4Zm8-6h7v9h-7Zm9 7h7v2h-7Z" />
+          <path fill="#fff" d="M12 17h7v2h-5v4h-2Z" />
+          <path fill="#aabed7" d="M19 18h1v10h-1ZM4 27h7v1H4Zm18 0h6v1h-6Z" />
+        </>
+      )}
+      {name === "chest" && (
+        <>
+          <path fill={ink} d="M6 4h20v3h3v4h2v18H1V11h2V7h3Z" />
+          <path fill="#643c37" d="M6 7h20v4h2v15H4V11h2Z" />
+          <path fill="#c07a42" d="M6 7h19v4h3v6H4v-6h2Z" />
+          <path fill="#e5a561" d="M7 7h17v2H7Zm-2 5h21v2H5Z" />
+          <path fill="#8f512e" d="M4 19h24v7H4Z" />
+          <path fill="#b76a35" d="M5 19h20v5H5Z" />
+          <path fill="#382a31" d="M4 16h24v3H4Z" />
+          <path fill="#f0c574" d="M6 7h3v19H6Zm17 0h3v19h-3Z" />
+          <path fill="#b17b34" d="M8 9h1v17H8Zm17 0h1v17h-1Z" />
+          <path fill={ink} d="M12 14h8v9h-8Z" />
+          <path fill="#ffdd79" d="M14 15h4v6h-4Z" />
+          <path fill="#81512f" d="M15 17h2v3h-2Z" />
+          <path fill="#ffe8b2" d="M6 7h3v2H6Zm17 0h3v2h-3Z" />
+        </>
+      )}
       {name === "daily" && (
         <>
           <path fill={ink} d="M7 1h4v4h10V1h4v4h4v3h2v23H1V8h2V5h4Z" />

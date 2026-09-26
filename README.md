@@ -8,10 +8,11 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 - Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers et mémorisée sur l’appareil. Les photos sont recadrées au centre et réduites à 320 × 320, sans envoi au serveur.
 - Roue dentée : réglages avec mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé ; connexion au serveur dans une section dépliable.
 - Emplacements niveau/XP, pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
-- Barre du bas : **Mode · Accueil · Profil**, masquée dans les salons et duels.
-- Parcours **Mode → Classique → One Piece → Créer un duel**.
+- Barre du bas : **Classement · Accueil · Boutique**, icônes pixel en relief et fond identique au bandeau joueur ; masquée dans les salons et duels. Classement et Boutique affichent « À venir ».
+- Profil accessible par la photo du bandeau ; changement de photo depuis la page Profil.
+- Le futur bouton **Jouer** sur l’accueil est différé. Le parcours de duel est conservé à la route `/#mode` pour les tests en développement.
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris vides au-dessus du portail (fonctionnalités à venir).
-- Création et invitation depuis **Mode → Classique → One Piece** ; pseudo demandé au premier besoin et mémorisé.
+- Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
 - Illustrations et provenance : [direction artistique](docs/ART.md).
 

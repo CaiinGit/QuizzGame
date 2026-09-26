@@ -1,5 +1,5 @@
 import { ChevronLeft, ArrowRight, Check, Settings2 } from "lucide-react";
-import { PixelIcon, type IconName } from "./PixelIcon";
+import { PixelIcon } from "./PixelIcon";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import type { Screen } from "./navigation";
 import type { Profile } from "./client";
@@ -28,17 +28,12 @@ export function BottomNavigation({
   screen: Screen;
   navigate: (screen: Screen) => void;
 }) {
-  const active =
-    screen === "profil"
-      ? "profil"
-      : ["mode", "classique", "one-piece"].includes(screen)
-        ? "mode"
-        : "accueil";
-  const items: { screen: Screen; label: string; icon: IconName }[] = [
-    { screen: "mode", label: "Mode", icon: "swords" },
-    { screen: "accueil", label: "Accueil", icon: "portal" },
-    { screen: "profil", label: "Profil", icon: "profile" },
-  ];
+  const active = screen;
+  const items = [
+    { screen: "classement", label: "Classement", icon: "podium" },
+    { screen: "accueil", label: "Accueil", icon: "home" },
+    { screen: "boutique", label: "Boutique", icon: "chest" },
+  ] as const;
   return (
     <nav className="bottom-nav" aria-label="Navigation principale">
       {items.map((item) => (
@@ -49,7 +44,7 @@ export function BottomNavigation({
           onClick={() => navigate(item.screen)}
         >
           <span>
-            <PixelIcon name={item.icon} />
+            <ArcadeIcon name={item.icon} />
           </span>
           {item.label}
         </button>
@@ -120,6 +115,22 @@ export function Explore(p: Props) {
         <ChevronLeft size={18} />
         Retour
       </button>
+      {(screen === "classement" || screen === "boutique") && (
+        <>
+          <div className="page-heading">
+            <h1>{screen === "classement" ? "Classement" : "Boutique"}</h1>
+          </div>
+          <section className="future-feature">
+            <ArcadeIcon name={screen === "classement" ? "podium" : "chest"} />
+            <span className="coming-soon">À venir</span>
+            <p>
+              {screen === "classement"
+                ? "Le classement des joueurs prendra place ici."
+                : "La boutique ouvrira ses coffres dans une prochaine étape."}
+            </p>
+          </section>
+        </>
+      )}
       {screen === "mode" && (
         <>
           <div className="page-heading">

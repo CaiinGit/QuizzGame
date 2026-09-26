@@ -7,6 +7,8 @@ const routes = [
   "one-piece",
   "rejoindre",
   "profil",
+  "classement",
+  "boutique",
 ] as const;
 export type Screen = (typeof routes)[number];
 const parents: Record<Screen, Screen> = {
@@ -16,6 +18,8 @@ const parents: Record<Screen, Screen> = {
   "one-piece": "classique",
   rejoindre: "accueil",
   profil: "accueil",
+  classement: "accueil",
+  boutique: "accueil",
 };
 const current = (): Screen => {
   const hash = window.location.hash.slice(1);

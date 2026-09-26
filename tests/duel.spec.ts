@@ -1,9 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 async function chooseTheme(page: Page) {
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Mode", exact: true })
-    .click();
+  // Keep exercising duels through their route while the home Jouer entry is deferred.
+  await page.goto("/#mode");
   await page
     .getByRole("button", { name: "Classique, duel 1 contre 1", exact: true })
     .click();
@@ -77,8 +75,7 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       p.getByRole("button", { name: "Défi du jour", exact: true }),
     ).toBeVisible();
     await p
-      .getByRole("navigation")
-      .getByRole("button", { name: "Profil", exact: true })
+      .getByRole("button", { name: "Ouvrir mon profil", exact: true })
       .click();
     await expect(p.getByRole("heading", { name: "Luffy" })).toBeVisible();
     await p.reload();
@@ -128,10 +125,7 @@ test("home fits small phones and navigation follows mode then theme", async ({
       nav = await page.getByRole("navigation").boundingBox();
     expect(button!.y + button!.height).toBeLessThanOrEqual(nav!.y);
   }
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Mode", exact: true })
-    .click();
+  await page.goto("/#mode");
   await expect(
     page.getByRole("heading", { name: "Choisis ton mode" }),
   ).toBeVisible();
@@ -212,8 +206,7 @@ test("leaving a pending offline invitation cancels it before reconnect", async (
 }) => {
   await page.goto("/");
   await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Profil", exact: true })
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
     .click();
   await page.getByRole("button", { name: "Choisir mon pseudo" }).click();
   await identify(page, "Robin");
@@ -237,8 +230,7 @@ test("leaving a pending offline invitation cancels it before reconnect", async (
   ).toBeVisible();
   await context.setOffline(false);
   await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Profil", exact: true })
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
     .click();
   await expect(page.getByText("Connecté", { exact: true })).toBeVisible();
   await page.reload();

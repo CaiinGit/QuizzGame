@@ -321,6 +321,8 @@ export default function App() {
     >
       <PlayerHeader
         photo={avatar.photo}
+        profile={() => navigate("profil")}
+        profileDisabled={!!room}
         open={setHeaderPanel}
         settings={() => {
           setIntent(null);
