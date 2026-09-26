@@ -6,7 +6,6 @@ import {
   Check,
   ChevronLeft,
   Copy,
-  Settings2,
   Trophy,
   Wifi,
   X,
@@ -24,6 +23,13 @@ import {
 import { Explore, BottomNavigation } from "./Explore";
 import { useNavigation } from "./navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import {
+  PlayerHeader,
+  PhotoEditor,
+  headerPanels,
+  type HeaderPanel,
+} from "./PlayerHeader";
+import { useAvatar } from "./avatar";
 type Intent =
   | { event: "room:create"; data: Record<string, never> }
   | { event: "room:join"; data: { code: string } };
@@ -31,6 +37,8 @@ import type { RoomView } from "../shared/protocol";
 
 export default function App() {
   const navigation = useNavigation();
+  const avatar = useAvatar();
+  const [headerPanel, setHeaderPanel] = useState<HeaderPanel | null>(null);
   const [identity, setIdentity] = useState(false),
     [intent, setIntent] = useState<Intent | null>(null),
     [synced, setSynced] = useState(false);
@@ -39,7 +47,8 @@ export default function App() {
     if (identity) {
       setIdentity(false);
       setIntent(null);
-    } else if (settings) setSettings(false);
+    } else if (headerPanel) setHeaderPanel(null);
+    else if (settings) setSettings(false);
     else if (quitting) setQuitting(false);
     else if (room) setQuitting(true);
     else if (navigation.screen !== "accueil") navigation.back();
@@ -194,15 +203,15 @@ export default function App() {
     });
   }, [intent, profile, online, synced, busy, room]);
   useEffect(() => {
-    if (!identity && !settings && !quitting) return;
+    if (!identity && !settings && !quitting && !headerPanel) return;
     const previous = document.activeElement as HTMLElement | null;
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     const focusable = () =>
       Array.from(
         dialog?.querySelectorAll<HTMLElement>(
-          'button:not(:disabled),input:not(:disabled),[tabindex="0"]',
+          'button:not(:disabled),input:not(:disabled):not([hidden]),summary,[tabindex="0"]',
         ) ?? [],
-      );
+      ).filter((element) => element.getClientRects().length > 0);
     if (dialog && !dialog.contains(document.activeElement))
       focusable()[0]?.focus();
     const keydown = (event: KeyboardEvent) => {
@@ -231,7 +240,7 @@ export default function App() {
       document.removeEventListener("keydown", keydown);
       previous?.focus();
     };
-  }, [identity, settings, quitting]);
+  }, [identity, settings, quitting, headerPanel]);
   async function run(action: () => Promise<void>) {
     if (pending.current) return;
     pending.current = true;
@@ -310,20 +319,15 @@ export default function App() {
     <div
       className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
     >
-      <header className="topbar">
-        <ThemeToggle />
-        <div className="wordmark">AKASHA</div>
-        <button
-          className="icon-button"
-          aria-label="Réglages de connexion"
-          onClick={() => {
-            setAddress(profile?.server ?? "");
-            setSettings(true);
-          }}
-        >
-          <Settings2 size={20} />
-        </button>
-      </header>
+      <PlayerHeader
+        photo={avatar.photo}
+        open={setHeaderPanel}
+        settings={() => {
+          setIntent(null);
+          setAddress(profile?.server ?? "");
+          setSettings(true);
+        }}
+      />
       <main>
         {error && !settings && !quitting && !identity && (
           <div className="notice error" role="alert">
@@ -353,6 +357,8 @@ export default function App() {
               navigation.back();
             }}
             profile={profile}
+            photo={avatar.photo}
+            editPhoto={() => setHeaderPanel("photo")}
             online={online}
             busy={busy || !!intent}
             code={code}
@@ -431,7 +437,13 @@ export default function App() {
               {[me, opponent].map((p, i) => (
                 <div className={`player ${i === 0 ? "you" : ""}`} key={i}>
                   <div className="avatar">
-                    {p ? p.name.slice(0, 1).toUpperCase() : <span>?</span>}
+                    {i === 0 && p && avatar.photo ? (
+                      <img src={avatar.photo} alt="" />
+                    ) : p ? (
+                      p.name.slice(0, 1).toUpperCase()
+                    ) : (
+                      <span>?</span>
+                    )}
                     {p && (
                       <b className={p.online ? "online-dot" : "offline-dot"} />
                     )}
@@ -705,39 +717,68 @@ export default function App() {
             >
               <X />
             </button>
-            <span className="eyebrow">AKASHA · CONNEXION</span>
-            <h2 id="settings-title">Votre point de rencontre.</h2>
-            <p>Les deux joueurs doivent utiliser la même adresse.</p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void changeServer();
-              }}
-            >
-              {error && (
-                <div className="notice error" role="alert">
-                  {error}
-                </div>
-              )}
-              <label htmlFor="server">Adresse du serveur</label>
-              <input
-                autoFocus
-                id="server"
-                type="url"
-                placeholder="https://akasha.exemple.fr"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                required
-                disabled={!!room}
-              />
-              {room && <p>Quitte le duel avant de changer de serveur.</p>}
-              <button className="button primary" disabled={!!room || busy}>
-                Enregistrer
-              </button>
-            </form>
+            <h2 id="settings-title">Réglages</h2>
+            <ThemeToggle />
+            <details className="connection-settings">
+              <summary>Connexion au serveur</summary>
+              <p>Les deux joueurs doivent utiliser la même adresse.</p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void changeServer();
+                }}
+              >
+                {error && (
+                  <div className="notice error" role="alert">
+                    {error}
+                  </div>
+                )}
+                <label htmlFor="server">Adresse du serveur</label>
+                <input
+                  id="server"
+                  type="url"
+                  placeholder="https://akasha.exemple.fr"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  required
+                  disabled={!!room}
+                />
+                {room && <p>Quitte le duel avant de changer de serveur.</p>}
+                <button className="button primary" disabled={!!room || busy}>
+                  Enregistrer
+                </button>
+              </form>
+            </details>
             <p className="fineprint">
               Ton pseudo est enregistré sur ce téléphone. Version de test 0.3.
             </p>
+          </section>
+        </div>
+      )}
+      {headerPanel && (
+        <div className="modal-backdrop">
+          <section
+            className="modal header-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="header-panel-title"
+          >
+            <button
+              className="icon-button close"
+              aria-label="Fermer"
+              onClick={() => setHeaderPanel(null)}
+            >
+              <X />
+            </button>
+            <h2 id="header-panel-title">{headerPanels[headerPanel].title}</h2>
+            {headerPanel === "photo" ? (
+              <PhotoEditor avatar={avatar} />
+            ) : (
+              <>
+                <span className="coming-soon">À venir</span>
+                <p>{headerPanels[headerPanel].text}</p>
+              </>
+            )}
           </section>
         </div>
       )}

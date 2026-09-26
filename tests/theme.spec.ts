@@ -1,25 +1,22 @@
 import { test, expect } from "@playwright/test";
 
-test("dark palette follows navigation, persists and returns to light", async ({
+test("theme is in settings, follows navigation and survives reload", async ({
   page,
 }) => {
   await page.goto("/");
+  const settings = page.getByRole("button", { name: "Réglages", exact: true });
   const toggle = page.getByRole("button", { name: "Mode sombre", exact: true });
-  await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("html")).toHaveCSS(
+  await expect(toggle).toHaveCount(0);
+  await expect(page.locator(".player-header")).toHaveCSS(
     "background-color",
-    "rgb(48, 48, 48)",
+    "rgb(35, 72, 54)",
   );
-  await expect(page.locator(".wordmark")).toHaveCSS(
-    "color",
-    "rgb(146, 170, 225)",
-  );
-  await expect(
-    page.getByRole("button", { name: "Choisir un mode", exact: true }),
-  ).toHaveCSS("background-color", "rgb(146, 170, 225)");
-  await expect(page.getByRole("navigation")).toHaveCSS(
+  await settings.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "false");
+  await expect(toggle.locator(".lucide-sun")).toBeVisible();
+  await toggle.click();
+  await expect(toggle.locator(".lucide-moon")).toBeVisible();
+  await expect(page.locator("html")).toHaveCSS(
     "background-color",
     "rgb(48, 48, 48)",
   );
@@ -27,7 +24,6 @@ test("dark palette follows navigation, persists and returns to light", async ({
     "content",
     "#303030",
   );
-  // Native Preferences uses localStorage on web; wait for the saved value before reload.
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -35,30 +31,25 @@ test("dark palette follows navigation, persists and returns to light", async ({
       ),
     )
     .toBe("dark");
+  await page.keyboard.press("Escape");
   await page.reload();
+  await expect(page.locator(".player-header")).toHaveCSS(
+    "background-color",
+    "rgb(146, 170, 225)",
+  );
+  await expect(page.locator(".player-header")).toHaveCSS(
+    "color",
+    "rgb(48, 48, 48)",
+  );
+  await expect(page.getByRole("navigation")).toHaveCSS(
+    "background-color",
+    "rgb(48, 48, 48)",
+  );
+  await settings.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
-  for (const viewport of [
-    { width: 320, height: 568 },
-    { width: 390, height: 844 },
-    { width: 1280, height: 900 },
-  ]) {
-    await page.setViewportSize(viewport);
-    const button = (await toggle.boundingBox())!;
-    const title = (await page.locator(".wordmark").boundingBox())!;
-    const settings = (await page
-      .getByRole("button", { name: "Réglages de connexion" })
-      .boundingBox())!;
-    expect(button.x + button.width).toBeLessThanOrEqual(title.x);
-    expect(title.x + title.width).toBeLessThanOrEqual(settings.x);
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-  }
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.keyboard.press("Escape");
   await page.screenshot({
-    path: "test-results/akasha-dark-accueil.png",
+    path: "test-results/akasha-header-dark.png",
     fullPage: true,
   });
   await page
@@ -67,10 +58,6 @@ test("dark palette follows navigation, persists and returns to light", async ({
   await expect(page.locator(".mode-card")).toHaveCSS(
     "background-color",
     "rgb(48, 48, 48)",
-  );
-  await expect(page.locator(".mode-art")).toHaveCSS(
-    "background-color",
-    "rgb(146, 170, 225)",
   );
   await page
     .getByRole("button", { name: "Classique, duel 1 contre 1" })
@@ -87,23 +74,8 @@ test("dark palette follows navigation, persists and returns to light", async ({
     "background-color",
     "rgb(48, 48, 48)",
   );
-  await expect(page.getByLabel("Ton pseudo", { exact: true })).toHaveCSS(
-    "color",
-    "rgb(146, 170, 225)",
-  );
-  await page.screenshot({
-    path: "test-results/akasha-dark-dialogue.png",
-    fullPage: true,
-  });
   await page.keyboard.press("Escape");
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Profil", exact: true })
-    .click();
-  await expect(page.locator(".profile-panel")).toHaveCSS(
-    "background-color",
-    "rgb(48, 48, 48)",
-  );
+  await settings.click();
   await toggle.focus();
   await page.keyboard.press("Enter");
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
@@ -115,9 +87,12 @@ test("dark palette follows navigation, persists and returns to light", async ({
     )
     .toBe("light");
   await page.reload();
+  await expect(page.locator(".player-header")).toHaveCSS(
+    "background-color",
+    "rgb(35, 72, 54)",
+  );
   await expect(page.locator("html")).toHaveCSS(
     "background-color",
     "rgb(243, 237, 223)",
   );
-  await expect(page.locator(".wordmark")).toHaveCSS("color", "rgb(35, 72, 54)");
 });

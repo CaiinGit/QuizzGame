@@ -5,7 +5,9 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 ## Version 0.3
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
-- Bouton lune/soleil en haut à gauche : mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé sur l’appareil.
+- Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers et mémorisée sur l’appareil. Les photos sont recadrées au centre et réduites à 320 × 320, sans envoi au serveur.
+- Roue dentée : réglages avec mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé ; connexion au serveur dans une section dépliable.
+- Emplacements niveau/XP, pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
 - Barre du bas : **Mode · Accueil · Profil**, masquée dans les salons et duels.
 - Parcours **Mode → Classique → One Piece → Créer un duel**.
 - Accès direct **Rejoindre un ami** depuis l’accueil ; pseudo demandé au premier besoin et mémorisé.

@@ -22,7 +22,9 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     q = await b.newPage();
   try {
     await p.goto("/");
+    await p.getByRole("button", { name: "Réglages", exact: true }).click();
     await p.getByRole("button", { name: "Mode sombre", exact: true }).click();
+    await p.keyboard.press("Escape");
     await chooseTheme(p);
     await p.getByRole("button", { name: "Créer un duel", exact: true }).click();
     await identify(p, "Luffy");
@@ -164,7 +166,8 @@ test("home fits small phones and navigation follows mode then theme", async ({
   await expect(
     page.getByRole("heading", { name: "Choisis ton mode" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Réglages de connexion" }).click();
+  await page.getByRole("button", { name: "Réglages", exact: true }).click();
+  await page.getByText("Connexion au serveur", { exact: true }).click();
   await page.getByLabel("Adresse du serveur").fill("http://example.com");
   await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("HTTPS");

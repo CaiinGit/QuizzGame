@@ -1,5 +1,19 @@
-export type IconName = "portal" | "swords" | "ticket" | "profile" | "compass";
+export type IconName =
+  | "portal"
+  | "swords"
+  | "ticket"
+  | "profile"
+  | "compass"
+  | "coin"
+  | "trophy"
+  | "gear"
+  | "mail";
 const shapes: Record<IconName, string> = {
+  coin: "M7 2h10v2h3v3h2v10h-2v3h-3v2H7v-2H4v-3H2V7h2V4h3V2Zm0 4v2H6v8h2v2h8v-2h2V8h-2V6H7Zm3 2h4v2h-2v6h-2V8Z",
+  trophy:
+    "M6 2h12v3h4v8h-2v2h-5v2h-2v3h5v2H6v-2h5v-3H9v-2H4v-2H2V5h4V2Zm0 5H4v4h2V7Zm12 0v4h2V7h-2Z",
+  gear: "M9 1h6v4h3V3h3v3h-2v3h4v6h-4v3h2v3h-3v-2h-3v4H9v-4H6v2H3v-3h2v-3H1V9h4V6H3V3h3v2h3V1Zm1 7v2H8v4h2v2h4v-2h2v-4h-2V8h-4Z",
+  mail: "M2 4h20v16H2V4Zm2 2v2h2v2h2v2h2v2h4v-2h2v-2h2V8h2V6H4Zm0 5v7h16v-7h-2v2h-2v2h-2v1h-4v-1H8v-2H6v-2H4Z",
   portal: "M9 2h6v2h3v3h2v15h-6V11h-4v11H4V7h2V4h3V2Zm1 4v2H8v11H6V8h2V6h2Z",
   swords:
     "M2 2h3v2h2v2h2v2h2v2H9v2H7v-2H5V8H3V6H2V2Zm17 0h3v4h-1v2h-2v2h-2v2h-2v-2h-2V8h2V6h2V4h2V2ZM9 12l3 3 3-3 2 2-3 3 2 2 2-2 2 2-2 2-2 2-2-2 2-2-4-4-4 4 2 2-2 2-2-2-2-2 2-2 2 2 2-2-3-3 2-2Z",

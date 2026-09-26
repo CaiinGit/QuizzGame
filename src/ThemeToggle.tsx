@@ -11,7 +11,7 @@ export function ThemeToggle() {
   return (
     <>
       <button
-        className="icon-button theme-toggle"
+        className="appearance-toggle"
         aria-label="Mode sombre"
         aria-pressed={dark}
         title={dark ? "Passer en mode clair" : "Passer en mode sombre"}
@@ -27,6 +27,13 @@ export function ThemeToggle() {
         ) : (
           <Sun size={22} aria-hidden="true" />
         )}
+        <span className="appearance-label">
+          <strong>Mode sombre</strong>
+          <small>{dark ? "Activé" : "Désactivé"}</small>
+        </span>
+        <span className="appearance-switch" aria-hidden="true">
+          <span />
+        </span>
       </button>
       {saveFailed && (
         <span className="theme-save-notice" role="status">

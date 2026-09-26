@@ -4,6 +4,7 @@ import App from "./App";
 import "./styles.css";
 import "./explore.css";
 import "./theme.css";
+import "./player-header.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

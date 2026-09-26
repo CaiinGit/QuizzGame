@@ -8,6 +8,8 @@ type Props = {
   navigate: (screen: Screen) => void;
   back: () => void;
   profile: Profile | null;
+  photo: string | null;
+  editPhoto: () => void;
   online: boolean;
   busy: boolean;
   code: string;
@@ -270,9 +272,17 @@ export function Explore(p: Props) {
             <h1>Profil</h1>
           </div>
           <div className="profile-panel">
-            <div className="profile-symbol" aria-hidden="true">
-              <PixelIcon name="profile" size={42} />
-            </div>
+            <button
+              className="profile-symbol profile-photo"
+              aria-label="Modifier ma photo"
+              onClick={p.editPhoto}
+            >
+              {p.photo ? (
+                <img src={p.photo} alt="Ta photo de profil" />
+              ) : (
+                <PixelIcon name="profile" size={42} />
+              )}
+            </button>
             {profile?.credentials ? (
               <>
                 <span className="eyebrow">TON PSEUDO</span>
