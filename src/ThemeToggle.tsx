@@ -23,9 +23,9 @@ export function ThemeToggle() {
         }}
       >
         {dark ? (
-          <Sun size={22} aria-hidden="true" />
-        ) : (
           <Moon size={22} aria-hidden="true" />
+        ) : (
+          <Sun size={22} aria-hidden="true" />
         )}
       </button>
       {saveFailed && (
