@@ -5,6 +5,7 @@ import "./styles.css";
 import "./explore.css";
 import "./theme.css";
 import "./player-header.css";
+import "./home-shortcuts.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

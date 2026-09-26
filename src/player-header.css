@@ -5,7 +5,6 @@
   --header-ink: var(--cream);
   --header-panel: #102f2380;
   --header-line: #f3eddf40;
-  --header-metal: #e6c574;
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr) 66px 38px;
   align-items: center;
@@ -29,12 +28,11 @@
   width: 72px;
   height: 72px;
   position: relative;
-  padding: 4px;
-  background: var(--cream);
-  border: 2px solid var(--cream);
-  color: var(--green) !important;
-  box-shadow: 3px 3px 0 var(--header-panel);
-  border-radius: 3px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  filter: drop-shadow(2px 3px 0 #10142660);
 }
 .header-photo img,
 .photo-preview img,
@@ -44,19 +42,32 @@
   object-fit: cover;
   display: block;
 }
-.photo-edit-mark {
+.portrait-frame {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.portrait-content {
   position: absolute;
-  right: -5px;
-  bottom: -5px;
-  width: 20px;
-  height: 20px;
+  inset: 15.625%;
   display: grid;
   place-items: center;
-  border: 2px solid var(--green);
   background: var(--cream);
   color: var(--green);
-  line-height: 1;
-  font-weight: 700;
+  overflow: hidden;
+}
+.portrait-bevel {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.arcade-icon {
+  display: block;
+  flex-shrink: 0;
+  filter: drop-shadow(1px 2px 0 #10142640);
 }
 .header-level {
   min-width: 0;
@@ -81,16 +92,38 @@
 }
 .level-track {
   display: block;
-  height: 16px;
+  height: 20px;
   margin-top: 10px;
-  border: 2px solid var(--header-ink);
-  background: var(--header-panel);
-  box-shadow: 2px 2px 0 var(--header-panel);
+  border: 3px solid #11162b;
+  background: #505971;
+  box-shadow:
+    inset 0 2px 0 #76849f,
+    inset 0 -2px 0 #30374d;
+  clip-path: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    calc(100% - 3px) 2px,
+    100% 2px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    3px calc(100% - 2px),
+    0 calc(100% - 2px),
+    0 3px,
+    3px 3px
+  );
 }
 .level-track > span {
   display: block;
-  width: 0;
+  width: var(--xp-progress, 0%);
   height: 100%;
+  background:
+    repeating-linear-gradient(90deg, #ffffff16 0 8px, #ffffff00 8px 16px),
+    linear-gradient(#baff74 0 20%, #72e737 20% 70%, #4db926 70%);
+  box-shadow:
+    inset 2px 0 0 #d8ffa3,
+    inset 0 2px 0 #dcffab;
 }
 .header-counters,
 .header-tools {
@@ -104,15 +137,30 @@
   gap: 6px;
   min-height: 36px;
   padding: 3px 7px 3px 5px;
-  border: 1px solid var(--header-line);
-  border-radius: 3px;
+  border: 0;
+  border-radius: 0;
   background: var(--header-panel);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 3px) 0,
+    calc(100% - 3px) 2px,
+    100% 2px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    0 100%
+  );
   font-family: ui-monospace, monospace;
   font-weight: 750;
   font-size: 18px;
 }
 .header-counters svg {
-  color: var(--header-metal);
+  width: 30px;
+  height: 30px;
+}
+.header-tools .arcade-icon {
+  width: 34px;
+  height: 34px;
 }
 .header-tools button {
   display: grid;
@@ -139,14 +187,16 @@
   height: 144px;
   display: grid;
   place-items: center;
-  padding: 5px;
-  border: 2px solid var(--green);
-  background: var(--paper);
+  padding: 0;
+  border: 0;
+  background: none;
   margin: 24px auto;
-  box-shadow: 4px 4px 0 var(--border);
+  filter: drop-shadow(3px 4px 0 #10142630);
 }
-.profile-photo {
-  padding: 3px;
+.profile-symbol.profile-photo {
+  padding: 0;
+  border: 0;
+  background: none;
   cursor: pointer;
 }
 .avatar img {
@@ -235,7 +285,6 @@
 [data-theme="dark"] .player-header {
   --header-panel: #30303014;
   --header-line: #30303040;
-  --header-metal: #303030;
   border-bottom-color: #687eaf;
   box-shadow: inset 0 -1px 0 #30303030;
 }
@@ -267,8 +316,8 @@
     padding: 3px 5px;
   }
   .header-counters svg {
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
   }
   .header-tools button {
     width: 36px;

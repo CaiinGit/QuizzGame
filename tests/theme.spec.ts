@@ -53,7 +53,8 @@ test("theme is in settings, follows navigation and survives reload", async ({
     fullPage: true,
   });
   await page
-    .getByRole("button", { name: "Choisir un mode", exact: true })
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mode", exact: true })
     .click();
   await expect(page.locator(".mode-card")).toHaveCSS(
     "background-color",

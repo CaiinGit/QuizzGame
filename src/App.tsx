@@ -359,6 +359,7 @@ export default function App() {
             profile={profile}
             photo={avatar.photo}
             editPhoto={() => setHeaderPanel("photo")}
+            openShortcut={setHeaderPanel}
             online={online}
             busy={busy || !!intent}
             code={code}

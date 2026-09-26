@@ -1,9 +1,16 @@
 import { useRef } from "react";
 import { PixelIcon } from "./PixelIcon";
+import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import type { useAvatar } from "./avatar";
 
 export type HeaderPanel =
-  "photo" | "level" | "coins" | "trophies" | "notifications";
+  | "photo"
+  | "level"
+  | "coins"
+  | "trophies"
+  | "notifications"
+  | "daily"
+  | "favorites";
 
 export function PlayerHeader({
   photo,
@@ -21,14 +28,13 @@ export function PlayerHeader({
         aria-label="Changer la photo de profil"
         onClick={() => open("photo")}
       >
-        {photo ? (
-          <img src={photo} alt="Ta photo de profil" />
-        ) : (
-          <PixelIcon name="profile" size={38} />
-        )}
-        <span className="photo-edit-mark" aria-hidden="true">
-          +
-        </span>
+        <PortraitFrame>
+          {photo ? (
+            <img src={photo} alt="Ta photo de profil" />
+          ) : (
+            <PixelIcon name="profile" size={38} />
+          )}
+        </PortraitFrame>
       </button>
       <button
         className="header-level"
@@ -39,28 +45,28 @@ export function PlayerHeader({
           NIV. <strong>—</strong>
         </span>
         <span className="level-track" aria-hidden="true">
-          <span />
+          <span className="level-fill" />
         </span>
       </button>
       <div className="header-counters">
         <button aria-label="Pièces, à venir" onClick={() => open("coins")}>
-          <PixelIcon name="coin" />
+          <ArcadeIcon name="coin" />
           <span aria-hidden="true">—</span>
         </button>
         <button aria-label="Trophées, à venir" onClick={() => open("trophies")}>
-          <PixelIcon name="trophy" />
+          <ArcadeIcon name="trophy" />
           <span aria-hidden="true">—</span>
         </button>
       </div>
       <div className="header-tools">
         <button aria-label="Réglages" onClick={settings}>
-          <PixelIcon name="gear" size={28} />
+          <ArcadeIcon name="gear" />
         </button>
         <button
           aria-label="Notifications"
           onClick={() => open("notifications")}
         >
-          <PixelIcon name="mail" size={28} />
+          <ArcadeIcon name="mail" />
         </button>
       </div>
     </header>
@@ -76,11 +82,13 @@ export function PhotoEditor({
   return (
     <>
       <div className="photo-preview">
-        {avatar.photo ? (
-          <img src={avatar.photo} alt="Aperçu de ta photo de profil" />
-        ) : (
-          <PixelIcon name="profile" size={60} />
-        )}
+        <PortraitFrame>
+          {avatar.photo ? (
+            <img src={avatar.photo} alt="Aperçu de ta photo de profil" />
+          ) : (
+            <PixelIcon name="profile" size={60} />
+          )}
+        </PortraitFrame>
       </div>
       <p>
         Choisis une image dans ta galerie ou tes fichiers. Elle sera centrée
@@ -131,6 +139,14 @@ export function PhotoEditor({
 }
 
 export const headerPanels = {
+  daily: {
+    title: "Défi du jour",
+    text: "Le défi quotidien arrive bientôt. En attendant, retrouve les duels entre amis dans Mode.",
+  },
+  favorites: {
+    title: "Tes thèmes favoris",
+    text: "Ces trois emplacements accueilleront tes thèmes favoris. Tu pourras les choisir dans une prochaine étape.",
+  },
   photo: { title: "Ta photo de profil", text: "" },
   level: {
     title: "Niveaux & expérience",

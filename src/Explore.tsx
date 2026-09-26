@@ -1,5 +1,6 @@
 import { ChevronLeft, ArrowRight, Check, Settings2 } from "lucide-react";
 import { PixelIcon, type IconName } from "./PixelIcon";
+import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import type { Screen } from "./navigation";
 import type { Profile } from "./client";
 
@@ -10,6 +11,7 @@ type Props = {
   profile: Profile | null;
   photo: string | null;
   editPhoto: () => void;
+  openShortcut: (panel: "daily" | "favorites") => void;
   online: boolean;
   busy: boolean;
   code: string;
@@ -61,6 +63,36 @@ export function Explore(p: Props) {
     return (
       <section className="home-screen" aria-label="Accueil Akasha">
         <h1 className="sr-only">Accueil</h1>
+        <div className="home-shortcuts">
+          <button
+            className="home-tile daily-challenge"
+            aria-label="Défi du jour"
+            onClick={() => p.openShortcut("daily")}
+          >
+            <ArcadeIcon name="daily" />
+            <span className="daily-label">
+              <strong>DÉFI DU JOUR</strong>
+              <small>À venir</small>
+            </span>
+            <span className="daily-arrow" aria-hidden="true">
+              ›
+            </span>
+          </button>
+          <div
+            className="favorite-slots"
+            role="group"
+            aria-label="Thèmes favoris"
+          >
+            {[1, 2, 3].map((slot) => (
+              <button
+                key={slot}
+                className="home-tile favorite-slot"
+                aria-label={`Thème favori ${slot}, emplacement vide`}
+                onClick={() => p.openShortcut("favorites")}
+              />
+            ))}
+          </div>
+        </div>
         <div className="portal-stage">
           <img
             className="portal-art"
@@ -75,22 +107,6 @@ export function Explore(p: Props) {
               <i key={i} />
             ))}
           </div>
-        </div>
-        <div className="home-actions">
-          <button
-            className="button primary arcade-button"
-            onClick={() => navigate("mode")}
-          >
-            <PixelIcon name="compass" />
-            Choisir un mode
-          </button>
-          <button
-            className="button secondary arcade-button"
-            onClick={() => navigate("rejoindre")}
-          >
-            <PixelIcon name="ticket" />
-            Rejoindre un ami
-          </button>
         </div>
       </section>
     );
@@ -277,11 +293,13 @@ export function Explore(p: Props) {
               aria-label="Modifier ma photo"
               onClick={p.editPhoto}
             >
-              {p.photo ? (
-                <img src={p.photo} alt="Ta photo de profil" />
-              ) : (
-                <PixelIcon name="profile" size={42} />
-              )}
+              <PortraitFrame>
+                {p.photo ? (
+                  <img src={p.photo} alt="Ta photo de profil" />
+                ) : (
+                  <PixelIcon name="profile" size={42} />
+                )}
+              </PortraitFrame>
             </button>
             {profile?.credentials ? (
               <>

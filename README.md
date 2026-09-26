@@ -10,7 +10,8 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 - Emplacements niveau/XP, pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
 - Barre du bas : **Mode · Accueil · Profil**, masquée dans les salons et duels.
 - Parcours **Mode → Classique → One Piece → Créer un duel**.
-- Accès direct **Rejoindre un ami** depuis l’accueil ; pseudo demandé au premier besoin et mémorisé.
+- Accueil : bouton **Défi du jour** et trois cases de thèmes favoris vides au-dessus du portail (fonctionnalités à venir).
+- Création et invitation depuis **Mode → Classique → One Piece** ; pseudo demandé au premier besoin et mémorisé.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
 - Illustrations et provenance : [direction artistique](docs/ART.md).
 

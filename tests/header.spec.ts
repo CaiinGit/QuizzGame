@@ -28,7 +28,7 @@ test("player header fits small phones and future features do not invent balances
       previousRight = box.x + box.width;
     }
     const action = (await page
-      .getByRole("button", { name: "Rejoindre un ami", exact: true })
+      .getByRole("group", { name: "Thèmes favoris", exact: true })
       .boundingBox())!;
     const nav = (await page.getByRole("navigation").boundingBox())!;
     expect(action.y + action.height).toBeLessThanOrEqual(nav.y);

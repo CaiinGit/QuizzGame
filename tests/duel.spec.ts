@@ -1,7 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 async function chooseTheme(page: Page) {
   await page
-    .getByRole("button", { name: "Choisir un mode", exact: true })
+    .getByRole("navigation")
+    .getByRole("button", { name: "Mode", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Classique, duel 1 contre 1", exact: true })
@@ -36,6 +37,7 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     const code = await p.getByTestId("room-code").innerText();
     await expect(p.getByRole("navigation")).toHaveCount(0);
     await q.goto("/");
+    await chooseTheme(q);
     await q
       .getByRole("button", { name: "Rejoindre un ami", exact: true })
       .click();
@@ -72,7 +74,7 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     ).toBeVisible();
     await p.getByRole("button", { name: "Retour à l’accueil" }).click();
     await expect(
-      p.getByRole("button", { name: "Choisir un mode" }),
+      p.getByRole("button", { name: "Défi du jour", exact: true }),
     ).toBeVisible();
     await p
       .getByRole("navigation")
@@ -91,7 +93,7 @@ test("home fits small phones and navigation follows mode then theme", async ({
 }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("button", { name: "Choisir un mode", exact: true }),
+    page.getByRole("button", { name: "Défi du jour", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByText(/Prêt à relever|Prêt pour un duel|LE SAVOIR FAIT LA FORCE/),
@@ -121,7 +123,7 @@ test("home fits small phones and navigation follows mode then theme", async ({
       ),
     ).toBe(true);
     const button = await page
-        .getByRole("button", { name: "Rejoindre un ami", exact: true })
+        .getByRole("group", { name: "Thèmes favoris", exact: true })
         .boundingBox(),
       nav = await page.getByRole("navigation").boundingBox();
     expect(button!.y + button!.height).toBeLessThanOrEqual(nav!.y);
@@ -191,6 +193,7 @@ test("canceling identity creates no session; invalid invite stays recoverable", 
     .getByRole("navigation")
     .getByRole("button", { name: "Accueil", exact: true })
     .click();
+  await chooseTheme(page);
   await page
     .getByRole("button", { name: "Rejoindre un ami", exact: true })
     .click();
