@@ -1,0 +1,84 @@
+:root {
+  --font-arcade: "Jersey 10", ui-sans-serif, system-ui, sans-serif;
+}
+.question-title {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+}
+
+/* The display face is bundled for Android and offline use. Long quiz text
+   and form fields retain the system sans-serif for comfortable reading. */
+h1,
+h2,
+.island-caption h2,
+.button,
+.screen-back,
+.eyebrow,
+.coming-soon,
+.level-label,
+.header-counters button,
+.daily-label strong,
+.daily-label small,
+.bottom-nav.bottom-nav button {
+  font-family: var(--font-arcade);
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+.button {
+  font-size: 24px;
+  line-height: 1.1;
+}
+.screen-back {
+  font-size: 22px;
+}
+.eyebrow,
+.coming-soon {
+  font-size: 18px;
+  letter-spacing: 0.6px;
+}
+.level-label {
+  font-size: 22px;
+  line-height: 1;
+  gap: 6px;
+}
+.level-label strong {
+  font-size: 28px;
+  font-weight: 400;
+}
+.header-counters button {
+  font-size: 25px;
+  line-height: 1;
+}
+.daily-label strong {
+  font-size: clamp(28px, 8.5vw, 38px);
+  line-height: 0.95;
+  letter-spacing: 0.3px;
+  text-shadow: 0 2px 0 #972b3640;
+}
+.daily-label small {
+  font-size: 17px;
+  line-height: 1;
+  margin-top: 5px;
+  letter-spacing: 0.5px;
+}
+.bottom-nav.bottom-nav button {
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+@media (max-width: 350px) {
+  .level-label {
+    font-size: 18px;
+  }
+  .level-label strong {
+    font-size: 24px;
+  }
+  .header-counters button {
+    font-size: 22px;
+  }
+  .bottom-nav.bottom-nav button {
+    font-size: 18px;
+  }
+}

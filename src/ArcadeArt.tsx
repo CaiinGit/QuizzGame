@@ -34,14 +34,25 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
         <>
           <path
             fill={ink}
-            d="M12 1h7v4h5v5h-4v5h-8v-4H8V5h4ZM10 15h12v7h9v9H1V21h9Z"
+            d="M16 0 20 5 26 6 22 11 23 17 16 14 9 17 10 11 6 6 12 5Z"
           />
-          <path fill="#ecb332" d="M14 3h3v4h5l-4 3v4l-3-2-3 2v-4L9 7h5Z" />
-          <path fill="#fff08a" d="M14 3h3v4h-3v2h-3V7h3Z" />
-          <path fill="#8299b8" d="M4 24h8v4H4Zm8-7h8v11h-8Zm10 8h6v3h-6Z" />
-          <path fill="#d9e8f6" d="M4 23h7v3H4Zm8-6h7v9h-7Zm9 7h7v2h-7Z" />
-          <path fill="#fff" d="M12 17h7v2h-5v4h-2Z" />
-          <path fill="#aabed7" d="M19 18h1v10h-1ZM4 27h7v1H4Zm18 0h6v1h-6Z" />
+          <path
+            fill="#e7a52f"
+            d="M16 3 18 7 22 8 19 11 20 14 16 12 12 14 13 10 10 8 14 7Z"
+          />
+          <path
+            fill="#ffe57a"
+            d="M16 3 18 7 16 8 15 11 12 14 13 10 10 8 14 7Z"
+          />
+          <path fill="#fff3b5" d="M15 5h2v2h-2Z" />
+          <path fill={ink} d="M11 16h10v6h9v2h2v8H0V22h11Z" />
+          <path fill="#7e98b6" d="M3 24h8v5H3Zm10-6h6v11h-6Zm8 6h8v5h-8Z" />
+          <path fill="#c8dcec" d="M3 24h8v3H3Zm10-6h6v9h-6Zm8 6h8v3h-8Z" />
+          <path
+            fill="#eff8ff"
+            d="M13 18h6v2h-4v5h-2ZM3 24h7v1H3Zm18 0h7v1h-7Z"
+          />
+          <path fill="#a3bbd4" d="M17 21h2v8h-2ZM3 28h8v1H3Zm18 0h8v1h-8Z" />
         </>
       )}
       {name === "chest" && (
@@ -63,18 +74,23 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
       )}
       {name === "daily" && (
         <>
-          <path fill={ink} d="M7 1h4v4h10V1h4v4h4v3h2v23H1V8h2V5h4Z" />
-          <path fill="#afbed4" d="M4 8h24v20H4Z" />
-          <path fill="#f5f7ff" d="M4 11h23v16H4Z" />
-          <path fill="#e43e48" d="M4 7h24v5H4Z" />
-          <path fill="#fff" d="M8 3h2v6H8Zm14 0h2v6h-2Z" />
+          <path fill={ink} d="M7 0h6v4h6V0h6v4h3v2h2v24h-3v2H5v-2H2V6h2V4h3Z" />
+          <path fill="#8e9bb0" d="M5 7h22v22H5Z" />
+          <path fill="#e4ebf3" d="M5 12h21v17H5Z" />
+          <path fill="#fff" d="M5 12h19v16H6v-2H5Z" />
+          <path fill="#b72c3b" d="M5 7h22v6H5Z" />
+          <path fill="#ff484c" d="M5 6h21v6H5Z" />
+          <path fill="#ff8280" d="M5 6h2v5H5Zm8 0h6v1h-6Z" />
+          <path fill={ink} d="M7 2h6v7H7Zm12 0h6v7h-6Z" />
+          <path fill="#b5c9db" d="M9 2h2v5H9Zm12 0h2v5h-2Z" />
+          <path fill="#fff" d="M9 2h1v4H9Zm12 0h1v4h-1Z" />
           <path
             fill="#df2927"
-            d="M16 13h3v4h3v4h2v5h-3v3H11v-2H8v-6h3v-4h3v3h2Z"
+            d="M15 14h3v3h2v3h2v2h1v4h-2v2H11v-2H9v-5h2v-3h2v2h2Z"
           />
-          <path fill="#ff8b18" d="M16 17h2v4h3v5h-3v2h-6v-3h-2v-3h3v-2h3Z" />
-          <path fill="#ffe559" d="M16 21h2v3h2v3h-6v-4h2Z" />
-          <path fill="#fff3a0" d="M16 24h2v3h-2Z" />
+          <path fill="#ff8716" d="M15 18h3v4h2v4h-2v2h-5v-2h-2v-4h2v1h2Z" />
+          <path fill="#ffe54d" d="M15 22h2v2h2v3h-1v1h-4v-2h-1v-2h2Z" />
+          <path fill="#fff4b2" d="M15 25h2v3h-2Z" />
         </>
       )}
       {name === "coin" && (
@@ -118,27 +134,27 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
         <>
           <path
             fill={ink}
-            d="M12 0h8v5h3V3h5v5h-2v4h6v8h-6v3h2v5h-5v-2h-3v6h-8v-6H9v2H4v-5h2v-3H0v-8h6V9H4V4h5v2h3Z"
+            d="M12 0h8v4h4V3h3v5h3v4h2v8h-3v4h-2v5h-5v-1h-2v4h-8v-4H9v1H5v-5H2v-4H0v-8h3V8h2V3h4v1h3Z"
           />
           <path
-            fill="#66748d"
-            d="M14 3h4v5h5V6h2v2h-2v6h6v4h-6v5h2v2h-2v-2h-5v6h-4v-6H9v2H7v-2h2v-5H3v-4h6V9H7V7h2v2h5Z"
+            fill="#7d91b1"
+            d="M14 3h4v4h5V6h2v5h3v3h2v4h-3v4h-3v4h-3v-2h-3v5h-4v-5h-4v2H7v-4H4v-4H2v-4h3v-3h3V6h2v2h4Z"
           />
           <path
-            fill="#c4d8ec"
-            d="M14 2h4v5h5V5h2v3h-2v5h6v4h-6v5h2v2h-3v-2h-5v6h-4v-6H8v2H6v-3h2v-5H2v-3h6V8H6V6h3v2h5Z"
+            fill="#cedcec"
+            d="M14 3h4v4h4V6h3v5h2v3h3v3h-4v4h-3v3h-3v-1h-3v5h-3v-5h-4v2H7v-4H5v-4H2v-3h4v-3h2V6h2v2h4Z"
           />
           <path
-            fill="#eefaff"
-            d="M14 2h4v2h-2v5h-3V7h1ZM2 13h6v-3h2v5H4v1H2Zm4-7h3v2H6Z"
+            fill="#f1f7ff"
+            d="M14 3h4v2h-2v4h-4V7h2ZM8 6h2v3H8Zm-2 5h3v3H5v3H2v-3h4Z"
           />
           <path
-            fill="#9bb1cd"
-            d="M23 13h6v4h-6v5h2v2h-3v-2h-5v6h-4v-2h2v-6h6v-5h2Z"
+            fill="#adbfda"
+            d="M25 11h2v3h3v3h-4v4h-3v3h-3v-1h-3v5h-3v-3h1v-4h6v-3h3v-4h1Z"
           />
-          <path fill={ink} d="M13 10h6v3h3v6h-3v3h-6v-3h-3v-6h3Z" />
-          <path fill="#536480" d="M14 13h4v1h1v4h-2v1h-3Z" />
-          <path fill="#26334e" d="M14 13h4v2h-2v3h-2Z" />
+          <path fill="#eff6ff" d="M12 10h8v2h2v8h-2v2h-8v-2h-2v-8h2Z" />
+          <path fill={ink} d="M13 11h6v2h2v6h-2v2h-6v-2h-2v-6h2Z" />
+          <path fill="#33425b" d="M14 14h4v4h-4Z" />
         </>
       )}
       {name === "mail" && (

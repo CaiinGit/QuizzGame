@@ -1,5 +1,15 @@
 # Illustrations Akasha 0.3
 
+## Typographie et pictogrammes de l’interface
+
+La police d’affichage **Jersey 10**, par Sarah Cadigan-Fried / The Soft Type Project Authors, apporte les lettres épaisses pixelisées de la référence. Elle est embarquée dans l’application via `@fontsource/jersey-10` (latin et latin étendu), sans requête vers un CDN. Licence SIL Open Font License 1.1 fournie dans le paquet. Source et installation : https://fontsource.org/fonts/jersey-10/install.
+
+Les titres, boutons principaux, compteurs et libellés de navigation l’utilisent ; les questions, paragraphes et champs gardent une sans-serif système pour la lecture. Les accents français sont pris en charge.
+
+Les pictogrammes de `src/ArcadeArt.tsx` sont redessinés en SVG sur une grille pixel, d’après les références fournies par le propriétaire du projet. Le podium argenté avec étoile, le calendrier rouge à flamme et l’engrenage gris ont été retravaillés le 26 septembre 2026 pour rapprocher leurs silhouettes et leurs reflets de la nouvelle référence. Ce sont des reconstructions vectorielles, pas des découpes de la capture.
+
+## Illustrations de décor
+
 Assets générés avec l’outil imagegen intégré le 25 septembre 2026, à partir des maquettes validées dans la conversation. Mode : édition des images de référence. Aucun personnage.
 
 - `public/art/portal.webp` : portail frontal isolé, canal alpha transparent à l’extérieur de la silhouette.
