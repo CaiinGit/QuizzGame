@@ -1,0 +1,157 @@
+/* Keep both header actions clear of the title, including on small phones. */
+.topbar > .theme-toggle {
+  left: -5px;
+  right: auto;
+}
+.wordmark {
+  font-size: clamp(24px, 7.5vw, 36px);
+  letter-spacing: 4px;
+  padding-left: 4px;
+}
+.theme-toggle[aria-pressed="true"] {
+  background: #92aae11a;
+}
+.theme-save-notice {
+  position: absolute;
+  z-index: 6;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 12px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --cream: #303030;
+  --paper: #303030;
+  --green: #92aae1;
+  --muted: #b5bfd6;
+  --border: #92aae166;
+  --dark-highlight: #92aae11a;
+  --dark-shadow: #0005;
+}
+[data-theme="dark"] body,
+[data-theme="dark"] .app-shell,
+[data-theme="dark"] .bottom-nav,
+[data-theme="dark"] .mode-card,
+[data-theme="dark"] .island-card,
+[data-theme="dark"] .join-panel,
+[data-theme="dark"] .profile-panel,
+[data-theme="dark"] .duel-theme-art,
+[data-theme="dark"] .arcade-button.secondary {
+  background: var(--cream);
+}
+[data-theme="dark"] .app-shell {
+  --gold: #92aae1;
+  box-shadow: none;
+}
+[data-theme="dark"] .bottom-nav,
+[data-theme="dark"] .mode-card,
+[data-theme="dark"] .island-card,
+[data-theme="dark"] .island-caption,
+[data-theme="dark"] .duel-theme-art,
+[data-theme="dark"] .join-panel,
+[data-theme="dark"] .profile-panel,
+[data-theme="dark"] .profile-symbol,
+[data-theme="dark"] .invite-code,
+[data-theme="dark"] .avatar,
+[data-theme="dark"] .arcade-button.secondary {
+  border-color: var(--border);
+}
+[data-theme="dark"] .mode-card,
+[data-theme="dark"] .island-card,
+[data-theme="dark"] .in-duel .invite-code,
+[data-theme="dark"] .arcade-button {
+  box-shadow: 3px 4px 0 var(--dark-shadow);
+}
+[data-theme="dark"] .arcade-button.primary {
+  border-color: var(--green);
+  box-shadow: 0 4px 0 var(--dark-shadow);
+}
+[data-theme="dark"] .arcade-button.primary > svg {
+  color: var(--cream);
+}
+[data-theme="dark"] .arcade-button:not(:disabled):active {
+  box-shadow: none;
+}
+[data-theme="dark"] .primary:not(:disabled):hover {
+  background: #a6bbed;
+}
+[data-theme="dark"] .secondary:hover,
+[data-theme="dark"] .icon-button:hover,
+[data-theme="dark"] .bottom-nav button[aria-current="page"] > span,
+[data-theme="dark"] .profile-symbol,
+[data-theme="dark"] .avatar,
+[data-theme="dark"] .notice,
+[data-theme="dark"] .trophy,
+[data-theme="dark"] .time-track,
+[data-theme="dark"] .answer:not(:disabled):hover,
+[data-theme="dark"] .answer.selected {
+  background: var(--dark-highlight);
+}
+[data-theme="dark"] .you .avatar,
+[data-theme="dark"] .answer.correct {
+  background: var(--green);
+  color: var(--cream);
+  border-color: var(--green);
+}
+[data-theme="dark"] .bottom-nav button,
+[data-theme="dark"] .versus,
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] .duel-nav i {
+  color: var(--muted);
+}
+[data-theme="dark"] .bottom-nav button[aria-current="page"],
+[data-theme="dark"] .invite-art {
+  color: var(--green);
+}
+[data-theme="dark"] .topbar:before,
+[data-theme="dark"] .time-track div,
+[data-theme="dark"] .online-dot,
+[data-theme="dark"] .connection.online:before {
+  background: var(--green);
+}
+[data-theme="dark"] .mode-art {
+  background: var(--green);
+  color: var(--cream);
+  border-bottom-color: var(--border);
+}
+[data-theme="dark"] .mode-art > svg {
+  filter: drop-shadow(5px 6px 0 #30303033);
+}
+[data-theme="dark"] .mode-ring,
+[data-theme="dark"] .mode-ring:before {
+  border-color: #30303040;
+}
+[data-theme="dark"] .mode-mark {
+  color: var(--cream);
+}
+[data-theme="dark"] .portal-sparks i {
+  background: var(--green);
+  box-shadow: 0 0 8px #92aae1b3;
+}
+[data-theme="dark"] .portal-art {
+  filter: drop-shadow(0 5px 6px #0003);
+}
+[data-theme="dark"] .modal-backdrop {
+  background: #000a;
+}
+[data-theme="dark"] .modal {
+  border: 1px solid var(--border);
+}
+[data-theme="dark"] .notice.error,
+[data-theme="dark"] .answer.wrong {
+  background: #493735;
+  color: #f2b9a8;
+  border-color: #c78e7e;
+}
+[data-theme="dark"] .timer.urgent {
+  color: #f2b9a8;
+}
+[data-theme="dark"] button:focus-visible,
+[data-theme="dark"] input:focus-visible {
+  outline-color: var(--green);
+}

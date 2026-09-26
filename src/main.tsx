@@ -3,9 +3,13 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./styles.css";
 import "./explore.css";
+import "./theme.css";
+import { initializeTheme } from "./theme";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+void initializeTheme().then(() =>
+  ReactDOM.createRoot(document.getElementById("root")!).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  ),
 );

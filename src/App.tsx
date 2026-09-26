@@ -23,6 +23,7 @@ import {
 } from "./client";
 import { Explore, BottomNavigation } from "./Explore";
 import { useNavigation } from "./navigation";
+import { ThemeToggle } from "./ThemeToggle";
 type Intent =
   | { event: "room:create"; data: Record<string, never> }
   | { event: "room:join"; data: { code: string } };
@@ -310,6 +311,7 @@ export default function App() {
       className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
     >
       <header className="topbar">
+        <ThemeToggle />
         <div className="wordmark">AKASHA</div>
         <button
           className="icon-button"

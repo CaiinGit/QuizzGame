@@ -22,10 +22,15 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     q = await b.newPage();
   try {
     await p.goto("/");
+    await p.getByRole("button", { name: "Mode sombre", exact: true }).click();
     await chooseTheme(p);
     await p.getByRole("button", { name: "Créer un duel", exact: true }).click();
     await identify(p, "Luffy");
     await expect(p.getByTestId("room-code")).toBeVisible();
+    await expect(p.getByTestId("room-code")).toHaveCSS(
+      "color",
+      "rgb(146, 170, 225)",
+    );
     const code = await p.getByTestId("room-code").innerText();
     await expect(p.getByRole("navigation")).toHaveCount(0);
     await q.goto("/");
