@@ -10,7 +10,7 @@ type ArcadeIconName =
   | "podium"
   | "chest"
   | "book"
-  | "gamepad";
+  | "play";
 const ink = "#101426";
 
 /** Layered pixel shapes reproduce the bevels of the supplied header reference. */
@@ -44,24 +44,17 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
           <path fill="#d64f4d" d="M21 4h3v13l-2-2-1 2Z" />
         </>
       )}
-      {name === "gamepad" && (
+      {name === "play" && (
         <>
           <path
             fill={ink}
-            d="M6 5h6v2h8V5h6v3h3v5h2v6h1v9h-7v-3h-4v-4H11v4H7v3H0v-9h1v-6h2V8h3Z"
+            d="M6 2h4v2h4v2h4v2h4v2h4v3h4v6h-4v3h-4v2h-4v2h-4v2h-4v2H6Z"
           />
           <path
-            fill="#9cabc4"
-            d="M6 8h6v2h8V8h5v3h2v5h2v9h-3v-3h-4v-4H10v4H6v3H3v-9h2v-5h1Z"
+            fill="currentColor"
+            d="M9 6h3v2h4v2h4v2h4v3h3v2h-3v3h-4v2h-4v2h-4v2H9Z"
           />
-          <path
-            fill="#f5f8ff"
-            d="M6 8h6v2h8V8h5v3h2v8h-5v-3H10v3H5v4H3v-7h2v-5h1Z"
-          />
-          <path fill={ink} d="M7 10h3v3h3v3h-3v3H7v-3H4v-3h3Zm8 3h2v2h-2Z" />
-          <path fill="#e9ae32" d="M24 12h3v3h-3Z" />
-          <path fill="#d95360" d="M20 15h3v3h-3Z" />
-          <path fill="#fff" d="M6 8h5v2H6Zm14 0h4v2h-4Z" />
+          <path fill="#ffffff55" d="M9 6h3v2h4v2h4v2h-4v-1h-4v-1h-1v14H9Z" />
         </>
       )}
       {name === "home" && (

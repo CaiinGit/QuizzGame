@@ -110,8 +110,8 @@ export function Explore(p: Props) {
             aria-label="Jouer"
             onClick={() => navigate("mode")}
           >
-            <ArcadeIcon name="gamepad" />
-            <span>JOUER</span>
+            <ArcadeIcon name="play" />
+            <span className="play-label">JOUER</span>
             <span className="play-arrow" aria-hidden="true">
               ›
             </span>

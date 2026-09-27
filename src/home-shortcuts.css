@@ -153,10 +153,10 @@
   z-index: 2;
   min-height: 96px;
   display: grid;
-  grid-template-columns: 56px 1fr 24px;
+  grid-template-columns: 56px minmax(0, 1fr) 56px;
   align-items: center;
   gap: 12px;
-  padding: 14px 24px 18px;
+  padding: 16px 24px;
   color: var(--cream);
   font-family: var(--font-arcade);
   font-size: clamp(48px, 14vw, 64px);
@@ -185,10 +185,10 @@
 }
 @media (max-width: 350px) {
   .home-play {
-    grid-template-columns: 44px 1fr 20px;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
     min-height: 80px;
     gap: 8px;
-    padding: 10px 18px 14px;
+    padding: 12px 18px;
   }
   .home-play > .arcade-icon {
     width: 44px;
