@@ -9,8 +9,7 @@ type ArcadeIconName =
   | "home"
   | "podium"
   | "chest"
-  | "book"
-  | "play";
+  | "book";
 const ink = "#101426";
 
 /** Layered pixel shapes reproduce the bevels of the supplied header reference. */
@@ -42,19 +41,6 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
             d="M7 10h4v1H7Zm0 4h4v1H7Zm0 4h4v1H7Zm13-8h4v1h-4Zm0 4h4v1h-4Z"
           />
           <path fill="#d64f4d" d="M21 4h3v13l-2-2-1 2Z" />
-        </>
-      )}
-      {name === "play" && (
-        <>
-          <path
-            fill={ink}
-            d="M6 2h4v2h4v2h4v2h4v2h4v3h4v6h-4v3h-4v2h-4v2h-4v2h-4v2H6Z"
-          />
-          <path
-            fill="currentColor"
-            d="M9 6h3v2h4v2h4v2h4v3h3v2h-3v3h-4v2h-4v2h-4v2H9Z"
-          />
-          <path fill="#ffffff55" d="M9 6h3v2h4v2h4v2h-4v-1h-4v-1h-1v14H9Z" />
         </>
       )}
       {name === "home" && (

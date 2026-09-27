@@ -174,17 +174,11 @@
   place-items: center;
 }
 /* Display the supplied PNG unchanged, framing only its transparent margins. */
-.play-symbol-light {
+.play-symbol-image {
   image-rendering: pixelated;
 }
-.play-symbol > .arcade-icon {
-  display: none;
-}
-[data-theme="dark"] .play-symbol-light {
-  display: none;
-}
-[data-theme="dark"] .play-symbol > .arcade-icon {
-  display: block;
+[data-theme="dark"] .play-symbol-image {
+  filter: grayscale(1) brightness(0.2);
 }
 .play-arrow {
   font-family: ui-monospace, monospace;

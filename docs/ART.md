@@ -2,7 +2,7 @@
 
 ## Typographie et pictogrammes de l’interface
 
-Le symbole Play du mode clair utilise `public/art/play-light.png`, fichier PNG original fourni par l’utilisateur le 27 septembre 2026, copié sans modification. Un cadrage SVG retire uniquement les marges transparentes à l’affichage ; les pixels, le contour et les couleurs du dessin sont conservés. Le mode sombre garde son pictogramme vectoriel.
+Le symbole Play utilise `public/art/play-light.png`, fichier PNG original fourni par l’utilisateur le 27 septembre 2026, copié sans modification. Un cadrage SVG retire uniquement les marges transparentes à l’affichage. Le mode clair conserve ses couleurs originales ; le mode sombre utilise le même dessin avec un filtre CSS gris anthracite, cohérent avec le texte sur le bouton bleu. Le fichier source reste intact dans les deux modes.
 
 La police d’affichage **Jersey 10**, par Sarah Cadigan-Fried / The Soft Type Project Authors, apporte les lettres épaisses pixelisées de la référence. Elle est embarquée dans l’application via `@fontsource/jersey-10` (latin et latin étendu), sans requête vers un CDN. Licence SIL Open Font License 1.1 fournie dans le paquet. Source et installation : https://fontsource.org/fonts/jersey-10/install.
 
