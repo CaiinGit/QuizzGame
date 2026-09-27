@@ -164,9 +164,27 @@
   text-align: center;
   text-shadow: 0 2px 0 #10142640;
 }
-.home-play > .arcade-icon {
+.play-symbol,
+.play-symbol > svg {
   width: 56px;
   height: 56px;
+}
+.play-symbol {
+  display: grid;
+  place-items: center;
+}
+/* Display the supplied PNG unchanged, framing only its transparent margins. */
+.play-symbol-light {
+  image-rendering: pixelated;
+}
+.play-symbol > .arcade-icon {
+  display: none;
+}
+[data-theme="dark"] .play-symbol-light {
+  display: none;
+}
+[data-theme="dark"] .play-symbol > .arcade-icon {
+  display: block;
 }
 .play-arrow {
   font-family: ui-monospace, monospace;
@@ -190,7 +208,8 @@
     gap: 8px;
     padding: 12px 18px;
   }
-  .home-play > .arcade-icon {
+  .play-symbol,
+  .play-symbol > svg {
     width: 44px;
     height: 44px;
   }

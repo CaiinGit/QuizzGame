@@ -110,7 +110,17 @@ export function Explore(p: Props) {
             aria-label="Jouer"
             onClick={() => navigate("mode")}
           >
-            <ArcadeIcon name="play" />
+            <span className="play-symbol" aria-hidden="true">
+              <svg
+                className="play-symbol-light"
+                viewBox="24 18 28 28"
+                width="56"
+                height="56"
+              >
+                <image href="/art/play-light.png" width="64" height="64" />
+              </svg>
+              <ArcadeIcon name="play" />
+            </span>
             <span className="play-label">JOUER</span>
             <span className="play-arrow" aria-hidden="true">
               ›
