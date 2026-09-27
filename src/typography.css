@@ -63,7 +63,7 @@ h2,
   letter-spacing: 0.5px;
 }
 .bottom-nav.bottom-nav button {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   letter-spacing: 0;
 }
@@ -79,6 +79,6 @@ h2,
     font-size: 22px;
   }
   .bottom-nav.bottom-nav button {
-    font-size: 18px;
+    font-size: 16px;
   }
 }

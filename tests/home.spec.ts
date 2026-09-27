@@ -6,6 +6,9 @@ test("home puts daily challenge and three empty favorites above the portal", asy
   await page.goto("/");
   const daily = page.getByRole("button", { name: "Défi du jour", exact: true });
   const favorites = page.getByRole("group", { name: "Thèmes favoris" });
+  const play = page.getByRole("button", { name: "Jouer", exact: true });
+  await expect(play).toBeVisible();
+  await expect(play).toHaveCSS("--tile-face", "#234836");
   await expect(daily).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Choisir un mode" }),
@@ -24,6 +27,12 @@ test("home puts daily challenge and three empty favorites above the portal", asy
     const favoritesBox = (await favorites.boundingBox())!;
     const portalBox = (await page.locator(".portal-stage").boundingBox())!;
     const navBox = (await page.getByRole("navigation").boundingBox())!;
+    const playBox = (await play.boundingBox())!;
+    expect(playBox.y).toBeGreaterThanOrEqual(
+      favoritesBox.y + favoritesBox.height,
+    );
+    expect(playBox.y + playBox.height).toBeLessThanOrEqual(navBox.y);
+    await expect(play).toBeInViewport({ ratio: 1 });
     expect(dailyBox.y + dailyBox.height).toBeLessThanOrEqual(favoritesBox.y);
     expect(favoritesBox.y + favoritesBox.height).toBeLessThanOrEqual(
       portalBox.y,
@@ -63,9 +72,16 @@ test("home puts daily challenge and three empty favorites above the portal", asy
     "--tile-face",
     "#92aae1",
   );
+  await expect(play).toHaveCSS("--tile-face", "#92aae1");
   await page.mouse.move(0, 0);
   await page.screenshot({
     path: "test-results/akasha-home-shortcuts-dark.png",
     fullPage: true,
   });
+  await play.click();
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Retour", exact: true }).click();
+  await expect(play).toBeVisible();
 });

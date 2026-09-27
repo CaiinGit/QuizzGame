@@ -52,7 +52,11 @@ test("theme is in settings, follows navigation and survives reload", async ({
     path: "test-results/akasha-header-dark.png",
     fullPage: true,
   });
-  await page.goto("/#mode");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Accueil", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
   await expect(page.locator(".mode-card")).toHaveCSS(
     "background-color",
     "rgb(48, 48, 48)",

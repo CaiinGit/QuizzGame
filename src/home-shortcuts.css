@@ -142,6 +142,41 @@
 .favorite-slot {
   aspect-ratio: 1;
 }
+.home-play {
+  --tile-face: var(--green);
+  --tile-light: #659579;
+  --tile-edge: #183c2b;
+  --tile-shadow: #10291f;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  min-height: 96px;
+  display: grid;
+  grid-template-columns: 56px 1fr 24px;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px 18px;
+  color: var(--cream);
+  font-family: var(--font-arcade);
+  font-size: clamp(48px, 14vw, 64px);
+  line-height: 1;
+  text-align: center;
+  text-shadow: 0 2px 0 #10142640;
+}
+.home-play > .arcade-icon {
+  width: 56px;
+  height: 56px;
+}
+.play-arrow {
+  font-family: ui-monospace, monospace;
+  font-size: 42px;
+}
+[data-theme="dark"] .home-play {
+  --tile-light: #d9e5ff;
+  --tile-edge: #6e87bc;
+  --tile-shadow: #45587f;
+}
 [data-theme="dark"] .favorite-slot {
   --tile-face: #92aae1;
   --tile-light: #d9e5ff;
@@ -149,6 +184,16 @@
   --tile-shadow: #45587f;
 }
 @media (max-width: 350px) {
+  .home-play {
+    grid-template-columns: 44px 1fr 20px;
+    min-height: 80px;
+    gap: 8px;
+    padding: 10px 18px 14px;
+  }
+  .home-play > .arcade-icon {
+    width: 44px;
+    height: 44px;
+  }
   .daily-challenge {
     gap: 8px;
     padding: 14px;

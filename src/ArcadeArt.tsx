@@ -1,7 +1,16 @@
 import type { ReactNode } from "react";
 
 type ArcadeIconName =
-  "coin" | "trophy" | "gear" | "mail" | "daily" | "home" | "podium" | "chest";
+  | "coin"
+  | "trophy"
+  | "gear"
+  | "mail"
+  | "daily"
+  | "home"
+  | "podium"
+  | "chest"
+  | "book"
+  | "gamepad";
 const ink = "#101426";
 
 /** Layered pixel shapes reproduce the bevels of the supplied header reference. */
@@ -15,6 +24,46 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
       shapeRendering="crispEdges"
       aria-hidden="true"
     >
+      {name === "book" && (
+        <>
+          <path fill={ink} d="M2 3h11v2h6V3h11v25H19v2h-6v-2H2Z" />
+          <path fill="#548e9f" d="M4 6h9v2h6V6h9v19h-9v2h-6v-2H4Z" />
+          <path
+            fill="#f5edca"
+            d="M5 5h7v2h3v17h-3v-2H5Zm15 0h7v17h-7v2h-3V7h3Z"
+          />
+          <path fill="#fff9e8" d="M5 5h7v2H7v13H5Zm15 0h7v2h-7v2h-2V7h2Z" />
+          <path
+            fill="#c9b887"
+            d="M12 8h2v15h-2ZM25 8h2v14h-7v2h-2v-2h5v-2h2Z"
+          />
+          <path
+            fill="#aa8550"
+            d="M7 10h4v1H7Zm0 4h4v1H7Zm0 4h4v1H7Zm13-8h4v1h-4Zm0 4h4v1h-4Z"
+          />
+          <path fill="#d64f4d" d="M21 4h3v13l-2-2-1 2Z" />
+        </>
+      )}
+      {name === "gamepad" && (
+        <>
+          <path
+            fill={ink}
+            d="M6 5h6v2h8V5h6v3h3v5h2v6h1v9h-7v-3h-4v-4H11v4H7v3H0v-9h1v-6h2V8h3Z"
+          />
+          <path
+            fill="#9cabc4"
+            d="M6 8h6v2h8V8h5v3h2v5h2v9h-3v-3h-4v-4H10v4H6v3H3v-9h2v-5h1Z"
+          />
+          <path
+            fill="#f5f8ff"
+            d="M6 8h6v2h8V8h5v3h2v8h-5v-3H10v3H5v4H3v-7h2v-5h1Z"
+          />
+          <path fill={ink} d="M7 10h3v3h3v3h-3v3H7v-3H4v-3h3Zm8 3h2v2h-2Z" />
+          <path fill="#e9ae32" d="M24 12h3v3h-3Z" />
+          <path fill="#d95360" d="M20 15h3v3h-3Z" />
+          <path fill="#fff" d="M6 8h5v2H6Zm14 0h4v2h-4Z" />
+        </>
+      )}
       {name === "home" && (
         <>
           <path

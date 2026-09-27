@@ -28,10 +28,12 @@ export function BottomNavigation({
   screen: Screen;
   navigate: (screen: Screen) => void;
 }) {
-  const active = screen;
+  const active =
+    screen === "one-piece" || screen === "rejoindre" ? "classique" : screen;
   const items = [
     { screen: "classement", label: "Classement", icon: "podium" },
     { screen: "accueil", label: "Accueil", icon: "home" },
+    { screen: "classique", label: "Thèmes", icon: "book" },
     { screen: "boutique", label: "Boutique", icon: "chest" },
   ] as const;
   return (
@@ -102,6 +104,18 @@ export function Explore(p: Props) {
               <i key={i} />
             ))}
           </div>
+          <button
+            type="button"
+            className="home-tile home-play"
+            aria-label="Jouer"
+            onClick={() => navigate("mode")}
+          >
+            <ArcadeIcon name="gamepad" />
+            <span>JOUER</span>
+            <span className="play-arrow" aria-hidden="true">
+              ›
+            </span>
+          </button>
         </div>
       </section>
     );

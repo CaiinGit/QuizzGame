@@ -1,7 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 async function chooseTheme(page: Page) {
-  // Keep exercising duels through their route while the home Jouer entry is deferred.
-  await page.goto("/#mode");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Accueil", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
   await page
     .getByRole("button", { name: "Classique, duel 1 contre 1", exact: true })
     .click();
@@ -125,7 +128,11 @@ test("home fits small phones and navigation follows mode then theme", async ({
       nav = await page.getByRole("navigation").boundingBox();
     expect(button!.y + button!.height).toBeLessThanOrEqual(nav!.y);
   }
-  await page.goto("/#mode");
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Accueil", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Choisis ton mode" }),
   ).toBeVisible();
