@@ -1,0 +1,33 @@
+# Permanent named tunnel for akashaquiz.com. Do not combine with compose.private.yaml.
+services:
+  app:
+    environment:
+      ALLOWED_ORIGINS: https://localhost,capacitor://localhost,https://akashaquiz.com,https://www.akashaquiz.com
+  cloudflared:
+    image: cloudflare/cloudflared@sha256:072c067d25ccbe61d46e18f0d0723255f2bb5304f7317caa95b27031520ff92c
+    restart: unless-stopped
+    user: "${AKASHA_UID:-1000}:${AKASHA_GID:-1000}"
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --config
+      - /etc/cloudflared/config.yml
+      - run
+      - ${CLOUDFLARE_TUNNEL_ID:?Configure CLOUDFLARE_TUNNEL_ID dans .env}
+    volumes:
+      - ./deploy/cloudflared.yml:/etc/cloudflared/config.yml:ro
+      - ./work/cloudflare/credentials.json:/etc/cloudflared/credentials.json:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"

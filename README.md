@@ -6,6 +6,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface bei
 
 APK 0.4.0 (code Android 4) : nouveau cadre de portrait blanc/cyan en pixel art, interfaces actualisées, Classique Solo, points selon le temps de réponse et chrono fluide. Le serveur doit également être à jour pour le Solo et le nouveau barème.
 
+APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, domaine public stable via Cloudflare Tunnel, sans Tailscale.
+
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
 - Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers et mémorisée sur l’appareil. Les photos sont recadrées au centre et réduites à 320 × 320, sans envoi au serveur.
 - Roue dentée : réglages avec mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé ; connexion au serveur dans une section dépliable.
@@ -38,7 +40,7 @@ Le score d’une bonne réponse est `ceil(1000 × temps restant / durée de la q
 1. Ouvrir [Actions → Android - Tests et APK](https://github.com/CaiinGit/QuizzGame/actions/workflows/android.yml).
 2. Ouvrir la dernière exécution réussie et télécharger **Akasha-Android-debug** (connexion GitHub requise).
 3. Extraire le ZIP, transférer `app-debug.apk` sur le téléphone, l’ouvrir et autoriser l’installation depuis cette source si Android le demande.
-4. Ouvrir Akasha. Si aucune adresse n’est préconfigurée, saisir l’URL HTTPS du serveur dans les réglages. Les deux joueurs doivent utiliser le même serveur.
+4. Ouvrir Akasha. L'APK 0.4.1 utilise `https://akashaquiz.com` par défaut. Si l'ancienne adresse est mémorisée, la remplacer dans Réglages → Connexion au serveur. Les deux joueurs doivent utiliser le même serveur ; Tailscale n'est plus nécessaire.
 
 L’identifiant Android reste `com.caiin.quizzgame` pour préserver la continuité du projet ; le nom affiché devient Akasha. Cet APK utilise une signature de développement, susceptible de changer entre deux compilations CI. Si Android refuse une mise à jour pour signature différente, désinstaller l’ancienne version avant installation efface ses données locales. Avant diffusion régulière, configurer une clé de signature stable privée.
 
@@ -66,6 +68,8 @@ npm run android:open
 ## Hébergement et architecture
 
 Voir le [guide pour SERVEUR Valentin](docs/HEBERGEMENT.md) et la [feuille de route](docs/ROADMAP.md).
+
+L'accès public utilise [Cloudflare Tunnel avec le domaine akashaquiz.com](docs/CLOUDFLARE.md). L'adresse est stable après redémarrage. Le serveur et PostgreSQL fonctionnent indépendamment du PC de développement ; celui-ci conserve son aperçu et sa base de test séparés.
 
 | Dossier               | Rôle                                                           |
 | --------------------- | -------------------------------------------------------------- |

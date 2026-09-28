@@ -1,0 +1,8 @@
+credentials-file: /etc/cloudflared/credentials.json
+protocol: http2
+ingress:
+  - hostname: akashaquiz.com
+    service: http://app:3001
+  - hostname: www.akashaquiz.com
+    service: http://app:3001
+  - service: http_status:404

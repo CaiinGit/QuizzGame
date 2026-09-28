@@ -103,7 +103,7 @@ export async function createApp(
   app.get("/api/health", async (_req, res) => {
     try {
       await db.query("SELECT 1");
-      res.json({ ok: true, app: "Akasha", version: "0.4.0" });
+      res.json({ ok: true, app: "Akasha", version: "0.4.1" });
     } catch {
       res.status(503).json({ ok: false });
     }

@@ -1,5 +1,11 @@
 # Akasha sur SERVEUR Valentin
 
+## Accès actuel : akashaquiz.com via Cloudflare
+
+La configuration actuelle remplace Tailscale par un tunnel Cloudflare nommé pour `https://akashaquiz.com`. Voir [l'installation permanente](CLOUDFLARE.md). PostgreSQL et les parties restent sur le serveur ; l'aperçu local conserve sa base de test distincte. Utiliser `compose.yaml` avec `compose.cloudflare.yaml`. Aucun tunnel temporaire ni achat supplémentaire n'est nécessaire pour cette installation.
+
+Les sections Tailscale ci-dessous documentent l'installation historique et un éventuel retour arrière, pas l'accès actuel.
+
 ## Installation du 25 septembre 2026
 
 Akasha et PostgreSQL sont installés dans `/srv/docker/akasha`. La machine vérifiée est `serveurdecaiin`, sous Ubuntu 24.04.5 LTS. L’accès privé est **https://akasha.tail118128.ts.net** ; Tailscale Serve a été activé par le propriétaire. L’APK produit par GitHub est préconfiguré avec cette adresse. Installer Tailscale sur chaque téléphone et autoriser l’ami via un partage de la machine Akasha avant de jouer depuis un autre réseau.
