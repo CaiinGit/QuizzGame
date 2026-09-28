@@ -24,6 +24,7 @@ export type Room = {
   answerTimes: Record<string, number>;
   dismissed: string[];
   correction: RoomView["correction"];
+  history: RoomView["history"];
   winnerId: string | null;
   reason: RoomView["reason"];
 };
@@ -81,6 +82,7 @@ export function newRoom(
     answerTimes: {},
     dismissed: [],
     correction: null,
+    history: [],
     winnerId: null,
     reason: null,
   };
@@ -133,6 +135,13 @@ function reveal(room: Room, now: number, times: Durations) {
     answers[p.id] = { choice, points };
   }
   room.correction = { correct: q.correct, explanation: q.explanation, answers };
+  room.history.push({
+    round: room.index + 1,
+    question: q.text,
+    choices: [...q.choices],
+    correct: q.correct,
+    answers: structuredClone(answers),
+  });
   startPhase(room, "reveal", now, times.reveal);
   room.revision++;
 }
@@ -234,6 +243,7 @@ export function view(
     question: show ? { text: q.text, choices: q.choices } : null,
     selected: room.answers[playerId] ?? null,
     submitted: Object.hasOwn(room.answers, playerId),
+    history: room.phase === "finished" ? structuredClone(room.history) : [],
     correction: room.phase === "reveal" ? room.correction : null,
     winnerId: room.winnerId,
     reason: room.reason,

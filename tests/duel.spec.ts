@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { questions } from "../server/questions";
 async function chooseTheme(page: Page) {
   await page
     .getByRole("navigation")
@@ -58,14 +59,41 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       await expect(p.locator(".question-title")).toHaveText(
         await q.locator(".question-title").innerText(),
       );
-      await p.locator(".answer").first().click();
-      await expect(p.locator(".answer").first()).toBeDisabled();
+      const questionText = await p.locator(".question-title").innerText();
+      await expect(p.locator(".question-points")).toHaveCount(0);
+      await expect(
+        q.getByText("Ton ami a répondu. À toi !", { exact: true }),
+      ).toHaveCount(0);
+      const original = questions.find(
+        (question) => question.text === questionText,
+      )!;
+      const options = await p.locator(".answer-copy > span").allTextContents();
+      const correctIndex = options.indexOf(original.choices[original.correct]);
+      await p.locator(".answer").nth(correctIndex).click();
+      await expect(p.locator(".answer.selected")).toBeDisabled();
+      await expect(p.locator(".answer.selected")).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await expect(p.locator(".answer.selected")).toContainText(
+        "Réponse enregistrée",
+      );
       if (i === 1) {
         await p.reload();
         await expect(p.locator(".answer.selected")).toHaveCount(1);
+        await expect(p.locator(".answer.selected")).toContainText(
+          "Réponse enregistrée",
+        );
+        await p.screenshot({
+          path: "test-results/akasha-answer-selected-dark.png",
+          fullPage: true,
+        });
         await expect(p.getByRole("navigation")).toHaveCount(0);
       }
-      await q.locator(".answer").first().click();
+      await q
+        .locator(".answer")
+        .nth((correctIndex + 1) % 4)
+        .click();
     }
     await expect(
       p.getByRole("heading", {
@@ -77,6 +105,32 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
         name: /Victoire !|Bien joué !|Égalité parfaite/,
       }),
     ).toBeVisible();
+    await expect(p.locator(".review-round")).toHaveCount(10);
+    await expect(p.locator(".review-answer.right")).toHaveCount(10);
+    await expect(p.locator(".review-answer.incorrect")).toHaveCount(10);
+    await p.reload();
+    await expect(p.locator(".review-round")).toHaveCount(10);
+    await p.locator(".review-round summary").first().click();
+    await expect(p.locator(".review-detail").first()).toContainText(
+      "Bonne réponse",
+    );
+    await expect(p.locator(".review-detail").first()).toContainText("Luffy");
+    await expect(p.locator(".review-detail").first()).toContainText("Zoro");
+    await p
+      .locator(".review-round")
+      .first()
+      .screenshot({ path: "test-results/akasha-review-dark.png" });
+    await q.locator(".review-round summary").first().click();
+    await q
+      .locator(".review-round")
+      .first()
+      .screenshot({ path: "test-results/akasha-review-light.png" });
+    await p.setViewportSize({ width: 320, height: 568 });
+    expect(
+      await p.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
     await p.getByRole("button", { name: "Retour à l’accueil" }).click();
     await expect(
       p.getByRole("button", { name: "Défi du jour", exact: true }),

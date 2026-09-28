@@ -607,12 +607,6 @@ svg {
 .players.players-solo {
   grid-template-columns: 1fr;
 }
-.question-points {
-  margin: -14px 0 16px;
-  color: var(--muted);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
 .question-title {
   font-size: 29px;
   line-height: 1.18;

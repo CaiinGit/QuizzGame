@@ -31,7 +31,7 @@ import {
 } from "./PlayerHeader";
 import { useAvatar } from "./avatar";
 import { TimeBar } from "./TimeBar";
-import { pointsForTime } from "../shared/scoring";
+import { MatchReview } from "./MatchReview";
 type Intent =
   | { event: "room:create"; data: { mode?: "duel" | "solo" } }
   | { event: "room:join"; data: { code: string } };
@@ -309,12 +309,7 @@ export default function App() {
   const ended = room?.phase === "finished" || room?.phase === "cancelled";
   const isQuestion = room?.phase === "question" || room?.phase === "reveal";
   const solo = room?.mode === "solo";
-  const availablePoints = room
-    ? pointsForTime(now - room.phaseStartedAt, room.phaseDuration)
-    : 0;
   const myPoints = room?.correction?.answers[me?.id ?? ""]?.points ?? 0;
-  const opponentPoints =
-    room?.correction?.answers[opponent?.id ?? ""]?.points ?? 0;
   const result = solo
     ? room?.reason === "forfeit"
       ? "Partie interrompue"
@@ -562,14 +557,10 @@ export default function App() {
                   duration={room.phaseDuration}
                   offset={offset}
                 />
-                {room.phase === "question" && !room.submitted && (
-                  <p className="question-points">
-                    Bonne réponse : jusqu’à{" "}
-                    <b>{availablePoints.toLocaleString("fr-FR")}</b> pts
-                  </p>
-                )}
                 <h1 className="question-title">{room.question.text}</h1>
-                <div className="answers">
+                <div
+                  className={`answers ${room.submitted ? "has-selection" : ""} ${room.phase === "question" ? "accepting-answers" : ""}`}
+                >
                   {room.question.choices.map((choice, i) => {
                     const correct = room.correction?.correct === i;
                     const wrong =
@@ -580,6 +571,7 @@ export default function App() {
                       <button
                         key={`${room.round}-${i}`}
                         className={`answer ${room.selected === i ? "selected" : ""} ${correct ? "correct" : ""} ${wrong ? "wrong" : ""}`}
+                        aria-pressed={room.selected === i}
                         disabled={
                           !online ||
                           busy ||
@@ -597,11 +589,22 @@ export default function App() {
                         }
                       >
                         <span className="letter">{"ABCD"[i]}</span>
-                        <span>{choice}</span>
+                        <span className="answer-copy">
+                          <span>{choice}</span>
+                          {room.selected === i && (
+                            <strong className="answer-confirmation">
+                              {room.phase === "question"
+                                ? "Réponse enregistrée"
+                                : "Ta réponse"}
+                            </strong>
+                          )}
+                        </span>
                         {correct ? (
                           <Check size={20} />
                         ) : wrong ? (
                           <X size={20} />
+                        ) : room.selected === i ? (
+                          <Check size={20} aria-hidden="true" />
                         ) : null}
                       </button>
                     );
@@ -618,14 +621,6 @@ export default function App() {
                             : "La bonne réponse"}
                       </strong>
                       <p>{room.correction?.explanation}</p>
-                      {!solo && (
-                        <small>
-                          {opponent?.name} :{" "}
-                          {opponentPoints
-                            ? `+${opponentPoints.toLocaleString("fr-FR")} points`
-                            : "0 point"}
-                        </small>
-                      )}
                     </>
                   ) : room.submitted ? (
                     <p>
@@ -634,12 +629,8 @@ export default function App() {
                         ? "Réponse envoyée…"
                         : "Réponse envoyée. À ton ami de jouer…"}
                     </p>
-                  ) : (
-                    <p>
-                      {opponent?.answered
-                        ? "Ton ami a répondu. À toi !"
-                        : "Une seule réponse. Fais-toi confiance."}
-                    </p>
+                  ) : opponent?.answered ? null : (
+                    <p>Une seule réponse. Fais-toi confiance.</p>
                   )}
                 </div>
               </section>
@@ -680,6 +671,9 @@ export default function App() {
                   Retour à l’accueil
                   <ArrowRight size={20} />
                 </button>
+                {room.phase === "finished" && (
+                  <MatchReview room={room} playerId={me?.id ?? ""} />
+                )}
               </section>
             )}
           </>

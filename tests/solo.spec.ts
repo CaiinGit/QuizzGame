@@ -40,15 +40,16 @@ test("Solo completes alone, resumes on reload, and timer moves between integer s
   );
   expect(new Set(samples).size).toBeGreaterThan(3);
   expect(samples.at(-1)!).toBeLessThan(samples[0]);
-  const previousPoints = Number(
-    (await page.locator(".question-points b").innerText()).replace(/\D/g, ""),
+  await expect(page.locator(".question-points")).toHaveCount(0);
+  const previousSeconds = Number(
+    await page.getByRole("progressbar").getAttribute("aria-valuenow"),
   );
   await page.reload();
   await expect(page.locator(".question-meta b")).toHaveText("01");
-  const resumedPoints = Number(
-    (await page.locator(".question-points b").innerText()).replace(/\D/g, ""),
+  const resumedSeconds = Number(
+    await page.getByRole("progressbar").getAttribute("aria-valuenow"),
   );
-  expect(resumedPoints).toBeLessThanOrEqual(previousPoints);
+  expect(resumedSeconds).toBeLessThanOrEqual(previousSeconds);
   await page.screenshot({
     path: "test-results/akasha-solo-question.png",
     fullPage: true,
@@ -64,6 +65,10 @@ test("Solo completes alone, resumes on reload, and timer moves between integer s
     page.getByRole("heading", { name: "Partie terminée", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".results")).toContainText("Ton score");
+  await expect(page.locator(".review-round")).toHaveCount(10);
+  await expect(
+    page.locator(".review-round").first().locator(".review-answer"),
+  ).toHaveCount(1);
   await expect(page.locator(".results")).not.toContainText(
     /Victoire|Égalité|revanche/,
   );

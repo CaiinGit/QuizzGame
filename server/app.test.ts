@@ -118,6 +118,7 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     assert.equal(a.state()!.selected, correct);
     assert.equal(b.state()!.selected, null);
     assert.equal(b.state()!.correction, null);
+    assert.deepEqual(b.state()!.history, []);
     a.s.disconnect();
     const reconnect = await client(ca);
     await waitFor(() => !!reconnect.state()?.submitted);
@@ -137,10 +138,14 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await waitFor(() => restored.state()?.code === code);
     assert.equal(restored.state()!.players[0].score, earned);
     assert.equal(restored.state()!.phase, "reveal");
+    assert.deepEqual(restored.state()!.history, []);
     await request(restored.s, "room:leave");
     const other = await client(cb);
     await waitFor(() => other.state()?.phase === "finished");
     assert.equal(other.state()!.winnerId, cb.id);
+    assert.equal(other.state()!.history.length, 1);
+    assert.equal(other.state()!.history[0].answers[ca.id].points, earned);
+    assert.equal(other.state()!.history[0].answers[ca.id].choice, correct);
     await assert.rejects(
       request(restored.s, "room:create", { mode: "invalid" }),
     );

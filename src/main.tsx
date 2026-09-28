@@ -10,6 +10,7 @@ import "./home-shortcuts.css";
 import "./bottom-navigation.css";
 import "./typography.css";
 import "./selection-cards.css";
+import "./match-review.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

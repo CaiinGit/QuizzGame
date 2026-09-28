@@ -27,6 +27,7 @@ test("same shuffled questions for both players; no answer keys before reveal", (
     second = view(r, "b", new Set(), 3000);
   assert.deepEqual(first.question, second.question);
   assert.equal(first.correction, null);
+  assert.deepEqual(first.history, []);
   assert.equal(Object.hasOwn(first, "questions"), false);
   assert.equal(Object.hasOwn(first.question!, "correct"), false);
   answer(r, "a", 1, r.questions[0].correct, 3100);
@@ -43,6 +44,7 @@ test("double taps cannot change answers or award points twice", () => {
   assert.equal(r.phase, "reveal");
   assert.equal(r.answerTimes.a, 3100);
   assert.equal(r.players[0].score, 995);
+  assert.equal(r.history.length, 1);
   assert.throws(() => answer(r, "b", 1, correct, 3300));
   assert.equal(r.players[0].score, 995);
 });
@@ -69,6 +71,16 @@ test("ten rounds finish once; the slower correct player earns fewer points", () 
   assert.equal(r.winnerId, "a");
   assert.equal(r.players[0].score, 9500);
   assert.equal(r.players[1].score, 10);
+  const results = view(r, "a", new Set(), r.deadline).history;
+  assert.equal(results.length, 10);
+  assert.deepEqual(
+    results.map((q) => q.round),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+  );
+  assert.equal(
+    results.reduce((score, q) => score + q.answers.a.points, 0),
+    9500,
+  );
   const revision = r.revision;
   tick(r, r.deadline + 10000);
   assert.equal(r.revision, revision);
@@ -147,6 +159,32 @@ test("solo timeout and abandonment do not invent an opponent", () => {
   assert.equal(r.phase, "finished");
   assert.equal(r.winnerId, null);
   assert.equal(r.reason, "forfeit");
+});
+
+test("review preserves choices, misses and timeouts without leaking an unfinished question", () => {
+  const r = started();
+  const first = structuredClone(r.questions[0]);
+  answer(r, "a", 1, first.correct, r.phaseStartedAt + 5000);
+  answer(r, "b", 1, (first.correct + 1) % 4, r.phaseStartedAt + 6000);
+  assert.deepEqual(view(r, "b", new Set(), r.deadline).history, []);
+  tick(r, r.deadline);
+  tick(r, r.deadline); // Both players time out on question 2.
+  tick(r, r.deadline);
+  answer(r, "a", 3, r.questions[2].correct, r.phaseStartedAt + 1000);
+  leave(r, "b");
+  const history = view(r, "a", new Set(), r.deadline).history;
+  assert.equal(history.length, 2);
+  assert.equal(history[0].question, first.text);
+  assert.deepEqual(history[0].choices, first.choices);
+  assert.equal(history[0].answers.a.choice, first.correct);
+  assert.equal(history[0].answers.a.points, 750);
+  assert.equal(history[0].answers.b.points, 0);
+  assert.equal(history[1].answers.a.choice, null);
+  assert.equal(history[1].answers.b.choice, null);
+  assert.equal(
+    history.some((q) => q.round === 3),
+    false,
+  );
 });
 test("capacity, readiness, expiry and forfeit", () => {
   const r = newRoom("ABCDEF", a, 0);

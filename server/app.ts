@@ -37,6 +37,7 @@ export async function createApp(
     // Older saved rooms predate solo and timing metadata. Preserve accepted
     // answers with full credit when their original receipt time is unknown.
     room.mode ??= "duel";
+    room.history ??= [];
     room.phaseDuration ??=
       room.phase === "lobby"
         ? times.lobby
@@ -103,7 +104,7 @@ export async function createApp(
   app.get("/api/health", async (_req, res) => {
     try {
       await db.query("SELECT 1");
-      res.json({ ok: true, app: "Akasha", version: "0.4.1" });
+      res.json({ ok: true, app: "Akasha", version: "0.4.2" });
     } catch {
       res.status(503).json({ ok: false });
     }

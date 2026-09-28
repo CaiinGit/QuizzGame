@@ -4,6 +4,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface bei
 
 ## Version 0.4
 
+APK 0.4.2 (code Android 6) : réponse enregistrée mise en évidence, écran de question allégé et bilan final question par question avec les choix et points des deux joueurs. Le bilan est sauvegardé côté serveur et disponible après reconnexion ; seules les questions déjà corrigées figurent dans un duel interrompu. Les anciennes parties sans historique ne peuvent pas être reconstituées.
+
 APK 0.4.0 (code Android 4) : nouveau cadre de portrait blanc/cyan en pixel art, interfaces actualisées, Classique Solo, points selon le temps de réponse et chrono fluide. Le serveur doit également être à jour pour le Solo et le nouveau barème.
 
 APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, domaine public stable via Cloudflare Tunnel, sans Tailscale.
