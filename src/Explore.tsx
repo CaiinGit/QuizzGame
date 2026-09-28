@@ -1,6 +1,11 @@
 import { ChevronLeft, ArrowRight, Check, Settings2 } from "lucide-react";
 import { PixelIcon } from "./PixelIcon";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
+import {
+  SelectionCard,
+  FutureSelectionCard,
+  OnePieceLogo,
+} from "./SelectionCard";
 import type { Screen } from "./navigation";
 import type { Profile } from "./client";
 
@@ -157,61 +162,47 @@ export function Explore(p: Props) {
       {screen === "mode" && (
         <>
           <div className="page-heading">
-            <span className="eyebrow">LES MODES DE JEU</span>
             <h1>Choisis ton mode</h1>
           </div>
-          <button
-            className="mode-card"
-            onClick={() => navigate("classique")}
-            aria-label="Classique, duel 1 contre 1"
+          <div
+            className="selection-grid"
+            role="group"
+            aria-label="Modes de jeu"
           >
-            <div className="mode-art" aria-hidden="true">
-              <div className="mode-ring" />
-              <PixelIcon name="swords" size={82} />
-              <span className="mode-mark left">✦</span>
-              <span className="mode-mark right">✦</span>
-            </div>
-            <div className="mode-card-body">
-              <span className="eyebrow">1 CONTRE 1</span>
-              <h2>Classique</h2>
-              <p>Un duel entre amis, sur le thème de votre choix.</p>
-              <div className="mode-card-bottom">
-                <span>10 questions · 20 s par question</span>
-                <ArrowRight size={20} />
-              </div>
-            </div>
-          </button>
-          <p className="selection-note">
-            Même question. Même temps. À vous de jouer.
-          </p>
+            <SelectionCard
+              label="Classique"
+              accessibleLabel="Classique, duel 1 contre 1"
+              onClick={() => navigate("classique")}
+            >
+              <img
+                src="/art/classic-swords.png"
+                width="64"
+                height="64"
+                alt=""
+              />
+            </SelectionCard>
+            <FutureSelectionCard />
+          </div>
         </>
       )}
       {screen === "classique" && (
         <>
           <div className="page-heading">
-            <span className="eyebrow">CLASSIQUE · 1 CONTRE 1</span>
             <h1>Choisis ton thème</h1>
           </div>
-          <button
-            className="island-card"
-            aria-label="One Piece"
-            onClick={() => navigate("one-piece")}
+          <div
+            className="selection-grid"
+            role="group"
+            aria-label="Thèmes disponibles"
           >
-            <img
-              src="/art/one-piece-island.webp"
-              width="800"
-              height="600"
-              alt="Île en pixel art avec un phare, entourée d’une mer vert sauge"
-            />
-            <div className="island-caption">
-              <span className="eyebrow">GRAND LINE</span>
-              <h2>One Piece</h2>
-              <span>
-                Explorer ce thème
-                <ArrowRight size={17} />
-              </span>
-            </div>
-          </button>
+            <SelectionCard
+              label="One Piece"
+              onClick={() => navigate("one-piece")}
+            >
+              <OnePieceLogo />
+            </SelectionCard>
+            <FutureSelectionCard />
+          </div>
         </>
       )}
       {screen === "one-piece" && (
@@ -220,13 +211,8 @@ export function Explore(p: Props) {
             <span className="eyebrow">CLASSIQUE · 1 CONTRE 1</span>
             <h1>One Piece</h1>
           </div>
-          <div className="duel-theme-art">
-            <img
-              src="/art/one-piece-island.webp"
-              width="800"
-              height="600"
-              alt="L’île et le phare du thème One Piece"
-            />
+          <div className="duel-theme-logo">
+            <OnePieceLogo />
           </div>
           <div className="duel-rules">
             <span>

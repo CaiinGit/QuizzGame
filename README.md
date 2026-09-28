@@ -11,6 +11,7 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 - Barre du bas : **Classement · Accueil · Thèmes · Boutique**, icônes pixel en relief et fond identique au bandeau joueur ; masquée dans les salons et duels. Classement et Boutique affichent « À venir ».
 - Profil accessible par la photo du bandeau ; changement de photo depuis la page Profil.
 - Grand bouton **JOUER** au pied du portail, vert en clair et bleu en sombre : ouvre la sélection des modes. L’onglet **Thèmes** ouvre directement la sélection des thèmes, avec One Piece.
+- Modes et thèmes : grille de deux colonnes, cases compactes en relief avec logo au-dessus du nom, vertes en clair et bleues en sombre. Classique reprend l’image d’épées fournie ; One Piece utilise un repère « OP » provisoire en attendant son logo. Les cases « À venir » sont désactivées. L’ancienne illustration d’île n’est plus affichée.
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris vides au-dessus du portail (fonctionnalités à venir).
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.

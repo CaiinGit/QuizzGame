@@ -9,6 +9,7 @@ import "./player-header.css";
 import "./home-shortcuts.css";
 import "./bottom-navigation.css";
 import "./typography.css";
+import "./selection-cards.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

@@ -1,0 +1,101 @@
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.selection-card {
+  --tile-face: var(--green);
+  --tile-light: #79b58b;
+  --tile-edge: #183c2b;
+  --tile-shadow: #10291f;
+  height: clamp(140px, 42vw, 180px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 20px 10px;
+  color: var(--cream);
+}
+.selection-logo,
+.selection-logo > img,
+.selection-logo > svg {
+  display: block;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+.selection-logo > img {
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.selection-name {
+  font-family: var(--font-arcade);
+  font-weight: 400;
+  font-size: 26px;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+.selection-card-future {
+  --tile-face: #d8cfba;
+  --tile-light: #f7f0dc;
+  --tile-edge: #afa791;
+  --tile-shadow: #847d6d;
+  color: #787364;
+}
+.selection-card-future:disabled {
+  opacity: 1;
+}
+.selection-card-future:hover {
+  filter: drop-shadow(0 3px 0 #10142645);
+}
+.selection-card-future:active {
+  transform: none;
+}
+[data-theme="dark"] .selection-card {
+  --tile-light: #d9e5ff;
+  --tile-edge: #6e87bc;
+  --tile-shadow: #45587f;
+}
+[data-theme="dark"] .selection-card-future {
+  --tile-face: #454545;
+  --tile-light: #737373;
+  --tile-edge: #3a3a3a;
+  --tile-shadow: #222;
+  color: #a7a7a7;
+}
+.screen-mode .page-heading h1,
+.screen-classique .page-heading h1 {
+  text-transform: uppercase;
+  font-size: clamp(36px, 11.5vw, 46px);
+  letter-spacing: 0;
+  margin-top: 0;
+}
+.theme-logo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 2px dashed currentColor;
+  font: 36px/1 var(--font-arcade);
+  opacity: 0.8;
+}
+.duel-theme-logo {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 24px;
+}
+@media (max-width: 350px) {
+  .selection-grid {
+    gap: 12px;
+  }
+  .selection-card {
+    gap: 12px;
+    padding: 18px 8px;
+  }
+  .selection-name {
+    font-size: 24px;
+  }
+}

@@ -57,17 +57,15 @@ test("theme is in settings, follows navigation and survives reload", async ({
     .getByRole("button", { name: "Accueil", exact: true })
     .click();
   await page.getByRole("button", { name: "Jouer", exact: true }).click();
-  await expect(page.locator(".mode-card")).toHaveCSS(
-    "background-color",
-    "rgb(48, 48, 48)",
-  );
+  await expect(
+    page.getByRole("button", { name: "Classique, duel 1 contre 1" }),
+  ).toHaveCSS("--tile-face", "#92aae1");
   await page
     .getByRole("button", { name: "Classique, duel 1 contre 1" })
     .click();
-  await expect(page.locator(".island-caption")).toHaveCSS(
-    "background-color",
-    "rgb(48, 48, 48)",
-  );
+  await expect(
+    page.getByRole("button", { name: "One Piece", exact: true }),
+  ).toHaveCSS("--tile-face", "#92aae1");
   await page.getByRole("button", { name: "One Piece", exact: true }).click();
   await page
     .getByRole("button", { name: "Créer un duel", exact: true })
