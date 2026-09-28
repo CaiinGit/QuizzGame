@@ -2,7 +2,9 @@
 
 Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
-## Version 0.3
+## Version 0.4
+
+APK 0.4.0 (code Android 4) : nouveau cadre de portrait blanc/cyan en pixel art, interfaces actualisées, Classique Solo, points selon le temps de réponse et chrono fluide. Le serveur doit également être à jour pour le Solo et le nouveau barème.
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
 - Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers et mémorisée sur l’appareil. Les photos sont recadrées au centre et réduites à 320 × 320, sans envoi au serveur.

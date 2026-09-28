@@ -50,10 +50,10 @@
 }
 .portrait-content {
   position: absolute;
-  inset: 15.625%;
+  inset: 14.0625%;
   display: grid;
   place-items: center;
-  background: var(--cream);
+  background: #bfeaf5;
   color: var(--green);
   overflow: hidden;
 }

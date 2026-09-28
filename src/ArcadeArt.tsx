@@ -208,7 +208,7 @@ export function ArcadeIcon({ name }: { name: ArcadeIconName }) {
 }
 
 export function PortraitFrame({ children }: { children: ReactNode }) {
-  const opening = "M12 10H52V12H54V52H52V54H12V52H10V12H12Z";
+  const opening = "M12 9H52V12H55V52H52V55H12V52H9V12H12Z";
   return (
     <span className="portrait-frame">
       <span className="portrait-content">{children}</span>
@@ -221,26 +221,27 @@ export function PortraitFrame({ children }: { children: ReactNode }) {
         <path
           fill={ink}
           fillRule="evenodd"
-          d={`M8 0H56V2H60V6H62V10H64V54H62V58H58V62H54V64H10V62H6V60H2V56H0V10H2V6H6V2H8Z ${opening}`}
+          d={`M7 0H57V3H61V7H64V57H61V61H57V64H7V61H3V57H0V7H3V3H7Z ${opening}`}
         />
         <path
-          fill="#728aab"
+          fill="#7894b3"
           fillRule="evenodd"
-          d={`M10 3H54V5H58V9H61V54H58V58H54V61H10V58H6V54H3V10H5V6H10Z ${opening}`}
+          d={`M8 3H56V6H60V9H61V56H58V60H55V61H9V58H6V55H3V9H6V6H8Z ${opening}`}
         />
         <path
-          fill="#e9f7ff"
+          fill="#edfaff"
           fillRule="evenodd"
-          d={`M10 3H54V5H58V9H60V53H57V57H53V60H11V57H7V53H4V11H6V7H10Z ${opening}`}
+          d={`M8 3H55V6H58V9H60V55H57V58H54V60H9V57H6V54H3V9H6V6H8Z ${opening}`}
         />
         <path
           fill="#fff"
-          d="M10 3H54V5H57V8H54V6H11V8H8V12H6V52H4V11H6V7H10Z"
+          d="M8 3H55V6H9V9H6V54H3V9H6V6H8Z"
         />
-        <path fill="#b5d8ec" d="M11 8H53V10H12V12H10V52H8V12H10V10h1Z" />
-        <path fill="#7dbbd9" d="M12 10H52V12H14V14H12V52H10V12H12Z" />
-        <path fill="#fff" d="M54 12h2v40h-2v3h-3v1H12v-2h40v-2h2Z" />
-        <path fill="#bbd2e5" d="M58 12h2v41h-3v4h-4v3H12v-2h40v-3h3v-3h3Z" />
+        <path fill="#bfeaf5" d="M11 6H53V9H12V12H9V52H6V11H9V9h2Z" />
+        <path fill="#80cbe6" d="M12 9H52V11H13V13H11V52H9V12H12Z" />
+        <path fill="#fff" d="M55 12h3v41h-3v3h-3v2H12v-3h40v-3h3Z" />
+        <path fill="#c8e2ef" d="M58 12h2v43h-3v3h-3v2H12v-2h42v-3h3v-3h1Z" />
+        <path fill="#fff" d="M6 12h2v9H6Zm6 45h7v2h-7Z" />
       </svg>
     </span>
   );

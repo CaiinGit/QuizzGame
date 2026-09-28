@@ -2,6 +2,8 @@
 
 ## Typographie et pictogrammes de l’interface
 
+Le cadre de portrait a été redessiné le 28 septembre 2026 d’après la référence fournie : silhouette carrée à coins en escalier, contour bleu nuit épais, face blanche et biseau intérieur cyan. Le même SVG encadre la photo personnelle dans le bandeau, le profil et l’éditeur, dans les deux thèmes. Le personnage de la référence n’est pas intégré à la photo.
+
 Les cases de sélection des modes et des thèmes reprennent la maquette validée : logo puis nom, bordure pixel en relief et deux colonnes. `public/art/classic-swords.png` est l’image d’épées originale fournie par l’utilisateur, copiée sans modification. Le thème One Piece utilise temporairement les initiales « OP » dans un cadre en pointillés, en attendant son logo. L’ancienne île est conservée comme archive, mais n’est plus utilisée dans l’interface.
 
 Le symbole Play utilise `public/art/play-light.png`, fichier PNG original fourni par l’utilisateur le 27 septembre 2026, copié sans modification. Un cadrage SVG retire uniquement les marges transparentes à l’affichage. Le mode clair conserve ses couleurs originales ; le mode sombre utilise le même dessin avec un filtre CSS gris anthracite, cohérent avec le texte sur le bouton bleu. Le fichier source reste intact dans les deux modes.
