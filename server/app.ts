@@ -33,12 +33,28 @@ export async function createApp(
   await repository.init();
   const rooms = new Map((await repository.rooms()).map((r) => [r.code, r]));
   const times = options.times ?? durations;
-  for (const room of rooms.values())
+  for (const room of rooms.values()) {
+    // Older saved rooms predate solo and timing metadata. Preserve accepted
+    // answers with full credit when their original receipt time is unknown.
+    room.mode ??= "duel";
+    room.phaseDuration ??=
+      room.phase === "lobby"
+        ? times.lobby
+        : room.phase === "countdown"
+          ? times.countdown
+          : room.phase === "question"
+            ? times.question
+            : times.reveal;
+    room.phaseStartedAt ??= room.deadline - room.phaseDuration;
+    room.answerTimes ??= Object.fromEntries(
+      Object.keys(room.answers).map((id) => [id, room.phaseStartedAt]),
+    );
     if (room.phase === "lobby") {
       room.players.forEach((p) => (p.ready = false));
       room.revision++;
       await repository.save(room);
     }
+  }
   const app = express();
   app.disable("x-powered-by");
   app.set("trust proxy", process.env.TRUST_PROXY === "1" ? 1 : false);
@@ -205,14 +221,15 @@ export async function createApp(
     });
     const command = (
       name: string,
-      handler: (data: unknown) => Promise<unknown>,
+      handler: (data: unknown, receivedAt: number) => Promise<unknown>,
     ) =>
       socket.on(name, (data: unknown, ack: unknown) => {
         if (typeof ack !== "function") return;
+        const receivedAt = Date.now();
         void serial(async () => {
           if (!allow(`event:${player.id}`, 80))
             throw new Error("Trop de demandes. Patiente quelques secondes.");
-          return handler(data);
+          return handler(data, receivedAt);
         })
           .then((result) =>
             (ack as (r: Ack<unknown>) => void)({ ok: true, data: result }),
@@ -227,18 +244,21 @@ export async function createApp(
             (ack as (r: Ack<unknown>) => void)({ ok: false, error: message });
           });
       });
-    const mutate = async (fn: (room: Room) => void) => {
+    const mutate = async (fn: (room: Room) => void, now = Date.now()) => {
       const current = rooms.get(socket.data.room);
       if (!current) throw new Error("Aucun duel actif.");
       const draft = structuredClone(current);
-      tick(draft, Date.now(), times);
+      tick(draft, now, times);
       // Persist an expired round even when the requested action is rejected.
       if (draft.revision !== current.revision) await persist(draft);
       const updated = structuredClone(draft);
       fn(updated);
       if (updated.revision !== draft.revision) await persist(updated);
     };
-    command("room:create", async () => {
+    command("room:create", async (data) => {
+      const { mode } = z
+        .object({ mode: z.enum(["duel", "solo"]).default("duel") })
+        .parse(data);
       const existing = active(player.id);
       if (existing) {
         socket.data.room = existing.code;
@@ -255,7 +275,7 @@ export async function createApp(
           () => alphabet[randomInt(alphabet.length)],
         ).join("");
       } while (rooms.has(code));
-      const room = newRoom(code, player, Date.now(), times);
+      const room = newRoom(code, player, Date.now(), times, mode);
       await repository.save(room);
       rooms.set(code, room);
       socket.data.room = code;
@@ -289,25 +309,27 @@ export async function createApp(
       socket.data.room = code;
       emit(room);
     });
-    command("room:ready", async () =>
+    command("room:ready", async (_data, receivedAt) =>
       mutate((room) => {
         if (
-          room.players.length !== 2 ||
+          room.players.length !== (room.mode === "solo" ? 1 : 2) ||
           !room.players.every((p) => online().has(p.id))
         )
           throw new Error("Attends que vous soyez tous les deux connectés.");
         ready(room, player.id, Date.now(), times);
-      }),
+      }, receivedAt),
     );
-    command("room:answer", async (data) => {
+    command("room:answer", async (data, receivedAt) => {
       const input = z
         .object({
           round: z.number().int().min(1).max(10),
           choice: z.number().int().min(0).max(3),
         })
         .parse(data);
-      await mutate((room) =>
-        answer(room, player.id, input.round, input.choice, Date.now(), times),
+      await mutate(
+        (room) =>
+          answer(room, player.id, input.round, input.choice, receivedAt, times),
+        receivedAt,
       );
     });
     command("room:leave", async () => {
@@ -336,11 +358,18 @@ export async function createApp(
     () => {
       if (ticking) return;
       ticking = true;
+      const scheduledAt = Date.now();
       void serial(async () => {
         for (const current of rooms.values()) {
-          if (!isLive(current) || Date.now() < current.deadline) continue;
+          // Don't expire a question ahead of answers already received while
+          // this timer job was waiting for persistence in the queue.
+          if (!isLive(current) || scheduledAt < current.deadline) continue;
           const room = structuredClone(current);
-          tick(room, Date.now(), times);
+          tick(
+            room,
+            room.phase === "question" ? scheduledAt : Date.now(),
+            times,
+          );
           if (room.revision !== current.revision) await persist(room);
         }
         for (const [key, entry] of limits)

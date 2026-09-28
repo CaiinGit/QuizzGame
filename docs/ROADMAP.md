@@ -1,12 +1,14 @@
 # Akasha — feuille de route
 
-## Périmètre actuel : 1v1 One Piece
+## Périmètre actuel : Classique en duel et Solo, One Piece
 
 Décision du 25 septembre 2026 : Akasha remplace le nom de travail QuizzGame. Palette beige/verte, emblème réservé à l’icône du téléphone. Une seule fonctionnalité mise en avant : le duel entre amis sur One Piece.
 
 La version 0.2 fournit les salons, invitations, readiness, dix questions communes, chronomètre serveur, correction, scores, abandon et reprise. Les anciennes expéditions, défis quotidiens, survie, monnaies et progressions ne font plus partie du parcours actuel.
 
-La version 0.3 ajoute l’accueil fantasy pixel avec portail frontal isolé et la navigation **Accueil · Mode · Profil**. Le parcours du duel devient **Classique → One Piece → Créer un duel**. Les personnages sont reportés ; aucun nouveau mode ni thème n’est ajouté.
+La version 0.3 ajoute l’accueil fantasy pixel avec portail frontal isolé. La navigation est désormais **Classement · Accueil · Thèmes · Boutique**, le profil s’ouvre via la photo du bandeau et **JOUER** ouvre les modes. Les cases compactes affichent leur logo puis leur nom.
+
+Décision du 28 septembre 2026 : ajout d’une case **Solo** pour tester le Classique sans second joueur. Le serveur utilise les mêmes questions et le même barème dans les deux parcours. Une bonne réponse rapporte jusqu’à 1 000 points, diminuant linéairement jusqu’à l’échéance ; le chrono affiche une progression fluide. Les personnages et autres thèmes restent reportés.
 
 ## Prochaine étape : test entre amis
 

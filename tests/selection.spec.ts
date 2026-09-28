@@ -14,11 +14,18 @@ test("compact mode and theme tiles fit phones in both palettes and keep the duel
     }
     for (const screen of ["mode", "classique"]) {
       await page.goto(`/#${screen}`);
-      const tile = page.locator(".selection-card:not(:disabled)");
-      await expect(tile).toHaveCount(1);
-      await expect(
-        page.getByRole("button", { name: "À venir", exact: true }),
-      ).toBeDisabled();
+      const tile = page.locator(".selection-card:not(:disabled)").first();
+      await expect(page.locator(".selection-card:not(:disabled)")).toHaveCount(
+        screen === "mode" ? 2 : 1,
+      );
+      if (screen === "mode")
+        await expect(
+          page.getByRole("button", { name: "Solo", exact: true }),
+        ).toBeEnabled();
+      else
+        await expect(
+          page.getByRole("button", { name: "À venir", exact: true }),
+        ).toBeDisabled();
       await expect(tile).toHaveCSS("--tile-face", dark ? "#92aae1" : "#234836");
       await expect(page.locator('img[src*="one-piece-island"]')).toHaveCount(0);
       if (screen === "mode") {
@@ -42,7 +49,8 @@ test("compact mode and theme tiles fit phones in both palettes and keep the duel
         const logo = (await tile.locator(".selection-logo").boundingBox())!;
         const label = (await tile.locator(".selection-name").boundingBox())!;
         const locked = (await page
-          .locator(".selection-card-future")
+          .locator(".selection-card")
+          .nth(1)
           .boundingBox())!;
         const nav = (await page.getByRole("navigation").boundingBox())!;
         expect(card.height).toBeLessThanOrEqual(180);

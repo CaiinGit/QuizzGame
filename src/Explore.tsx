@@ -22,6 +22,7 @@ type Props = {
   code: string;
   setCode: (code: string) => void;
   create: () => void;
+  solo: () => void;
   join: () => void;
   chooseName: () => void;
   settings: () => void;
@@ -33,8 +34,11 @@ export function BottomNavigation({
   screen: Screen;
   navigate: (screen: Screen) => void;
 }) {
-  const active =
-    screen === "one-piece" || screen === "rejoindre" ? "classique" : screen;
+  const active = ["one-piece", "rejoindre", "solo", "solo-one-piece"].includes(
+    screen,
+  )
+    ? "classique"
+    : screen;
   const items = [
     { screen: "classement", label: "Classement", icon: "podium" },
     { screen: "accueil", label: "Accueil", icon: "home" },
@@ -181,13 +185,22 @@ export function Explore(p: Props) {
                 alt=""
               />
             </SelectionCard>
-            <FutureSelectionCard />
+            <SelectionCard
+              label="Solo"
+              accessibleLabel="Solo"
+              onClick={() => navigate("solo")}
+            >
+              <PixelIcon name="profile" size={64} />
+            </SelectionCard>
           </div>
         </>
       )}
-      {screen === "classique" && (
+      {(screen === "classique" || screen === "solo") && (
         <>
           <div className="page-heading">
+            {screen === "solo" && (
+              <span className="eyebrow">CLASSIQUE · SOLO</span>
+            )}
             <h1>Choisis ton thème</h1>
           </div>
           <div
@@ -197,7 +210,9 @@ export function Explore(p: Props) {
           >
             <SelectionCard
               label="One Piece"
-              onClick={() => navigate("one-piece")}
+              onClick={() =>
+                navigate(screen === "solo" ? "solo-one-piece" : "one-piece")
+              }
             >
               <OnePieceLogo />
             </SelectionCard>
@@ -205,10 +220,12 @@ export function Explore(p: Props) {
           </div>
         </>
       )}
-      {screen === "one-piece" && (
+      {(screen === "one-piece" || screen === "solo-one-piece") && (
         <>
           <div className="page-heading">
-            <span className="eyebrow">CLASSIQUE · 1 CONTRE 1</span>
+            <span className="eyebrow">
+              CLASSIQUE · {screen === "solo-one-piece" ? "SOLO" : "1 CONTRE 1"}
+            </span>
             <h1>One Piece</h1>
           </div>
           <div className="duel-theme-logo">
@@ -222,25 +239,30 @@ export function Explore(p: Props) {
               <b>20 s</b> par question
             </span>
             <span>
-              <b>1 000</b> points par bonne réponse
+              Jusqu’à <b>1 000</b> points par bonne réponse · moins tu attends,
+              plus tu marques
             </span>
           </div>
           <div className="theme-actions">
             <button
               className="button primary arcade-button"
               disabled={busy}
-              onClick={p.create}
+              onClick={screen === "solo-one-piece" ? p.solo : p.create}
             >
               <PixelIcon name="swords" />
-              Créer un duel
+              {screen === "solo-one-piece"
+                ? "Commencer en solo"
+                : "Créer un duel"}
             </button>
-            <button
-              className="button secondary arcade-button"
-              onClick={() => navigate("rejoindre")}
-            >
-              <PixelIcon name="ticket" />
-              Rejoindre un ami
-            </button>
+            {screen !== "solo-one-piece" && (
+              <button
+                className="button secondary arcade-button"
+                onClick={() => navigate("rejoindre")}
+              >
+                <PixelIcon name="ticket" />
+                Rejoindre un ami
+              </button>
+            )}
           </div>
           {profile?.credentials && (
             <p className="player-connection">

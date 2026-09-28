@@ -68,10 +68,14 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       await q.locator(".answer").first().click();
     }
     await expect(
-      p.getByRole("heading", { name: "Égalité parfaite" }),
+      p.getByRole("heading", {
+        name: /Victoire !|Bien joué !|Égalité parfaite/,
+      }),
     ).toBeVisible();
     await expect(
-      q.getByRole("heading", { name: "Égalité parfaite" }),
+      q.getByRole("heading", {
+        name: /Victoire !|Bien joué !|Égalité parfaite/,
+      }),
     ).toBeVisible();
     await p.getByRole("button", { name: "Retour à l’accueil" }).click();
     await expect(

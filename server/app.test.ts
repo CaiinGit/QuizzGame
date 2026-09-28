@@ -122,21 +122,58 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     const reconnect = await client(ca);
     await waitFor(() => !!reconnect.state()?.submitted);
     assert.equal(reconnect.state()!.code, code);
+    await pause(120);
     await request(b.s, "room:answer", { round: 1, choice: correct });
     await waitFor(() => reconnect.state()?.phase === "reveal");
-    assert.equal(reconnect.state()!.players[0].score, 1000);
+    const earned = reconnect.state()!.players[0].score;
+    assert.ok(earned > 0 && earned <= 1000);
+    assert.equal(reconnect.state()!.correction!.answers[ca.id].points, earned);
+    assert.ok(reconnect.state()!.correction!.answers[cb.id].points < earned);
     clients.forEach((s) => s.disconnect());
     await server!.close();
     server = undefined;
     base = await start();
     const restored = await client(ca);
     await waitFor(() => restored.state()?.code === code);
-    assert.equal(restored.state()!.players[0].score, 1000);
+    assert.equal(restored.state()!.players[0].score, earned);
     assert.equal(restored.state()!.phase, "reveal");
     await request(restored.s, "room:leave");
     const other = await client(cb);
     await waitFor(() => other.state()?.phase === "finished");
     assert.equal(other.state()!.winnerId, cb.id);
+    await assert.rejects(
+      request(restored.s, "room:create", { mode: "invalid" }),
+    );
+    await request(restored.s, "room:create", { mode: "solo" });
+    await waitFor(
+      () =>
+        restored.state()?.mode === "solo" &&
+        restored.state()?.phase === "question",
+    );
+    const soloCode = restored.state()!.code;
+    assert.equal(restored.state()!.players.length, 1);
+    assert.equal(restored.state()!.correction, null);
+    assert.equal(Object.hasOwn(restored.state()!, "answerTimes"), false);
+    await request(restored.s, "room:create", { mode: "solo" });
+    assert.equal(restored.state()!.code, soloCode);
+    await assert.rejects(
+      request(other.s, "room:join", { code: soloCode }),
+      /solo/,
+    );
+    await pause(120);
+    const soloCorrect = server!.rooms.get(soloCode)!.questions[0].correct;
+    await request(restored.s, "room:answer", {
+      round: 1,
+      choice: soloCorrect,
+      answeredAt: 0,
+      points: 1000,
+    });
+    await waitFor(() => restored.state()?.phase === "reveal");
+    const soloPoints = restored.state()!.correction!.answers[ca.id].points;
+    assert.ok(soloPoints > 0 && soloPoints < 1000);
+    assert.equal(restored.state()!.players[0].score, soloPoints);
+    await request(restored.s, "room:leave");
+    await waitFor(() => restored.state() === null);
     const expired = io(base, {
       auth: { token: "a".repeat(64) },
       reconnection: false,

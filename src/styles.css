@@ -600,7 +600,18 @@ svg {
 .time-track div {
   height: 100%;
   background: #809b67;
-  transition: width 0.2s;
+  width: 100%;
+  transform-origin: left;
+  will-change: transform;
+}
+.players.players-solo {
+  grid-template-columns: 1fr;
+}
+.question-points {
+  margin: -14px 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 .question-title {
   font-size: 29px;

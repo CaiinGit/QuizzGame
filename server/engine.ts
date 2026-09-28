@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
-import type { Phase, RoomView } from "../shared/protocol";
+import type { Phase, RoomView, GameMode } from "../shared/protocol";
+import { pointsForTime } from "../shared/scoring";
 import { questions, type Question } from "./questions";
 export type Player = {
   id: string;
@@ -8,15 +9,19 @@ export type Player = {
   score: number;
 };
 export type Room = {
+  mode: GameMode;
   code: string;
   phase: Phase;
   revision: number;
   createdAt: number;
   deadline: number;
+  phaseStartedAt: number;
+  phaseDuration: number;
   index: number;
   players: Player[];
   questions: Question[];
   answers: Record<string, number>;
+  answerTimes: Record<string, number>;
   dismissed: string[];
   correction: RoomView["correction"];
   winnerId: string | null;
@@ -48,6 +53,7 @@ export function newRoom(
   player: { id: string; name: string },
   now: number,
   times = durations,
+  mode: GameMode = "duel",
 ): Room {
   const picked = shuffle(questions)
     .slice(0, 10)
@@ -60,15 +66,19 @@ export function newRoom(
       };
     });
   return {
+    mode,
     code,
-    phase: "lobby",
+    phase: mode === "solo" ? "countdown" : "lobby",
     revision: 1,
     createdAt: now,
-    deadline: now + times.lobby,
+    deadline: now + (mode === "solo" ? times.countdown : times.lobby),
+    phaseStartedAt: now,
+    phaseDuration: mode === "solo" ? times.countdown : times.lobby,
     index: 0,
-    players: [{ ...player, ready: false, score: 0 }],
+    players: [{ ...player, ready: mode === "solo", score: 0 }],
     questions: picked,
     answers: {},
+    answerTimes: {},
     dismissed: [],
     correction: null,
     winnerId: null,
@@ -76,6 +86,8 @@ export function newRoom(
   };
 }
 export function join(room: Room, player: { id: string; name: string }) {
+  if (room.mode === "solo")
+    throw new Error("Cette partie est réservée au jeu solo.");
   if (room.players.some((p) => p.id === player.id)) return;
   if (room.phase !== "lobby" || room.players.length >= 2)
     throw new Error("Ce salon est déjà complet ou la partie a commencé.");
@@ -94,23 +106,34 @@ export function ready(
   if (!player) throw new Error("Tu ne fais pas partie de ce duel.");
   player.ready = true;
   room.revision++;
-  if (room.players.length === 2 && room.players.every((p) => p.ready)) {
-    room.phase = "countdown";
-    room.deadline = now + times.countdown;
+  if (
+    room.players.length === (room.mode === "solo" ? 1 : 2) &&
+    room.players.every((p) => p.ready)
+  ) {
+    startPhase(room, "countdown", now, times.countdown);
   }
+}
+function startPhase(room: Room, phase: Phase, now: number, duration: number) {
+  room.phase = phase;
+  room.phaseStartedAt = now;
+  room.phaseDuration = duration;
+  room.deadline = now + duration;
 }
 function reveal(room: Room, now: number, times: Durations) {
   const q = room.questions[room.index];
   const answers: NonNullable<RoomView["correction"]>["answers"] = {};
   for (const p of room.players) {
     const choice = room.answers[p.id] ?? null;
-    const points = choice === q.correct ? 1000 : 0;
+    const answeredAt = room.answerTimes[p.id];
+    const points =
+      choice === q.correct && answeredAt !== undefined
+        ? pointsForTime(answeredAt - room.phaseStartedAt, room.phaseDuration)
+        : 0;
     p.score += points;
     answers[p.id] = { choice, points };
   }
   room.correction = { correct: q.correct, explanation: q.explanation, answers };
-  room.phase = "reveal";
-  room.deadline = now + times.reveal;
+  startPhase(room, "reveal", now, times.reveal);
   room.revision++;
 }
 export function tick(room: Room, now: number, times = durations) {
@@ -122,21 +145,20 @@ export function tick(room: Room, now: number, times = durations) {
     reveal(room, now, times);
     return;
   } else if (room.phase === "countdown") {
-    room.phase = "question";
-    room.deadline = now + times.question;
+    startPhase(room, "question", now, times.question);
   } else if (room.phase === "reveal") {
     if (room.index === room.questions.length - 1) {
       room.phase = "finished";
       room.reason = "completed";
       const [a, b] = room.players;
       room.winnerId =
-        a.score === b.score ? null : a.score > b.score ? a.id : b.id;
+        !b || a.score === b.score ? null : a.score > b.score ? a.id : b.id;
     } else {
       room.index++;
       room.answers = {};
+      room.answerTimes = {};
       room.correction = null;
-      room.phase = "question";
-      room.deadline = now + times.question;
+      startPhase(room, "question", now, times.question);
     }
   }
   room.revision++;
@@ -161,6 +183,7 @@ export function answer(
     throw new Error("Réponse invalide.");
   if (Object.hasOwn(room.answers, playerId)) return;
   room.answers[playerId] = choice;
+  room.answerTimes[playerId] = now;
   room.revision++;
   if (room.players.every((p) => Object.hasOwn(room.answers, p.id)))
     reveal(room, now, times);
@@ -192,11 +215,14 @@ export function view(
   const show = room.phase === "question" || room.phase === "reveal";
   const q = room.questions[room.index];
   return {
+    mode: room.mode,
     code: room.code,
     phase: room.phase,
     revision: room.revision,
     serverNow: now,
     deadline: room.deadline,
+    phaseStartedAt: room.phaseStartedAt,
+    phaseDuration: room.phaseDuration,
     round: room.index + 1,
     total: room.questions.length,
     hostId: room.players[0].id,

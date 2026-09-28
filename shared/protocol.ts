@@ -1,5 +1,6 @@
 export type Phase =
   "lobby" | "countdown" | "question" | "reveal" | "finished" | "cancelled";
+export type GameMode = "duel" | "solo";
 export type PublicPlayer = {
   id: string;
   name: string;
@@ -9,11 +10,14 @@ export type PublicPlayer = {
   answered: boolean;
 };
 export type RoomView = {
+  mode: GameMode;
   code: string;
   phase: Phase;
   revision: number;
   serverNow: number;
   deadline: number;
+  phaseStartedAt: number;
+  phaseDuration: number;
   round: number;
   total: number;
   hostId: string;

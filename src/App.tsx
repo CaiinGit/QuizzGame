@@ -30,8 +30,10 @@ import {
   type HeaderPanel,
 } from "./PlayerHeader";
 import { useAvatar } from "./avatar";
+import { TimeBar } from "./TimeBar";
+import { pointsForTime } from "../shared/scoring";
 type Intent =
-  | { event: "room:create"; data: Record<string, never> }
+  | { event: "room:create"; data: { mode?: "duel" | "solo" } }
   | { event: "room:join"; data: { code: string } };
 import type { RoomView } from "../shared/protocol";
 
@@ -84,6 +86,7 @@ export default function App() {
     [now, setNow] = useState(Date.now());
   const socket = useRef<DuelSocket | null>(null),
     offset = useRef(0),
+    clockSynced = useRef(false),
     pending = useRef(false);
   useEffect(() => {
     setIntent(null);
@@ -117,6 +120,7 @@ export default function App() {
   useEffect(() => {
     if (!profile?.credentials) return;
     setSynced(false);
+    clockSynced.current = false;
     const s = connect(profile);
     socket.current = s;
     let disposed = false;
@@ -125,6 +129,7 @@ export default function App() {
       try {
         const result = await command<{ serverNow: number }>(s, "sync");
         offset.current = result.serverNow - (sent + Date.now()) / 2;
+        clockSynced.current = true;
       } catch {
         /* Automatic reconnect will retry. */
       }
@@ -157,7 +162,9 @@ export default function App() {
         );
     });
     s.on("room:state", (state: RoomView | null) => {
-      offset.current = state ? state.serverNow - Date.now() : offset.current;
+      // State packets must not reset the clock on every opponent answer.
+      if (state && !clockSynced.current)
+        offset.current = state.serverNow - Date.now();
       setRoom(state);
       setSynced(true);
       if (state) setIntent(null);
@@ -301,8 +308,18 @@ export default function App() {
     : 0;
   const ended = room?.phase === "finished" || room?.phase === "cancelled";
   const isQuestion = room?.phase === "question" || room?.phase === "reveal";
-  const result =
-    room?.phase === "cancelled"
+  const solo = room?.mode === "solo";
+  const availablePoints = room
+    ? pointsForTime(now - room.phaseStartedAt, room.phaseDuration)
+    : 0;
+  const myPoints = room?.correction?.answers[me?.id ?? ""]?.points ?? 0;
+  const opponentPoints =
+    room?.correction?.answers[opponent?.id ?? ""]?.points ?? 0;
+  const result = solo
+    ? room?.reason === "forfeit"
+      ? "Partie interrompue"
+      : "Partie terminée"
+    : room?.phase === "cancelled"
       ? "Salon fermé"
       : room?.winnerId === me?.id
         ? "Victoire !"
@@ -345,7 +362,7 @@ export default function App() {
         )}
         {room && !online && (
           <div className="notice" role="status">
-            <Wifi size={18} /> Reconnexion en cours… Le duel continue sur le
+            <Wifi size={18} /> Reconnexion en cours… La partie continue sur le
             serveur.
           </div>
         )}
@@ -367,6 +384,9 @@ export default function App() {
             code={code}
             setCode={setCode}
             create={() => requestAction({ event: "room:create", data: {} })}
+            solo={() =>
+              requestAction({ event: "room:create", data: { mode: "solo" } })
+            }
             join={() => requestAction({ event: "room:join", data: { code } })}
             chooseName={() => {
               setIntent(null);
@@ -387,7 +407,7 @@ export default function App() {
                 {ended ? "Accueil" : "Quitter"}
               </button>
               <span>
-                ONE PIECE <i> / </i> DUEL 1V1
+                ONE PIECE <i> / </i> {solo ? "CLASSIQUE SOLO" : "DUEL 1V1"}
               </span>
             </div>
             {room.phase === "lobby" && (
@@ -436,8 +456,11 @@ export default function App() {
                 </button>
               </>
             )}
-            <section className="players" aria-label="Joueurs et scores">
-              {[me, opponent].map((p, i) => (
+            <section
+              className={`players ${solo ? "players-solo" : ""}`}
+              aria-label="Joueurs et scores"
+            >
+              {(solo ? [me] : [me, opponent]).map((p, i) => (
                 <div className={`player ${i === 0 ? "you" : ""}`} key={i}>
                   <div className="avatar">
                     {i === 0 && p && avatar.photo ? (
@@ -475,7 +498,7 @@ export default function App() {
                   )}
                 </div>
               ))}
-              <span className="versus">VS</span>
+              {!solo && <span className="versus">VS</span>}
             </section>
             {room.phase === "lobby" && (
               <section className="lobby-bottom">
@@ -509,8 +532,8 @@ export default function App() {
                 </p>
                 <div className="rules">
                   <span>10 questions</span>
-                  <span>+1 000 par bonne réponse</span>
-                  <span>Aucun bonus de vitesse</span>
+                  <span>Jusqu’à 1 000 points par bonne réponse</span>
+                  <span>Les points diminuent avec le temps de réponse</span>
                 </div>
               </section>
             )}
@@ -518,7 +541,7 @@ export default function App() {
               <section className="countdown" role="status">
                 <span className="eyebrow">PRÊTS À PRENDRE LA MER ?</span>
                 <strong>{seconds || 1}</strong>
-                <p>Votre duel commence…</p>
+                <p>{solo ? "Ta partie commence…" : "Votre duel commence…"}</p>
               </section>
             )}
             {isQuestion && room.question && (
@@ -533,13 +556,18 @@ export default function App() {
                     {seconds} s
                   </span>
                 </div>
-                <div className="time-track">
-                  <div
-                    style={{
-                      width: `${Math.min(100, (seconds / (room.phase === "reveal" ? 4.5 : 20)) * 100)}%`,
-                    }}
-                  />
-                </div>
+                <TimeBar
+                  key={`${room.code}:${room.round}:${room.phase}`}
+                  deadline={room.deadline}
+                  duration={room.phaseDuration}
+                  offset={offset}
+                />
+                {room.phase === "question" && !room.submitted && (
+                  <p className="question-points">
+                    Bonne réponse : jusqu’à{" "}
+                    <b>{availablePoints.toLocaleString("fr-FR")}</b> pts
+                  </p>
+                )}
                 <h1 className="question-title">{room.question.text}</h1>
                 <div className="answers">
                   {room.question.choices.map((choice, i) => {
@@ -583,24 +611,28 @@ export default function App() {
                   {room.phase === "reveal" ? (
                     <>
                       <strong>
-                        {room.correction?.answers[me!.id]?.points
-                          ? "+1 000 points · Bien joué !"
+                        {myPoints
+                          ? `+${myPoints.toLocaleString("fr-FR")} points · Bien joué !`
                           : room.selected === null
                             ? "Temps écoulé"
                             : "La bonne réponse"}
                       </strong>
                       <p>{room.correction?.explanation}</p>
-                      <small>
-                        {opponent?.name} :{" "}
-                        {room.correction?.answers[opponent?.id ?? ""]?.points
-                          ? "+1 000 points"
-                          : "0 point"}
-                      </small>
+                      {!solo && (
+                        <small>
+                          {opponent?.name} :{" "}
+                          {opponentPoints
+                            ? `+${opponentPoints.toLocaleString("fr-FR")} points`
+                            : "0 point"}
+                        </small>
+                      )}
                     </>
                   ) : room.submitted ? (
                     <p>
                       <Check size={17} />
-                      Réponse envoyée. À ton ami de jouer…
+                      {solo
+                        ? "Réponse envoyée…"
+                        : "Réponse envoyée. À ton ami de jouer…"}
                     </p>
                   ) : (
                     <p>
@@ -618,23 +650,27 @@ export default function App() {
                   <Trophy size={42} strokeWidth={1.3} />
                 </div>
                 <span className="eyebrow">
-                  {room.reason === "forfeit"
-                    ? "DUEL INTERROMPU"
-                    : room.phase === "cancelled"
-                      ? "RENDEZ-VOUS TERMINÉ"
-                      : "LE VERDICT"}
+                  {solo
+                    ? "CLASSIQUE · SOLO"
+                    : room.reason === "forfeit"
+                      ? "DUEL INTERROMPU"
+                      : room.phase === "cancelled"
+                        ? "RENDEZ-VOUS TERMINÉ"
+                        : "LE VERDICT"}
                 </span>
                 <h1>{result}</h1>
                 <p>
-                  {room.reason === "expired"
-                    ? "Le salon a expiré. Un nouveau départ ?"
-                    : room.reason === "forfeit"
-                      ? "Un joueur a quitté le duel."
-                      : room.winnerId === me?.id
-                        ? "Tu connais le cap. À quand la revanche ?"
-                        : room.winnerId
-                          ? "La prochaine traversée sera peut-être la tienne."
-                          : "Vous connaissez Grand Line aussi bien l’un que l’autre."}
+                  {solo
+                    ? `Ton score : ${(me?.score ?? 0).toLocaleString("fr-FR")} points${room.reason === "completed" ? ` sur ${(room.total * 1000).toLocaleString("fr-FR")}` : ""}.`
+                    : room.reason === "expired"
+                      ? "Le salon a expiré. Un nouveau départ ?"
+                      : room.reason === "forfeit"
+                        ? "Un joueur a quitté le duel."
+                        : room.winnerId === me?.id
+                          ? "Tu connais le cap. À quand la revanche ?"
+                          : room.winnerId
+                            ? "La prochaine traversée sera peut-être la tienne."
+                            : "Vous connaissez Grand Line aussi bien l’un que l’autre."}
                 </p>
                 <button
                   className="button primary"
@@ -670,7 +706,7 @@ export default function App() {
             >
               <X />
             </button>
-            <span className="eyebrow">AVANT TON PREMIER DUEL</span>
+            <span className="eyebrow">AVANT TA PREMIÈRE PARTIE</span>
             <h2 id="identity-title">Choisis ton pseudo</h2>
             <form
               onSubmit={(e) => {
@@ -746,7 +782,7 @@ export default function App() {
                   required
                   disabled={!!room}
                 />
-                {room && <p>Quitte le duel avant de changer de serveur.</p>}
+                {room && <p>Quitte la partie avant de changer de serveur.</p>}
                 <button className="button primary" disabled={!!room || busy}>
                   Enregistrer
                 </button>
@@ -794,14 +830,20 @@ export default function App() {
             aria-labelledby="leave-title"
           >
             <h2 id="leave-title">
-              {ended ? "Revenir à l’accueil ?" : "Quitter le duel ?"}
+              {ended
+                ? "Revenir à l’accueil ?"
+                : solo
+                  ? "Quitter la partie ?"
+                  : "Quitter le duel ?"}
             </h2>
             <p>
-              {ended
-                ? "Tu pourras créer un nouveau salon."
-                : room?.phase === "lobby"
-                  ? "Le salon sera fermé pour vous deux."
-                  : "Ton ami remportera le duel par abandon."}
+              {solo
+                ? "Tu pourras recommencer une nouvelle partie solo."
+                : ended
+                  ? "Tu pourras créer un nouveau salon."
+                  : room?.phase === "lobby"
+                    ? "Le salon sera fermé pour vous deux."
+                    : "Ton ami remportera le duel par abandon."}
             </p>
             {error && (
               <div className="notice error" role="alert">
@@ -814,7 +856,11 @@ export default function App() {
               disabled={!online || busy}
               onClick={() => void leave()}
             >
-              {ended ? "Revenir à l’accueil" : "Quitter le duel"}
+              {ended
+                ? "Revenir à l’accueil"
+                : solo
+                  ? "Quitter la partie"
+                  : "Quitter le duel"}
             </button>
             <button
               className="button secondary"

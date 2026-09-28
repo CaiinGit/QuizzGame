@@ -1,6 +1,6 @@
 # Akasha · Android
 
-Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
+Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
 ## Version 0.3
 
@@ -14,18 +14,22 @@ Un quiz **1 contre 1 entre amis**, exclusivement sur **One Piece**. Interface be
 - Modes et thèmes : grille de deux colonnes, cases compactes en relief avec logo au-dessus du nom, vertes en clair et bleues en sombre. Classique reprend l’image d’épées fournie ; One Piece utilise un repère « OP » provisoire en attendant son logo. Les cases « À venir » sont désactivées. L’ancienne illustration d’île n’est plus affichée.
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris vides au-dessus du portail (fonctionnalités à venir).
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
+- Parcours individuel : **JOUER → Solo → One Piece → Commencer en solo**. Même moteur et même barème que le duel, démarrage sans adversaire, résultat individuel, reconnexion et abandon pris en charge. Le Solo nécessite lui aussi le serveur.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
 - Illustrations et provenance : [direction artistique](docs/ART.md).
 
 - Création d’un salon et invitation par code à six caractères.
-- Deux joueurs connectés, chacun confirme qu’il est prêt.
+- En duel, deux joueurs connectés confirment qu’ils sont prêts ; le Solo démarre directement son décompte.
 - Dix questions communes, réponses mélangées de façon identique, vingt secondes par question.
-- 1 000 points par bonne réponse, sans avantage lié à la vitesse du réseau.
+- Bonne réponse : score décroissant linéairement de 1 000 à 0 pendant le chrono (1 000 au départ, 750 à 5 s, 500 à 10 s, 250 à 15 s). Mauvaise réponse ou temps écoulé : 0. Le nombre de points réellement gagné est affiché à la correction.
+- Barre du chrono animée à chaque image à partir de l’échéance et de la durée envoyées par le serveur, y compris après reconnexion.
 - Corrections communes, scores et résultat calculés exclusivement par le serveur.
 - Reconnexion, sauvegarde des duels et reprise après redémarrage du serveur.
 - Abandon, égalité, salon complet ou expiré et erreurs de connexion gérés.
 
-La banque initiale contient dix questions One Piece. Les anciens modes solo, niveaux, pièces, succès et autres thèmes ont été retirés du parcours. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
+La banque initiale contient dix questions One Piece. Niveaux, pièces, succès et autres thèmes restent à venir. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
+
+Le score d’une bonne réponse est `ceil(1000 × temps restant / durée de la question)`, borné entre 0 et 1 000, avec au moins 1 point avant l’échéance. La date de réception est enregistrée par le serveur avant sa file de sauvegarde ; les dates et points envoyés par le client sont ignorés. La latence réseau compte donc dans le délai de réception. Deux réponses dans la même tranche d’un point peuvent donner le même score. Les doubles clics ne changent ni le premier choix ni son horodatage. Les anciennes réponses sauvegardées sans horodatage conservent leur ancien crédit ; les nouvelles utilisent le barème temporel.
 
 ## Installer l’APK
 
