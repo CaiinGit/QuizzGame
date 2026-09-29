@@ -11,10 +11,11 @@ import {
   durations,
 } from "./engine";
 import { pointsForTime } from "../shared/scoring";
+import { questions } from "./questions";
 const a = { id: "a", name: "Luffy" },
   b = { id: "b", name: "Zoro" };
 function started() {
-  const r = newRoom("ABCDEF", a, 0);
+  const r = newRoom("ABCDEF", a, questions, 0);
   join(r, b);
   ready(r, a.id, 0);
   ready(r, b.id, 0);
@@ -122,7 +123,7 @@ test("equal correct reception times can tie", () => {
 });
 
 test("solo starts alone, refuses guests, reveals immediately and completes ten rounds", () => {
-  const r = newRoom("SOLOAA", a, 0, durations, "solo");
+  const r = newRoom("SOLOAA", a, questions, 0, durations, "solo");
   assert.equal(r.phase, "countdown");
   assert.throws(() => join(r, b), /solo/);
   tick(r, r.deadline);
@@ -151,7 +152,7 @@ test("solo starts alone, refuses guests, reveals immediately and completes ten r
 });
 
 test("solo timeout and abandonment do not invent an opponent", () => {
-  const r = newRoom("SOLOAB", a, 0, durations, "solo");
+  const r = newRoom("SOLOAB", a, questions, 0, durations, "solo");
   tick(r, r.deadline);
   tick(r, r.deadline);
   assert.equal(r.correction?.answers.a.points, 0);
@@ -187,7 +188,7 @@ test("review preserves choices, misses and timeouts without leaking an unfinishe
   );
 });
 test("capacity, readiness, expiry and forfeit", () => {
-  const r = newRoom("ABCDEF", a, 0);
+  const r = newRoom("ABCDEF", a, questions, 0);
   ready(r, "a", 0);
   assert.equal(r.phase, "lobby");
   join(r, b);

@@ -276,7 +276,8 @@ export async function createApp(
           () => alphabet[randomInt(alphabet.length)],
         ).join("");
       } while (rooms.has(code));
-      const room = newRoom(code, player, Date.now(), times, mode);
+      const questions = await repository.questionBank.drawQuestions();
+      const room = newRoom(code, player, questions, Date.now(), times, mode);
       await repository.save(room);
       rooms.set(code, room);
       socket.data.room = code;

@@ -33,7 +33,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 - Reconnexion, sauvegarde des duels et reprise après redémarrage du serveur.
 - Abandon, égalité, salon complet ou expiré et erreurs de connexion gérés.
 
-La banque initiale contient dix questions One Piece. Niveaux, pièces, succès et autres thèmes restent à venir. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
+La banque PostgreSQL contient initialement dix questions de test One Piece. Les nouvelles parties tirent uniquement les questions publiées ; les brouillons et les archives sont exclus. La structure est prête pour les futurs contenus, dont le format d’import sera défini plus tard : voir [la banque de questions](docs/QUESTIONS.md). Niveaux, pièces, succès et autres thèmes restent à venir. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
 
 Le score d’une bonne réponse est `ceil(1000 × temps restant / durée de la question)`, borné entre 0 et 1 000, avec au moins 1 point avant l’échéance. La date de réception est enregistrée par le serveur avant sa file de sauvegarde ; les dates et points envoyés par le client sont ignorés. La latence réseau compte donc dans le délai de réception. Deux réponses dans la même tranche d’un point peuvent donner le même score. Les doubles clics ne changent ni le premier choix ni son horodatage. Les anciennes réponses sauvegardées sans horodatage conservent leur ancien crédit ; les nouvelles utilisent le barème temporel.
 
@@ -77,7 +77,8 @@ L'accès public utilise [Cloudflare Tunnel avec le domaine akashaquiz.com](docs/
 | --------------------- | -------------------------------------------------------------- |
 | `src/`                | Interface React, connexion Socket.IO et profil local Capacitor |
 | `server/engine.ts`    | Règles, temps, réponses et scores contrôlés par le serveur     |
-| `server/questions.ts` | Banque privée : aucune correction embarquée dans l’APK         |
+| `server/questions.ts` | Dix questions de test, utilisées une seule fois à l’initialisation |
+| `server/question-bank.ts` | Banque PostgreSQL privée : validation, statuts et tirage des questions |
 | `server/database.ts`  | Sessions et états de duels persistés dans PostgreSQL           |
 | `shared/`             | Données publiques échangées avec l’application                 |
 | `tests/`              | Parcours avec deux navigateurs au format téléphone             |

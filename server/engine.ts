@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import type { Phase, RoomView, GameMode } from "../shared/protocol";
 import { pointsForTime } from "../shared/scoring";
-import { questions, type Question } from "./questions";
+import type { Question } from "./questions";
 export type Player = {
   id: string;
   name: string;
@@ -52,10 +52,13 @@ function shuffle<T>(items: T[]) {
 export function newRoom(
   code: string,
   player: { id: string; name: string },
+  questions: Question[],
   now: number,
   times = durations,
   mode: GameMode = "duel",
 ): Room {
+  if (questions.length < 10)
+    throw new Error("Il faut dix questions pour créer une partie.");
   const picked = shuffle(questions)
     .slice(0, 10)
     .map((q) => {

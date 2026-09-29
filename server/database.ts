@@ -3,6 +3,7 @@ import pg from "pg";
 import { mkdir } from "node:fs/promises";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { Room } from "./engine";
+import { QuestionBank } from "./question-bank";
 export interface Sql {
   query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
   close(): Promise<void>;
@@ -29,8 +30,12 @@ export async function connectDatabase(
   };
 }
 export class Repository {
-  constructor(public db: Sql) {}
+  readonly questionBank: QuestionBank;
+  constructor(public db: Sql) {
+    this.questionBank = new QuestionBank(db);
+  }
   async init() {
+    await this.questionBank.init();
     await this.db.query(
       "CREATE TABLE IF NOT EXISTS akasha_sessions (id TEXT PRIMARY KEY, token_hash TEXT UNIQUE NOT NULL, name TEXT NOT NULL, expires_at BIGINT NOT NULL)",
     );

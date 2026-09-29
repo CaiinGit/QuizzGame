@@ -7,6 +7,7 @@ import { io, type Socket } from "socket.io-client";
 import { createApp } from "./app";
 import { connectDatabase } from "./database";
 import { durations } from "./engine";
+import { questions } from "./questions";
 import type { RoomView, Ack, Credentials } from "../shared/protocol";
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(fn: () => boolean) {
@@ -97,9 +98,25 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
       [ca.id],
     );
     assert.notEqual(hashed.rows[0].token_hash, ca.token);
+    const editedQuestion = {
+      ...questions[0],
+      themeId: "one-piece",
+      status: "published" as const,
+      text: "Énoncé tiré de la base",
+    };
+    await server!.repository.questionBank.saveQuestion(editedQuestion);
     await request(a.s, "room:create");
     await waitFor(() => !!a.state());
     const code = a.state()!.code;
+    assert.equal(
+      server!.rooms.get(code)!.questions.find((q) => q.id === editedQuestion.id)
+        ?.text,
+      editedQuestion.text,
+    );
+    await server!.repository.questionBank.saveQuestion({
+      ...editedQuestion,
+      text: "Nouvelle version pour les prochaines parties",
+    });
     await request(b.s, "room:join", { code });
     await assert.rejects(request(c.s, "room:join", { code }));
     await request(a.s, "room:ready");
@@ -134,6 +151,17 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await server!.close();
     server = undefined;
     base = await start();
+    assert.equal(
+      server!.rooms.get(code)!.questions.find((q) => q.id === editedQuestion.id)
+        ?.text,
+      editedQuestion.text,
+    );
+    assert.equal(
+      (await server!.repository.questionBank.drawQuestions()).find(
+        (q) => q.id === editedQuestion.id,
+      )?.text,
+      "Nouvelle version pour les prochaines parties",
+    );
     const restored = await client(ca);
     await waitFor(() => restored.state()?.code === code);
     assert.equal(restored.state()!.players[0].score, earned);
