@@ -299,7 +299,6 @@ export function Explore(p: Props) {
                   }
                   aria-hidden="true"
                 />
-                <span>Favori</span>
               </button>
             </div>
             <FutureSelectionCard />
