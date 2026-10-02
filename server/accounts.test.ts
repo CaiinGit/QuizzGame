@@ -189,12 +189,22 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     );
     await command(pb.s, "friends:respond", { id: friendship, accept: true });
     await wait(() => pa.state.social!.friends.length === 1);
+    assert.equal(pa.state.social!.friends[0].presence, "online");
+    await command(pb.s, "room:create", { mode: "solo" });
+    await wait(() => pa.state.social!.friends[0].presence === "playing");
+    await assert.rejects(
+      command(pa.s, "friends:invite", { id: b.credentials.id }),
+      /déjà/,
+    );
+    await command(pb.s, "room:leave");
+    await wait(() => pa.state.social!.friends[0].presence === "online");
     await command(pa.s, "friends:invite", { id: b.credentials.id });
     await wait(
       () => pb.state.social!.invitations.length === 1 && !!pa.state.room,
     );
     const invited = pb.state.social!.invitations[0].id,
       firstCode = pa.state.room!.code;
+    assert.equal(pb.state.social!.friends[0].presence, "lobby");
     await assert.rejects(
       command(pc.s, "room:join", { code: firstCode }),
       /réservé/,
@@ -208,6 +218,7 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     await wait(() => secondDevice.state.room?.code === firstCode);
     await command(pa.s, "room:ready");
     await command(pb.s, "room:ready");
+    await wait(() => pa.state.social!.friends[0].presence === "playing");
     for (let round = 1; round <= 10; round++) {
       await wait(
         () =>
@@ -219,6 +230,7 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
       await command(pb.s, "room:answer", { round, choice: (correct + 1) % 4 });
     }
     await wait(() => pa.state.room?.phase === "finished");
+    await wait(() => pa.state.social!.friends[0].presence === "online");
     const history: HistoryPage = await request(
       "account/history",
       undefined,
@@ -307,6 +319,7 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
       "A dismissed rematch must not reopen the previous result",
     );
     assert.equal(restored.state.social!.friends[0].id, b.credentials.id);
+    assert.equal(restored.state.social!.friends[0].presence, "offline");
     assert.equal(
       (await request("account/history", undefined, updated.credentials)).matches
         .length,

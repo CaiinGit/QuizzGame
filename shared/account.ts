@@ -8,6 +8,7 @@ export type AccountProfile = {
   isAdmin: boolean;
   mustChangePassword: boolean;
   totalXp: number;
+  favorites: string[];
 };
 export type AuthResult = {
   credentials: Credentials;
@@ -19,6 +20,7 @@ export type Friend = {
   username: string;
   name: string;
   online: boolean;
+  presence: "offline" | "online" | "lobby" | "playing";
 };
 export type FriendRequest = { id: string; player: Friend };
 export type Invitation = {
@@ -44,3 +46,15 @@ export type MatchSummary = {
   rounds: number;
 };
 export type HistoryPage = { matches: MatchSummary[]; next: number | null };
+export type ModeStatistics = {
+  played: number;
+  completed: number;
+  interrupted: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  correct: number;
+  questions: number;
+  accuracy: number | null;
+};
+export type AccountStatistics = { duel: ModeStatistics; solo: ModeStatistics };

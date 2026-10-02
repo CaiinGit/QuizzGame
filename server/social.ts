@@ -132,7 +132,11 @@ export class Social {
       [id, status, roomCode ?? null],
     );
   }
-  async state(id: string, online: Set<string>): Promise<SocialState> {
+  async state(
+    id: string,
+    online: Set<string>,
+    activities = new Map<string, Friend["presence"]>(),
+  ): Promise<SocialState> {
     const friend = (r: {
       player_id: string;
       username: string;
@@ -142,6 +146,9 @@ export class Social {
       username: r.username,
       name: r.name,
       online: online.has(r.player_id),
+      presence:
+        activities.get(r.player_id) ??
+        (online.has(r.player_id) ? "online" : "offline"),
     });
     const { rows } = await this.db.query<{
       id: string;

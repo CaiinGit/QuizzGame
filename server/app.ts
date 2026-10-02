@@ -116,18 +116,16 @@ export async function createApp(
   app.get("/api/health", async (_req, res) => {
     try {
       await db.query("SELECT 1");
-      res.json({ ok: true, app: "Akasha", version: "0.6.0" });
+      res.json({ ok: true, app: "Akasha", version: "0.7.0" });
     } catch {
       res.status(503).json({ ok: false });
     }
   });
   app.post("/api/session", async (req, res) => {
     if (adminOnly) {
-      res
-        .status(403)
-        .json({
-          error: "Accès réservé aux administrateurs pendant les tests.",
-        });
+      res.status(403).json({
+        error: "Accès réservé aux administrateurs pendant les tests.",
+      });
       return;
     }
     if (!allow(`session:${req.ip}`, 12, 3600000)) {
@@ -178,10 +176,18 @@ export async function createApp(
         .map((s) => s.data.player.id as string),
     );
     for (const id of ids) {
-      const state = await social.state(id, online());
+      const state = await social.state(id, online(), activities());
       for (const s of io.sockets.sockets.values())
         if (s.data.player.id === id) s.emit("social:state", state);
     }
+  }
+  function activities() {
+    const result = new Map<string, "lobby" | "playing">();
+    for (const room of rooms.values())
+      if (isLive(room))
+        for (const p of room.players)
+          result.set(p.id, room.phase === "lobby" ? "lobby" : "playing");
+    return result;
   }
   function revoke(id: string, token?: string) {
     for (const s of io.sockets.sockets.values())
@@ -236,7 +242,8 @@ export async function createApp(
         [room.code],
       );
       await refreshSocial();
-    }
+    } else if ((room.phase === "lobby") !== (previous?.phase === "lobby"))
+      await refreshSocial();
   }
   function attach(room: Room, id: string) {
     for (const s of io.sockets.sockets.values())
@@ -338,7 +345,7 @@ export async function createApp(
               );
             if (p!.account)
               return social
-                .state(p!.id, online())
+                .state(p!.id, online(), activities())
                 .then((state) => socket.emit("social:state", state));
           }
         })
@@ -400,6 +407,7 @@ export async function createApp(
       rooms.set(room.code, room);
       attach(room, player.id);
       emit(room);
+      await refreshSocial();
     });
     command("room:join", async (data) => {
       const { code } = z
@@ -469,6 +477,10 @@ export async function createApp(
       const d = z.object({ id: z.string().uuid() }).parse(data);
       if (!(await social.areFriends(player.id, d.id)))
         throw new Error("Ajoute d’abord ce joueur à tes amis.");
+      if (active(d.id))
+        throw new Error(
+          "Cet ami est déjà dans un salon ou en partie. Attends qu’il soit disponible.",
+        );
       if (!allow(`invite:${player.id}`, 12, 60000))
         throw new Error("Patiente avant d’envoyer une autre invitation.");
       let room = active(player.id);

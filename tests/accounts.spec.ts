@@ -161,6 +161,11 @@ test("round home friends button, friendship, direct invitation, match history an
     await expect(
       p.getByRole("heading", { name: "Demandes envoyées" }),
     ).toBeVisible();
+    await q
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
+    await expect(q.locator(".home-friends .social-badge")).toHaveText("1");
     await q.getByRole("button", { name: "Mes amis", exact: true }).click();
     await q
       .getByRole("button", { name: `Accepter ${alice}`, exact: true })
@@ -177,6 +182,10 @@ test("round home friends button, friendship, direct invitation, match history an
     });
     await p.getByRole("button", { name: "Inviter", exact: true }).click();
     await expect(p.getByTestId("room-code")).toBeVisible();
+    await expect(q.locator(".friend-presence")).toHaveText("Dans un salon");
+    await expect(
+      q.getByRole("button", { name: "Occupé", exact: true }),
+    ).toBeDisabled();
     await q.getByRole("button", { name: "Accepter", exact: true }).click();
     await expect(q.getByTestId("room-code")).toHaveText(
       await p.getByTestId("room-code").innerText(),
@@ -224,6 +233,101 @@ test("round home friends button, friendship, direct invitation, match history an
       path: "test-results/account-history-dark.png",
       fullPage: true,
     });
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});
+
+test("favorites sync between devices and retain the selected theme through both modes", async ({
+  browser,
+}) => {
+  const a = await browser.newContext({ viewport: { width: 320, height: 640 } });
+  const b = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await a.newPage(),
+    q = await b.newPage();
+  try {
+    const username = `fav_${Date.now().toString(36)}`;
+    await register(p, username);
+    await login(q, username);
+    await q
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
+    await p
+      .getByRole("navigation")
+      .getByRole("button", { name: "Thèmes", exact: true })
+      .click();
+    await p
+      .getByRole("button", {
+        name: "Ajouter One Piece aux favoris",
+        exact: true,
+      })
+      .click();
+    const favorite = q.getByRole("button", {
+      name: "Thème favori 1, One Piece",
+      exact: true,
+    });
+    await expect(favorite).toBeVisible();
+    await expect(
+      p.getByRole("button", {
+        name: "Retirer One Piece des favoris",
+        exact: true,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await p.screenshot({
+      path: "test-results/theme-favorite-light.png",
+      fullPage: true,
+    });
+    await q.screenshot({
+      path: "test-results/home-favorite-light.png",
+      fullPage: true,
+    });
+    await favorite.click();
+    await expect(
+      q.getByText("ONE PIECE · FAVORI", { exact: true }),
+    ).toBeVisible();
+    await q
+      .getByRole("button", { name: "Classique, duel 1 contre 1", exact: true })
+      .click();
+    await expect(
+      q.getByRole("button", { name: "Créer un duel", exact: true }),
+    ).toBeVisible();
+    await q
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
+    await favorite.click();
+    await q.reload();
+    await q.getByRole("button", { name: "Solo", exact: true }).click();
+    await expect(
+      q.getByRole("button", { name: "Commencer en solo", exact: true }),
+    ).toBeVisible();
+    await q
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
+    await q.getByRole("button", { name: "Réglages", exact: true }).click();
+    await q.getByRole("button", { name: "Mode sombre", exact: true }).click();
+    await q.keyboard.press("Escape");
+    await q.screenshot({
+      path: "test-results/home-favorite-dark.png",
+      fullPage: true,
+    });
+    await p
+      .getByRole("button", {
+        name: "Retirer One Piece des favoris",
+        exact: true,
+      })
+      .click();
+    await expect(favorite).toHaveCount(0);
+    await expect(
+      q
+        .getByRole("group", { name: "Thèmes favoris", exact: true })
+        .getByRole("button"),
+    ).toHaveCount(3);
+    await q.reload();
+    await expect(favorite).toHaveCount(0);
   } finally {
     await a.close();
     await b.close();

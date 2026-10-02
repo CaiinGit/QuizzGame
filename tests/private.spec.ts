@@ -161,6 +161,30 @@ test("private gate, first login, saved recovery, solo XP, level-up and logout", 
     await page
       .getByRole("button", { name: "Ouvrir mon profil", exact: true })
       .click();
+    const soloStats = page.getByRole("region", {
+      name: "Statistiques Solo",
+      exact: true,
+    });
+    await expect(soloStats).toContainText("100 %");
+    await expect(soloStats).toContainText(
+      "10 bonnes réponses sur 10 questions corrigées.",
+    );
+    await expect(
+      page.getByRole("region", { name: "Statistiques Duel", exact: true }),
+    ).toContainText(
+      "Tes statistiques apparaîtront après tes premières parties.",
+    );
+    await page.screenshot({
+      path: "test-results/profile-statistics-light.png",
+      fullPage: true,
+    });
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = "dark";
+    });
+    await page.screenshot({
+      path: "test-results/profile-statistics-dark.png",
+      fullPage: true,
+    });
     await page
       .getByRole("button", { name: "Me déconnecter", exact: true })
       .click();

@@ -188,6 +188,18 @@ test(
       await api("account/me", 403, undefined, outsider.credentials.token);
       await api("account/history", 403, undefined, outsider.credentials.token);
       await api(
+        "account/statistics",
+        403,
+        undefined,
+        outsider.credentials.token,
+      );
+      await api(
+        "account/favorites",
+        403,
+        { themeId: "one-piece", favorite: true },
+        outsider.credentials.token,
+      );
+      await api(
         "account/profile",
         403,
         { isAdmin: true },
@@ -265,6 +277,86 @@ test(
         390,
       );
       const old = finished(c.credentials.id, changed.credentials.id);
+      const stats = await api(
+        "account/statistics",
+        200,
+        undefined,
+        c.credentials.token,
+      );
+      assert.deepEqual(stats.duel, {
+        played: 3,
+        completed: 3,
+        interrupted: 0,
+        wins: 3,
+        losses: 0,
+        draws: 0,
+        correct: 21,
+        questions: 30,
+        accuracy: 70,
+      });
+      assert.equal(stats.solo.accuracy, null);
+      const solo = finished(c.credentials.id, changed.credentials.id);
+      solo.mode = "solo";
+      solo.players = solo.players.slice(0, 1);
+      solo.reason = "forfeit";
+      solo.forfeitedBy = c.credentials.id;
+      solo.winnerId = null;
+      solo.history = solo.history.slice(0, 3);
+      solo.history[2].answers[c.credentials.id].choice = null;
+      await restarted.save(solo);
+      const withSolo = await api(
+        "account/statistics",
+        200,
+        undefined,
+        c.credentials.token,
+      );
+      assert.equal(withSolo.duel.played, 3);
+      assert.deepEqual(withSolo.solo, {
+        played: 1,
+        completed: 0,
+        interrupted: 1,
+        wins: 0,
+        losses: 0,
+        draws: 0,
+        correct: 2,
+        questions: 3,
+        accuracy: 67,
+      });
+      await api(
+        "account/favorites",
+        400,
+        { themeId: "invented", favorite: true },
+        c.credentials.token,
+      );
+      await api(
+        "account/favorites",
+        200,
+        { themeId: "one-piece", favorite: true, id: changed.credentials.id },
+        c.credentials.token,
+      );
+      const favorite = await api(
+        "account/favorites",
+        200,
+        { themeId: "one-piece", favorite: true },
+        c.credentials.token,
+      );
+      assert.deepEqual(favorite.favorites, ["one-piece"]);
+      assert.deepEqual(
+        (await restarted.accounts.profile(changed.credentials.id))!.favorites,
+        [],
+      );
+      await restarted.init();
+      assert.deepEqual(
+        (await restarted.accounts.profile(c.credentials.id))!.favorites,
+        ["one-piece"],
+      );
+      const removed = await api(
+        "account/favorites",
+        200,
+        { themeId: "one-piece", favorite: false },
+        c.credentials.token,
+      );
+      assert.deepEqual(removed.favorites, []);
       delete old.xpVersion;
       await restarted.save(old);
       assert.equal(
@@ -286,6 +378,17 @@ test(
         null,
       );
       const s = await socket(c.credentials.token, true);
+      assert.equal(
+        (
+          await api(
+            "account/statistics",
+            200,
+            undefined,
+            thirdAdmin.credentials.token,
+          )
+        ).duel.played,
+        0,
+      );
       await db.query("UPDATE akasha_accounts SET is_admin=false WHERE id=$1", [
         c.credentials.id,
       ]);

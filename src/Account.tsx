@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Copy, History, LogOut, Shield, Users, X } from "lucide-react";
 import { accountApi, type Profile } from "./client";
 import type { AccountProfile, AuthResult } from "../shared/account";
+import { LevelProgress } from "./Progression";
+import { ProfileStatistics } from "./ProfileStatistics";
 
 export type AuthMode = "register" | "login" | "recover" | "security";
 export function AuthDialog({
@@ -331,6 +333,8 @@ export function AccountActions({
   return (
     <section className="account-actions" aria-label="Mon compte">
       <p className="account-handle">@{account.username}</p>
+      <LevelProgress total={account.totalXp} />
+      <ProfileStatistics profile={profile} totalXp={account.totalXp} />
       {error && (
         <div className="notice error" role="alert">
           {error}

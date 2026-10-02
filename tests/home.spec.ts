@@ -55,10 +55,18 @@ test("home puts daily challenge and three empty favorites above the portal", asy
     const slot = favorites.getByRole("button").nth(i);
     await slot.click();
     await expect(
-      page.getByRole("heading", { name: "Tes thèmes favoris" }),
+      page.getByRole("heading", { name: "Choisis ton thème" }),
     ).toBeVisible();
-    await page.keyboard.press("Escape");
-    await expect(slot).toBeFocused();
+    await expect(
+      page.getByRole("button", {
+        name: "Ajouter One Piece aux favoris",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
   }
   await page.mouse.move(0, 0);
   await page.screenshot({

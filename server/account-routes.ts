@@ -154,6 +154,17 @@ export function accountRoutes(
         .parse(req.query.offset ?? 0);
     return repository.history(player.id, offset);
   });
+  route("get", "/api/account/statistics", async (req) =>
+    repository.statistics((await auth(req)).id),
+  );
+  route("post", "/api/account/favorites", async (req) => {
+    const player = await auth(req);
+    if (!hooks.allow(`favorites:${player.id}`, 30))
+      throw new UserError("Patiente avant de modifier tes favoris.", 429);
+    const result = await repository.accounts.favorite(player.id, req.body);
+    await hooks.updated(player.id);
+    return result;
+  });
   route("get", "/api/account/reward/:id", async (req) => {
     const player = await auth(req);
     return repository.reward(

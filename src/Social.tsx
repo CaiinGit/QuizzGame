@@ -64,6 +64,7 @@ export function FriendsPanel({
   auth,
   act,
   busy,
+  now,
 }: {
   state: SocialState | null;
   account: boolean;
@@ -71,6 +72,7 @@ export function FriendsPanel({
   auth: () => void;
   act: (event: string, data: unknown) => Promise<void>;
   busy: boolean;
+  now: number;
 }) {
   const [username, setUsername] = useState(""),
     [remove, setRemove] = useState<string | null>(null);
@@ -120,20 +122,24 @@ export function FriendsPanel({
           </button>
         </div>
       </form>
-      {!!state.invitations.length && (
+      {!!state.invitations.filter((i) => i.expiresAt > now).length && (
         <section>
           <h2>Invitations à jouer</h2>
-          {state.invitations.map((i) => (
-            <InviteCard key={i.id} invite={i} act={act} busy={busy} />
-          ))}
+          {state.invitations
+            .filter((i) => i.expiresAt > now)
+            .map((i) => (
+              <InviteCard key={i.id} invite={i} act={act} busy={busy} />
+            ))}
         </section>
       )}
-      {!!state.sentInvitations.length && (
+      {!!state.sentInvitations.filter((i) => i.expiresAt > now).length && (
         <section>
           <h2>Invitations envoyées</h2>
-          {state.sentInvitations.map((i) => (
-            <InviteCard key={i.id} invite={i} sent act={act} busy={busy} />
-          ))}
+          {state.sentInvitations
+            .filter((i) => i.expiresAt > now)
+            .map((i) => (
+              <InviteCard key={i.id} invite={i} sent act={act} busy={busy} />
+            ))}
         </section>
       )}
       {!!state.incoming.length && (
@@ -211,18 +217,41 @@ export function FriendsPanel({
                 <strong>{f.name}</strong>
                 <small>@{f.username}</small>
                 <span
-                  className={`friend-presence ${f.online ? "is-online" : ""}`}
+                  className={`friend-presence ${f.online ? "is-online" : ""} is-${f.presence}`}
                 >
-                  {f.online ? "En ligne" : "Hors ligne"}
+                  {f.presence === "lobby"
+                    ? "Dans un salon"
+                    : f.presence === "playing"
+                      ? "En partie"
+                      : f.online
+                        ? "En ligne"
+                        : "Hors ligne"}
+                  {!f.online &&
+                  (f.presence === "lobby" || f.presence === "playing")
+                    ? " · déconnecté"
+                    : ""}
                 </span>
               </div>
               <div className="social-buttons">
                 <button
                   className="button primary"
-                  disabled={busy}
+                  disabled={
+                    busy ||
+                    f.presence === "lobby" ||
+                    f.presence === "playing" ||
+                    state.sentInvitations.some(
+                      (i) => i.player.id === f.id && i.expiresAt > now,
+                    )
+                  }
                   onClick={() => void act("friends:invite", { id: f.id })}
                 >
-                  Inviter
+                  {f.presence === "lobby" || f.presence === "playing"
+                    ? "Occupé"
+                    : state.sentInvitations.some(
+                          (i) => i.player.id === f.id && i.expiresAt > now,
+                        )
+                      ? "Invité"
+                      : "Inviter"}
                 </button>
                 <button
                   className="text-button"

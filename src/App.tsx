@@ -550,6 +550,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               </div>
               {navigation.screen === "amis" ? (
                 <FriendsPanel
+                  now={now}
                   state={social}
                   account={!!profile.credentials?.account}
                   online={online}
@@ -570,6 +571,22 @@ function App({ adminOnly }: { adminOnly: boolean }) {
           navigation.screen !== "amis" &&
           navigation.screen !== "historique" && (
             <Explore
+              favorites={account?.favorites ?? []}
+              toggleFavorite={(themeId) => {
+                if (!profile?.credentials?.account) {
+                  setAuth("login");
+                  return;
+                }
+                if (!account || busy) return;
+                void run(async () =>
+                  updateAccount(
+                    await accountApi<AccountProfile>(profile, "favorites", {
+                      themeId,
+                      favorite: !account.favorites.includes(themeId),
+                    }),
+                  ),
+                );
+              }}
               screen={navigation.screen}
               navigate={navigate}
               back={() => {

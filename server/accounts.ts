@@ -7,6 +7,7 @@ import {
 } from "node:crypto";
 import { z } from "zod";
 import sharp from "sharp";
+import { themes } from "../shared/themes";
 import type { Sql } from "./database";
 import type { AccountProfile, AuthResult } from "../shared/account";
 
@@ -39,7 +40,7 @@ export const passwordInput = z
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 const fields =
-  'id,username,name,photo,is_admin AS "isAdmin",must_change_password AS "mustChangePassword",total_xp AS "totalXp"';
+  'id,username,name,photo,is_admin AS "isAdmin",must_change_password AS "mustChangePassword",total_xp AS "totalXp",favorites';
 let hashing = 0;
 async function derive(password: string, salt: string) {
   if (hashing >= 2)
@@ -98,6 +99,9 @@ export class Accounts {
       ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false,
       ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0 CHECK(total_xp >= 0)`);
+    await this.db.query(
+      `ALTER TABLE akasha_accounts ADD COLUMN IF NOT EXISTS favorites TEXT[] NOT NULL DEFAULT '{}' CHECK(cardinality(favorites)<=3)`,
+    );
     await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_account_sessions (
       token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES akasha_accounts(id) ON DELETE CASCADE,
       expires_at BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
@@ -317,5 +321,25 @@ export class Accounts {
       "DELETE FROM akasha_account_sessions WHERE token_hash=$1",
       [hashToken(token)],
     );
+  }
+  async favorite(id: string, input: unknown) {
+    const { themeId, favorite } = z
+      .object({ themeId: z.string(), favorite: z.boolean() })
+      .parse(input);
+    if (!themes.some((t) => t.id === themeId))
+      throw new UserError("Ce thème n’est pas disponible.");
+    const { rows } = await this.db.query<AccountProfile>(
+      `UPDATE akasha_accounts SET favorites=CASE WHEN $3::boolean THEN
+        CASE WHEN $2=ANY(favorites) THEN favorites ELSE array_append(favorites,$2) END
+        ELSE array_remove(favorites,$2) END,updated_at=now()
+       WHERE id=$1 AND (NOT $3::boolean OR $2=ANY(favorites) OR cardinality(favorites)<3) RETURNING ${fields}`,
+      [id, themeId, favorite],
+    );
+    if (!rows.length)
+      throw new UserError(
+        "Tu peux choisir trois favoris. Retire un thème pour en ajouter un autre.",
+        409,
+      );
+    return rows[0];
   }
 }

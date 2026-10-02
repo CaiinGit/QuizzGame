@@ -1,0 +1,111 @@
+.profile-statistics {
+  display: grid;
+  gap: 14px;
+}
+.profile-statistics h2 {
+  margin: 6px 0 0;
+  font-size: 30px;
+}
+.mode-statistics {
+  padding: 16px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.mode-statistics h3 {
+  margin: 0 0 12px;
+  font-family: var(--font-arcade);
+  font-size: 28px;
+  font-weight: 400;
+}
+.mode-statistics dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+.mode-statistics dl > div {
+  padding: 10px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+.mode-statistics dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.mode-statistics dd {
+  margin: 4px 0 0;
+  font-family: var(--font-arcade);
+  font-size: 30px;
+}
+.mode-statistics p,
+.statistics-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.theme-selection {
+  position: relative;
+  min-width: 0;
+}
+.favorite-toggle {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px;
+  color: var(--green);
+  background: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 0 #0003;
+  font-size: 13px;
+}
+.favorite-toggle[aria-pressed="true"] {
+  background: var(--green);
+  color: var(--cream);
+}
+.favorite-toggle:focus-visible {
+  outline: 3px solid var(--green);
+  outline-offset: 3px;
+}
+.favorite-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 4px;
+  color: #173b29;
+}
+[data-theme="dark"] .favorite-slot {
+  color: #303030;
+}
+.favorite-slot .theme-logo-placeholder {
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+  border-width: 2px;
+}
+.favorite-name {
+  font-family: var(--font-arcade);
+  font-size: clamp(17px, 5vw, 23px);
+  line-height: 1;
+}
+.friend-presence.is-lobby:before {
+  background: #b98827;
+}
+.friend-presence.is-playing:before {
+  background: #bc6640;
+}
+@media (max-width: 350px) {
+  .favorite-slot .theme-logo-placeholder {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+}

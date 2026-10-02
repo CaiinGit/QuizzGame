@@ -8,7 +8,12 @@ import { Accounts } from "./accounts";
 import { rewards } from "./progression";
 import type { XpReward } from "../shared/progression";
 import type { RoomView } from "../shared/protocol";
-import type { HistoryPage, MatchSummary } from "../shared/account";
+import type {
+  HistoryPage,
+  MatchSummary,
+  AccountStatistics,
+  ModeStatistics,
+} from "../shared/account";
 export interface Sql {
   query<T>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>;
   close(): Promise<void>;
@@ -186,6 +191,66 @@ export class Repository {
       rounds: r.result.history.length,
     }));
     return { matches, next: rows.length > 20 ? offset + 20 : null };
+  }
+  async statistics(id: string): Promise<AccountStatistics> {
+    const { rows } = await this.db.query<{
+      mode: "duel" | "solo";
+      played: string;
+      completed: string;
+      interrupted: string;
+      wins: string;
+      losses: string;
+      draws: string;
+      correct: string;
+      questions: string;
+    }>(
+      `WITH games AS (
+      SELECT result,COALESCE(result->>'mode','duel') AS mode,
+        (SELECT count(*) FROM jsonb_array_elements(COALESCE(result->'history','[]'::jsonb)) r) AS questions,
+        (SELECT count(*) FROM jsonb_array_elements(COALESCE(result->'history','[]'::jsonb)) r
+          WHERE r->'answers'->$1->'choice'=r->'correct') AS correct
+      FROM akasha_match_history WHERE players @> ARRAY[$1]::text[] AND result->>'phase'='finished'
+    ) SELECT mode,count(*) AS played,
+      count(*) FILTER(WHERE result->>'reason'='completed') AS completed,
+      count(*) FILTER(WHERE result->>'reason'='forfeit') AS interrupted,
+      count(*) FILTER(WHERE mode='duel' AND result->>'winnerId'=$1) AS wins,
+      count(*) FILTER(WHERE mode='duel' AND result->>'winnerId' IS NOT NULL AND result->>'winnerId'<>$1) AS losses,
+      count(*) FILTER(WHERE mode='duel' AND result->>'winnerId' IS NULL AND result->>'reason'='completed') AS draws,
+      COALESCE(sum(correct),0) AS correct,COALESCE(sum(questions),0) AS questions
+      FROM games GROUP BY mode`,
+      [id],
+    );
+    const empty = (): ModeStatistics => ({
+      played: 0,
+      completed: 0,
+      interrupted: 0,
+      wins: 0,
+      losses: 0,
+      draws: 0,
+      correct: 0,
+      questions: 0,
+      accuracy: null,
+    });
+    const result: AccountStatistics = { duel: empty(), solo: empty() };
+    for (const row of rows) {
+      if (row.mode !== "duel" && row.mode !== "solo") continue;
+      const value = result[row.mode];
+      for (const key of [
+        "played",
+        "completed",
+        "interrupted",
+        "wins",
+        "losses",
+        "draws",
+        "correct",
+        "questions",
+      ] as const)
+        value[key] = Number(row[key]);
+      value.accuracy = value.questions
+        ? Math.round((100 * value.correct) / value.questions)
+        : null;
+    }
+    return result;
   }
   async historyDetail(id: string, match: string) {
     return (

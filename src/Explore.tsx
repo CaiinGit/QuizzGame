@@ -1,4 +1,13 @@
-import { ChevronLeft, ArrowRight, Check, Settings2, Users } from "lucide-react";
+import {
+  ChevronLeft,
+  ArrowRight,
+  Check,
+  Settings2,
+  Users,
+  Star,
+  Plus,
+} from "lucide-react";
+import { themes } from "../shared/themes";
 import type { ReactNode } from "react";
 import { PixelIcon } from "./PixelIcon";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
@@ -14,6 +23,8 @@ type Props = {
   accountContent?: ReactNode;
   accountName?: string;
   friendCount?: number;
+  favorites: string[];
+  toggleFavorite: (id: string) => void;
   screen: Screen;
   navigate: (screen: Screen) => void;
   back: () => void;
@@ -38,9 +49,13 @@ export function BottomNavigation({
   screen: Screen;
   navigate: (screen: Screen) => void;
 }) {
-  const active = ["one-piece", "rejoindre", "solo", "solo-one-piece"].includes(
-    screen,
-  )
+  const active = [
+    "one-piece",
+    "rejoindre",
+    "solo",
+    "solo-one-piece",
+    "favorite-one-piece",
+  ].includes(screen)
     ? "classique"
     : screen;
   const items = [
@@ -93,14 +108,32 @@ export function Explore(p: Props) {
             role="group"
             aria-label="Thèmes favoris"
           >
-            {[1, 2, 3].map((slot) => (
-              <button
-                key={slot}
-                className="home-tile favorite-slot"
-                aria-label={`Thème favori ${slot}, emplacement vide`}
-                onClick={() => p.openShortcut("favorites")}
-              />
-            ))}
+            {[1, 2, 3].map((slot) => {
+              const theme = themes.find((t) => t.id === p.favorites[slot - 1]);
+              return (
+                <button
+                  key={slot}
+                  className="home-tile favorite-slot"
+                  aria-label={
+                    theme
+                      ? `Thème favori ${slot}, ${theme.name}`
+                      : `Thème favori ${slot}, ajouter un thème`
+                  }
+                  onClick={() =>
+                    navigate(theme ? "favorite-one-piece" : "classique")
+                  }
+                >
+                  {theme ? (
+                    <>
+                      <OnePieceLogo />
+                      <span className="favorite-name">{theme.name}</span>
+                    </>
+                  ) : (
+                    <Plus size={24} aria-hidden="true" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="portal-stage">
@@ -108,6 +141,7 @@ export function Explore(p: Props) {
             type="button"
             className="home-friends"
             aria-label="Mes amis"
+            aria-describedby="friends-alerts"
             title="Mes amis"
             onClick={() => navigate("amis")}
           >
@@ -118,6 +152,11 @@ export function Explore(p: Props) {
               </span>
             )}
           </button>
+          <span id="friends-alerts" className="sr-only" aria-live="polite">
+            {p.friendCount
+              ? `${p.friendCount} demande${p.friendCount > 1 ? "s" : ""} ou invitation${p.friendCount > 1 ? "s" : ""} en attente`
+              : "Aucune demande ni invitation en attente"}
+          </span>
           <img
             className="portal-art"
             src="/art/portal.webp"
@@ -181,9 +220,12 @@ export function Explore(p: Props) {
           </section>
         </>
       )}
-      {screen === "mode" && (
+      {(screen === "mode" || screen === "favorite-one-piece") && (
         <>
           <div className="page-heading">
+            {screen === "favorite-one-piece" && (
+              <span className="eyebrow">ONE PIECE · FAVORI</span>
+            )}
             <h1>Choisis ton mode</h1>
           </div>
           <div
@@ -194,7 +236,11 @@ export function Explore(p: Props) {
             <SelectionCard
               label="Classique"
               accessibleLabel="Classique, duel 1 contre 1"
-              onClick={() => navigate("classique")}
+              onClick={() =>
+                navigate(
+                  screen === "favorite-one-piece" ? "one-piece" : "classique",
+                )
+              }
             >
               <img
                 src="/art/classic-swords.png"
@@ -206,7 +252,11 @@ export function Explore(p: Props) {
             <SelectionCard
               label="Solo"
               accessibleLabel="Solo"
-              onClick={() => navigate("solo")}
+              onClick={() =>
+                navigate(
+                  screen === "favorite-one-piece" ? "solo-one-piece" : "solo",
+                )
+              }
             >
               <PixelIcon name="profile" size={64} />
             </SelectionCard>
@@ -226,16 +276,37 @@ export function Explore(p: Props) {
             role="group"
             aria-label="Thèmes disponibles"
           >
-            <SelectionCard
-              label="One Piece"
-              onClick={() =>
-                navigate(screen === "solo" ? "solo-one-piece" : "one-piece")
-              }
-            >
-              <OnePieceLogo />
-            </SelectionCard>
+            <div className="theme-selection">
+              <SelectionCard
+                label="One Piece"
+                onClick={() =>
+                  navigate(screen === "solo" ? "solo-one-piece" : "one-piece")
+                }
+              >
+                <OnePieceLogo />
+              </SelectionCard>
+              <button
+                className="favorite-toggle"
+                aria-label={`${p.favorites.includes("one-piece") ? "Retirer" : "Ajouter"} One Piece ${p.favorites.includes("one-piece") ? "des" : "aux"} favoris`}
+                aria-pressed={p.favorites.includes("one-piece")}
+                disabled={busy}
+                onClick={() => p.toggleFavorite("one-piece")}
+              >
+                <Star
+                  size={22}
+                  fill={
+                    p.favorites.includes("one-piece") ? "currentColor" : "none"
+                  }
+                  aria-hidden="true"
+                />
+                <span>Favori</span>
+              </button>
+            </div>
             <FutureSelectionCard />
           </div>
+          <p className="selection-note">
+            L’étoile ajoute ce thème aux trois favoris de ton accueil.
+          </p>
         </>
       )}
       {(screen === "one-piece" || screen === "solo-one-piece") && (
@@ -397,7 +468,7 @@ export function Explore(p: Props) {
             </span>
             <ArrowRight size={18} />
           </button>
-          <p className="version-label">AKASHA · VERSION 0.5</p>
+          <p className="version-label">AKASHA · VERSION 0.7</p>
         </>
       )}
     </section>

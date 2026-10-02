@@ -2,6 +2,10 @@
 
 Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
+## Version 0.7
+
+Profil avec statistiques Solo et duel séparées, favoris de thèmes synchronisés entre appareils et statuts des amis en temps réel. Les favoris de l’accueil ouvrent le choix du mode avec One Piece déjà sélectionné. Voir [profil, favoris et amis](docs/PROFIL-FAVORIS-AMIS.md).
+
 ## Version 0.6
 
 Accès privé réservé à trois administrateurs, mot de passe personnel obligatoire après la première connexion, XP persistante et niveaux avec bilan de fin de partie. Voir [accès privé et progression](docs/PROGRESSION-ACCES.md). Les inscriptions et invités sont fermés par défaut, y compris pour les anciens clients.
@@ -26,7 +30,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 - Profil accessible par la photo du bandeau ; changement de photo depuis la page Profil.
 - Grand bouton **JOUER** au pied du portail, vert en clair et bleu en sombre : ouvre la sélection des modes. L’onglet **Thèmes** ouvre directement la sélection des thèmes, avec One Piece.
 - Modes et thèmes : grille de deux colonnes, cases compactes en relief avec logo au-dessus du nom, vertes en clair et bleues en sombre. Classique reprend l’image d’épées fournie ; One Piece utilise un repère « OP » provisoire en attendant son logo. Les cases « À venir » sont désactivées. L’ancienne illustration d’île n’est plus affichée.
-- Accueil : bouton **Défi du jour** et trois cases de thèmes favoris vides au-dessus du portail (fonctionnalités à venir).
+- Accueil : bouton **Défi du jour** et trois cases de thèmes favoris au-dessus du portail ; le défi du jour reste à venir.
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Parcours individuel : **JOUER → Solo → One Piece → Commencer en solo**. Même moteur et même barème que le duel, démarrage sans adversaire, résultat individuel, reconnexion et abandon pris en charge. Le Solo nécessite lui aussi le serveur.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const routes = [
   "accueil",
   "mode",
+  "favorite-one-piece",
   "classique",
   "solo",
   "solo-one-piece",
@@ -18,6 +19,7 @@ export type Screen = (typeof routes)[number];
 const parents: Record<Screen, Screen> = {
   accueil: "accueil",
   mode: "accueil",
+  "favorite-one-piece": "accueil",
   classique: "mode",
   solo: "mode",
   "solo-one-piece": "solo",
