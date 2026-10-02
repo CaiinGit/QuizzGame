@@ -4,7 +4,7 @@ import { Preferences } from "@capacitor/preferences";
 const AVATAR_KEY = "akasha.avatar.v1";
 const LIMIT = 12 * 1024 * 1024;
 
-async function preparePhoto(file: File): Promise<string> {
+export async function preparePhoto(file: File): Promise<string> {
   if (!file.type.startsWith("image/"))
     throw new Error("Choisis un fichier image.");
   if (file.size > LIMIT)

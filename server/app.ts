@@ -19,6 +19,8 @@ import {
   type Durations,
 } from "./engine";
 import type { Ack } from "../shared/protocol";
+import { accountRoutes } from "./account-routes";
+import { Social } from "./social";
 
 export async function createApp(
   db: Sql,
@@ -31,6 +33,8 @@ export async function createApp(
 ) {
   const repository = new Repository(db);
   await repository.init();
+  const social = new Social(db);
+  await social.init();
   const rooms = new Map((await repository.rooms()).map((r) => [r.code, r]));
   const times = options.times ?? durations;
   for (const room of rooms.values()) {
@@ -91,7 +95,7 @@ export async function createApp(
     if (req.headers.origin)
       res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
     res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("X-Content-Type-Options", "nosniff");
     if (req.method === "OPTIONS") {
@@ -100,11 +104,12 @@ export async function createApp(
     }
     next();
   });
+  app.use("/api/account/profile", express.json({ limit: "320kb" }));
   app.use(express.json({ limit: "4kb" }));
   app.get("/api/health", async (_req, res) => {
     try {
       await db.query("SELECT 1");
-      res.json({ ok: true, app: "Akasha", version: "0.4.2" });
+      res.json({ ok: true, app: "Akasha", version: "0.5.0" });
     } catch {
       res.status(503).json({ ok: false });
     }
@@ -151,6 +156,39 @@ export async function createApp(
     new Set(
       [...io.sockets.sockets.values()].map((s) => s.data.player.id as string),
     );
+  async function refreshSocial() {
+    const ids = new Set(
+      [...io.sockets.sockets.values()]
+        .filter((s) => s.data.player.account)
+        .map((s) => s.data.player.id as string),
+    );
+    for (const id of ids) {
+      const state = await social.state(id, online());
+      for (const s of io.sockets.sockets.values())
+        if (s.data.player.id === id) s.emit("social:state", state);
+    }
+  }
+  function revoke(id: string, token?: string) {
+    for (const s of io.sockets.sockets.values())
+      if (s.data.player.id === id && (!token || s.data.token === token)) {
+        s.emit("auth:expired");
+        s.disconnect(true);
+      }
+  }
+  accountRoutes(app, repository, {
+    allow,
+    active,
+    revoked: revoke,
+    updated: async (id) => {
+      const profile = await repository.accounts.profile(id);
+      for (const s of io.sockets.sockets.values())
+        if (s.data.player.id === id) {
+          s.data.player.name = profile!.name;
+          s.emit("account:profile", profile);
+        }
+      await refreshSocial();
+    },
+  });
   function emit(room: Room) {
     const present = online();
     for (const socket of io.sockets.sockets.values())
@@ -161,9 +199,47 @@ export async function createApp(
         );
   }
   async function persist(room: Room) {
+    const previous = rooms.get(room.code);
     await repository.save(room);
     rooms.set(room.code, room);
     emit(room);
+    if (
+      (!isLive(room) && (!previous || isLive(previous))) ||
+      (room.players.length === 2 && previous?.players.length !== 2)
+    ) {
+      await db.query(
+        "UPDATE akasha_invitations SET status='cancelled' WHERE kind='duel' AND room_code=$1 AND status='pending'",
+        [room.code],
+      );
+      await refreshSocial();
+    }
+  }
+  function attach(room: Room, id: string) {
+    for (const s of io.sockets.sockets.values())
+      if (s.data.player.id === id) s.data.room = room.code;
+  }
+  async function makeRoom(
+    player: { id: string; name: string; account?: boolean },
+    mode: "duel" | "solo" = "duel",
+  ) {
+    if ([...rooms.values()].filter(isLive).length >= 200)
+      throw new Error("Tous les salons sont occupés. Réessaie bientôt.");
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let code = "";
+    do {
+      code = Array.from(
+        { length: 6 },
+        () => alphabet[randomInt(alphabet.length)],
+      ).join("");
+    } while (rooms.has(code));
+    return newRoom(
+      code,
+      player,
+      await repository.questionBank.drawQuestions(),
+      Date.now(),
+      times,
+      mode,
+    );
   }
   function active(id: string) {
     return [...rooms.values()].find(
@@ -171,11 +247,12 @@ export async function createApp(
     );
   }
   function resumable(id: string) {
-    return [...rooms.values()]
-      .reverse()
-      .find(
-        (r) => r.players.some((p) => p.id === id) && !r.dismissed.includes(id),
-      );
+    const latest =
+      active(id) ??
+      [...rooms.values()]
+        .filter((r) => r.players.some((p) => p.id === id))
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+    return latest && !latest.dismissed.includes(id) ? latest : undefined;
   }
   io.use(async (socket, next) => {
     try {
@@ -194,6 +271,7 @@ export async function createApp(
       )
         throw new Error("Trop de connexions pour ce profil.");
       socket.data.player = player;
+      socket.data.token = token;
       next();
     } catch (e) {
       next(
@@ -206,7 +284,12 @@ export async function createApp(
     }
   });
   io.on("connection", (socket) => {
-    const player = socket.data.player as { id: string; name: string };
+    const player = socket.data.player as {
+      id: string;
+      name: string;
+      account: boolean;
+    };
+    void refreshSocial().catch(() => {});
     const resume = resumable(player.id);
     if (resume) {
       socket.data.room = resume.code;
@@ -219,6 +302,18 @@ export async function createApp(
       const room = rooms.get(socket.data.room);
       if (room)
         socket.emit("room:state", view(room, player.id, online(), Date.now()));
+      void repository
+        .authenticate(socket.data.token)
+        .then((p) => {
+          if (!p) {
+            socket.emit("auth:expired");
+            socket.disconnect(true);
+          } else if (p.account)
+            return social
+              .state(p.id, online())
+              .then((state) => socket.emit("social:state", state));
+        })
+        .catch(() => {});
     });
     const command = (
       name: string,
@@ -228,6 +323,11 @@ export async function createApp(
         if (typeof ack !== "function") return;
         const receivedAt = Date.now();
         void serial(async () => {
+          if (!(await repository.authenticate(socket.data.token))) {
+            socket.emit("auth:expired");
+            socket.disconnect(true);
+            throw new Error("Session expirée. Reconnecte-toi.");
+          }
           if (!allow(`event:${player.id}`, 80))
             throw new Error("Trop de demandes. Patiente quelques secondes.");
           return handler(data, receivedAt);
@@ -266,21 +366,10 @@ export async function createApp(
         emit(existing);
         return;
       }
-      if ([...rooms.values()].filter(isLive).length >= 200)
-        throw new Error("Tous les salons sont occupés. Réessaie bientôt.");
-      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      let code = "";
-      do {
-        code = Array.from(
-          { length: 6 },
-          () => alphabet[randomInt(alphabet.length)],
-        ).join("");
-      } while (rooms.has(code));
-      const questions = await repository.questionBank.drawQuestions();
-      const room = newRoom(code, player, questions, Date.now(), times, mode);
+      const room = await makeRoom(player, mode);
       await repository.save(room);
-      rooms.set(code, room);
-      socket.data.room = code;
+      rooms.set(room.code, room);
+      attach(room, player.id);
       emit(room);
     });
     command("room:join", async (data) => {
@@ -308,8 +397,185 @@ export async function createApp(
         throw new Error("Ce salon est terminé. Crée un nouveau duel.");
       await repository.save(room);
       rooms.set(code, room);
-      socket.data.room = code;
+      attach(room, player.id);
       emit(room);
+      await db.query(
+        "UPDATE akasha_invitations SET status=CASE WHEN recipient=$2 THEN 'accepted' ELSE 'cancelled' END WHERE kind='duel' AND room_code=$1 AND status='pending'",
+        [code, player.id],
+      );
+      await refreshSocial();
+    });
+    const accountOnly = () => {
+      if (!player.account)
+        throw new Error(
+          "Crée un compte pour retrouver tes amis et tes invitations.",
+        );
+    };
+    command("friends:request", async (data) => {
+      accountOnly();
+      if (!allow(`friend-request:${player.id}`, 10, 3600000))
+        throw new Error("Trop de demandes d’amis. Réessaie plus tard.");
+      await social.request(
+        player.id,
+        z.object({ username: z.string() }).parse(data).username,
+      );
+      await refreshSocial();
+    });
+    command("friends:respond", async (data) => {
+      accountOnly();
+      const d = z
+        .object({ id: z.string().uuid(), accept: z.boolean() })
+        .parse(data);
+      await social.respond(player.id, d.id, d.accept);
+      await refreshSocial();
+    });
+    command("friends:remove", async (data) => {
+      accountOnly();
+      const d = z.object({ id: z.string().uuid() }).parse(data);
+      await social.remove(player.id, d.id);
+      await refreshSocial();
+    });
+    command("friends:invite", async (data) => {
+      accountOnly();
+      const d = z.object({ id: z.string().uuid() }).parse(data);
+      if (!(await social.areFriends(player.id, d.id)))
+        throw new Error("Ajoute d’abord ce joueur à tes amis.");
+      if (!allow(`invite:${player.id}`, 12, 60000))
+        throw new Error("Patiente avant d’envoyer une autre invitation.");
+      let room = active(player.id);
+      if (
+        room &&
+        (room.phase !== "lobby" ||
+          room.players.length !== 1 ||
+          room.mode !== "duel" ||
+          (room.reservedFor && room.reservedFor !== d.id))
+      )
+        throw new Error("Quitte ton salon actuel avant d’inviter cet ami.");
+      room = structuredClone(room ?? (await makeRoom(player)));
+      room.reservedFor = d.id;
+      await repository.save(room);
+      rooms.set(room.code, room);
+      attach(room, player.id);
+      await social.invite(player.id, d.id, "duel", room.code);
+      emit(room);
+      await refreshSocial();
+    });
+    command("room:rematch", async () => {
+      accountOnly();
+      const source = rooms.get(socket.data.room);
+      if (
+        !source ||
+        source.phase !== "finished" ||
+        source.mode !== "duel" ||
+        source.players.length !== 2
+      )
+        throw new Error("La revanche est disponible après un duel.");
+      const opponent = source.players.find((p) => p.id !== player.id)!;
+      if (!(await repository.accounts.profile(opponent.id)))
+        throw new Error(
+          "Ton adversaire doit créer un compte pour recevoir une revanche.",
+        );
+      if (active(player.id) || active(opponent.id))
+        throw new Error("Un joueur est déjà dans une autre partie.");
+      if (!allow(`rematch:${player.id}`, 6, 60000))
+        throw new Error("Patiente avant de redemander une revanche.");
+      await social.invite(
+        player.id,
+        opponent.id,
+        "rematch",
+        source.code,
+        `${source.code}:${source.createdAt}`,
+      );
+      await refreshSocial();
+    });
+    command("invitation:respond", async (data) => {
+      accountOnly();
+      const d = z
+        .object({ id: z.string().uuid(), accept: z.boolean() })
+        .parse(data);
+      const invitation = await social.getInvite(d.id);
+      if (
+        !invitation ||
+        (invitation.recipient !== player.id &&
+          !(invitation.sender === player.id && !d.accept))
+      )
+        throw new Error("Invitation introuvable.");
+      if (
+        invitation.status !== "pending" ||
+        Number(invitation.expires_at) <= Date.now()
+      )
+        throw new Error("Cette invitation a expiré ou a déjà été traitée.");
+      if (!d.accept) {
+        await social.resolve(
+          invitation.id,
+          invitation.sender === player.id ? "cancelled" : "declined",
+        );
+        const source = rooms.get(invitation.room_code);
+        if (
+          invitation.kind === "duel" &&
+          source?.phase === "lobby" &&
+          source.players.length === 1 &&
+          source.reservedFor === invitation.recipient
+        ) {
+          const closed = structuredClone(source);
+          leave(closed, invitation.sender);
+          await persist(closed);
+          for (const peer of io.sockets.sockets.values())
+            if (peer.data.room === closed.code) {
+              peer.data.room = null;
+              peer.emit("room:state", null);
+            }
+        }
+        await refreshSocial();
+        return;
+      }
+      const sender = await repository.accounts.profile(invitation.sender);
+      if (!sender) throw new Error("Ce joueur n’est plus disponible.");
+      let room: Room;
+      if (invitation.kind === "duel") {
+        if (!(await social.areFriends(player.id, sender.id)))
+          throw new Error("Vous n’êtes plus amis.");
+        const source = rooms.get(invitation.room_code);
+        if (
+          !source ||
+          source.phase !== "lobby" ||
+          source.deadline <= Date.now() ||
+          source.players.length !== 1 ||
+          source.players[0].id !== sender.id
+        )
+          throw new Error("Ce salon n’est plus disponible.");
+        if (active(player.id) && active(player.id)!.code !== source.code)
+          throw new Error("Quitte ta partie actuelle avant d’accepter.");
+        room = structuredClone(source);
+        join(room, player);
+      } else {
+        const source = rooms.get(invitation.room_code);
+        if (
+          !source ||
+          `${source.code}:${source.createdAt}` !== invitation.origin_key ||
+          source.phase !== "finished" ||
+          !source.players.some((p) => p.id === player.id) ||
+          !source.players.some((p) => p.id === sender.id)
+        )
+          throw new Error("Ce duel n’est plus disponible pour une revanche.");
+        if (active(player.id) || active(sender.id))
+          throw new Error("Un joueur est déjà dans une autre partie.");
+        room = await makeRoom({
+          id: sender.id,
+          name: sender.name,
+          account: true,
+        });
+        room.rematchOf = invitation.id;
+        room.reservedFor = player.id;
+        join(room, player);
+      }
+      await repository.save(room);
+      rooms.set(room.code, room);
+      attach(room, sender.id);
+      attach(room, player.id);
+      await social.resolve(invitation.id, "accepted", room.code);
+      emit(room);
+      await refreshSocial();
     });
     command("room:ready", async (_data, receivedAt) =>
       mutate((room) => {
@@ -343,6 +609,7 @@ export async function createApp(
         }
     });
     socket.on("disconnect", () => {
+      void refreshSocial().catch(() => {});
       void serial(async () => {
         const current = rooms.get(socket.data.room);
         if (!current) return;

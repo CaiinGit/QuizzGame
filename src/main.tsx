@@ -11,6 +11,7 @@ import "./bottom-navigation.css";
 import "./typography.css";
 import "./selection-cards.css";
 import "./match-review.css";
+import "./account-social.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

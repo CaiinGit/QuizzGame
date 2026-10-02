@@ -83,8 +83,10 @@ export function PlayerHeader({
 
 export function PhotoEditor({
   avatar,
+  cloud = false,
 }: {
   avatar: ReturnType<typeof useAvatar>;
+  cloud?: boolean;
 }) {
   const picker = useRef<HTMLInputElement>(null);
   return (
@@ -100,7 +102,8 @@ export function PhotoEditor({
       </div>
       <p>
         Choisis une image dans ta galerie ou tes fichiers. Elle sera centrée
-        dans un carré et conservée sur cet appareil.
+        dans un carré et{" "}
+        {cloud ? "sauvegardée dans ton compte." : "conservée sur cet appareil."}
       </p>
       {avatar.error && (
         <div className="notice error" role="alert">

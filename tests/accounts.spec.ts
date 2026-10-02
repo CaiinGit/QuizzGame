@@ -1,0 +1,231 @@
+import { test, expect, type Page } from "@playwright/test";
+const password = "Ma longue phrase de test Akasha!";
+async function register(page: Page, username: string) {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Créer un compte", exact: true })
+    .click();
+  await page.getByLabel("Pseudo unique", { exact: true }).fill(username);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(password);
+  await page
+    .getByLabel("Confirmer le mot de passe", { exact: true })
+    .fill(password);
+  await page
+    .getByRole("button", { name: "Créer mon compte", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Ton code de secours" }),
+  ).toBeVisible();
+  const code = await page
+    .getByLabel("Code de secours", { exact: true })
+    .textContent();
+  await page
+    .getByRole("button", { name: "J’ai conservé mon code", exact: true })
+    .click();
+  await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+  return code!;
+}
+async function login(page: Page, username: string, pass = password) {
+  await page.goto("/#profil");
+  await page.getByRole("button", { name: "Me connecter", exact: true }).click();
+  await page.getByLabel("Pseudo unique", { exact: true }).fill(username);
+  await page.getByLabel("Mot de passe", { exact: true }).fill(pass);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Me connecter", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+}
+
+test("accounts sync profile and photo across devices, preserve recovery, and revoke old sessions", async ({
+  browser,
+}) => {
+  test.setTimeout(90000);
+  const name = `photo_${Date.now().toString(36)}`;
+  const a = await browser.newContext({ viewport: { width: 320, height: 640 } }),
+    b = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const p = await a.newPage(),
+    q = await b.newPage();
+  try {
+    const recovery = await register(p, name);
+    await p.getByLabel("Nom affiché", { exact: true }).fill("Capitaine Akasha");
+    await p.getByRole("button", { name: "Enregistrer", exact: true }).click();
+    await expect(
+      p.getByRole("heading", { name: "Capitaine Akasha", exact: true }),
+    ).toBeVisible();
+    await p
+      .getByRole("button", { name: "Modifier ma photo", exact: true })
+      .click();
+    await p
+      .getByLabel("Choisir une photo de profil", { exact: true })
+      .setInputFiles("public/art/portal.webp");
+    await expect(p.getByRole("status")).toHaveText("Photo enregistrée");
+    const photo = await p.locator(".header-photo img").getAttribute("src");
+    await p.keyboard.press("Escape");
+    await login(q, name);
+    await expect(
+      q.getByRole("heading", { name: "Capitaine Akasha", exact: true }),
+    ).toBeVisible();
+    await expect(q.locator(".header-photo img")).toHaveAttribute("src", photo!);
+    await p.reload();
+    await expect(p.locator(".header-photo img")).toHaveAttribute("src", photo!);
+    expect(
+      await p.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await p.screenshot({
+      path: "test-results/account-profile-light.png",
+      fullPage: true,
+    });
+    await q
+      .getByRole("button", { name: "Me déconnecter", exact: true })
+      .click();
+    await q
+      .getByRole("button", { name: "Confirmer la déconnexion", exact: true })
+      .click();
+    await q.getByRole("button", { name: "Me connecter", exact: true }).click();
+    await q
+      .getByRole("button", { name: "Mot de passe oublié ?", exact: true })
+      .click();
+    await q.getByLabel("Pseudo unique", { exact: true }).fill(name);
+    await q.getByLabel("Code de secours", { exact: true }).fill(recovery);
+    await q
+      .getByLabel("Nouveau mot de passe", { exact: true })
+      .fill(password + " nouveau");
+    await q
+      .getByLabel("Confirmer le mot de passe", { exact: true })
+      .fill(password + " nouveau");
+    await q
+      .getByRole("button", { name: "Récupérer mon compte", exact: true })
+      .click();
+    await expect(
+      q.getByRole("heading", { name: "Ton code de secours" }),
+    ).toBeVisible();
+    await expect(
+      q.getByLabel("Code de secours", { exact: true }),
+    ).not.toHaveText(recovery);
+    await q.keyboard.press("Escape");
+    await expect(
+      q.getByRole("heading", { name: "Ton code de secours" }),
+    ).toBeVisible();
+    await q
+      .getByRole("button", { name: "J’ai conservé mon code", exact: true })
+      .click();
+    await expect(
+      p.getByRole("button", { name: "Me connecter", exact: true }),
+    ).toBeVisible();
+    await q.reload();
+    await expect(
+      q.getByRole("heading", { name: "Capitaine Akasha", exact: true }),
+    ).toBeVisible();
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});
+
+test("round home friends button, friendship, direct invitation, match history and accepted rematch", async ({
+  browser,
+}) => {
+  test.setTimeout(90000);
+  const suffix = Date.now().toString(36),
+    alice = `ami_a_${suffix}`,
+    bob = `ami_b_${suffix}`;
+  const a = await browser.newContext({ viewport: { width: 390, height: 844 } }),
+    b = await browser.newContext({ viewport: { width: 360, height: 800 } });
+  const p = await a.newPage(),
+    q = await b.newPage();
+  try {
+    await register(p, alice);
+    await register(q, bob);
+    await p
+      .getByRole("navigation")
+      .getByRole("button", { name: "Accueil", exact: true })
+      .click();
+    const friends = p.getByRole("button", { name: "Mes amis", exact: true });
+    await expect(friends).toBeVisible();
+    const box = (await friends.boundingBox())!;
+    expect(box.width).toBe(box.height);
+    expect(box.x).toBeGreaterThan(250);
+    await p.screenshot({
+      path: "test-results/home-friends-light.png",
+      fullPage: true,
+    });
+    await friends.click();
+    await p.getByLabel("Ajouter un ami par son pseudo unique").fill(bob);
+    await p.getByRole("button", { name: "Ajouter", exact: true }).click();
+    await expect(
+      p.getByRole("heading", { name: "Demandes envoyées" }),
+    ).toBeVisible();
+    await q.getByRole("button", { name: "Mes amis", exact: true }).click();
+    await q
+      .getByRole("button", { name: `Accepter ${alice}`, exact: true })
+      .click();
+    await expect(
+      p.getByRole("button", { name: "Inviter", exact: true }),
+    ).toBeVisible();
+    await p.getByRole("button", { name: "Réglages", exact: true }).click();
+    await p.getByRole("button", { name: "Mode sombre", exact: true }).click();
+    await p.keyboard.press("Escape");
+    await p.screenshot({
+      path: "test-results/friends-dark.png",
+      fullPage: true,
+    });
+    await p.getByRole("button", { name: "Inviter", exact: true }).click();
+    await expect(p.getByTestId("room-code")).toBeVisible();
+    await q.getByRole("button", { name: "Accepter", exact: true }).click();
+    await expect(q.getByTestId("room-code")).toHaveText(
+      await p.getByTestId("room-code").innerText(),
+    );
+    const first = await p.getByTestId("room-code").innerText();
+    await p.getByRole("button", { name: "Je suis prêt", exact: true }).click();
+    await q.getByRole("button", { name: "Je suis prêt", exact: true }).click();
+    for (let round = 1; round <= 10; round++) {
+      await expect(p.locator(".question-meta b")).toHaveText(
+        String(round).padStart(2, "0"),
+      );
+      await expect(q.locator(".question-meta b")).toHaveText(
+        String(round).padStart(2, "0"),
+      );
+      await p.locator(".answer").first().click();
+      await q.locator(".answer").first().click();
+    }
+    await expect(
+      p.getByRole("button", { name: "Demander une revanche", exact: true }),
+    ).toBeVisible();
+    await p
+      .getByRole("button", { name: "Demander une revanche", exact: true })
+      .click();
+    await q.getByRole("button", { name: "Accepter", exact: true }).click();
+    await expect(p.getByTestId("room-code")).not.toHaveText(first);
+    await expect(q.getByTestId("room-code")).toHaveText(
+      await p.getByTestId("room-code").innerText(),
+    );
+    await p.getByRole("button", { name: "Quitter", exact: true }).click();
+    await p
+      .getByRole("dialog")
+      .getByRole("button", { name: "Quitter le duel", exact: true })
+      .click();
+    await p
+      .getByRole("button", { name: "Ouvrir mon profil", exact: true })
+      .click();
+    await p.getByRole("button", { name: "Mes parties", exact: true }).click();
+    await expect(p.locator(".history-card")).toHaveCount(1);
+    await p.locator(".history-card").click();
+    await expect(
+      p.getByRole("heading", { name: "Détail des réponses" }),
+    ).toBeVisible();
+    await expect(p.locator(".review-round")).toHaveCount(10);
+    await p.screenshot({
+      path: "test-results/account-history-dark.png",
+      fullPage: true,
+    });
+  } finally {
+    await a.close();
+    await b.close();
+  }
+});

@@ -19,6 +19,7 @@ import {
   serverUrl,
   type DuelSocket,
   type Profile,
+  accountApi,
 } from "./client";
 import { Explore, BottomNavigation } from "./Explore";
 import { useNavigation } from "./navigation";
@@ -29,7 +30,14 @@ import {
   headerPanels,
   type HeaderPanel,
 } from "./PlayerHeader";
-import { useAvatar } from "./avatar";
+import { useAvatar, preparePhoto } from "./avatar";
+import { AccountActions, AuthDialog, type AuthMode } from "./Account";
+import { FriendsPanel, HistoryPanel, InviteCard } from "./Social";
+import type {
+  AccountProfile,
+  AuthResult,
+  SocialState,
+} from "../shared/account";
 import { TimeBar } from "./TimeBar";
 import { MatchReview } from "./MatchReview";
 type Intent =
@@ -40,13 +48,25 @@ import type { RoomView } from "../shared/protocol";
 export default function App() {
   const navigation = useNavigation();
   const avatar = useAvatar();
+  const [account, setAccount] = useState<AccountProfile | null>(null),
+    [auth, setAuth] = useState<AuthMode | null>(null),
+    [social, setSocial] = useState<SocialState | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false),
+    [photoError, setPhotoError] = useState("");
   const [headerPanel, setHeaderPanel] = useState<HeaderPanel | null>(null);
   const [identity, setIdentity] = useState(false),
     [intent, setIntent] = useState<Intent | null>(null),
     [synced, setSynced] = useState(false);
   const backRef = useRef(() => {});
   backRef.current = () => {
-    if (identity) {
+    if (auth) {
+      if (
+        !document.querySelector(
+          '.account-dialog[data-recovery="true"],.account-dialog[data-busy="true"]',
+        )
+      )
+        setAuth(null);
+    } else if (identity) {
       setIdentity(false);
       setIntent(null);
     } else if (headerPanel) setHeaderPanel(null);
@@ -138,6 +158,37 @@ export default function App() {
       setOnline(true);
       setError("");
       void sync();
+      if (profile.credentials?.account)
+        void accountApi<AccountProfile>(profile, "me")
+          .then((p) => {
+            if (!disposed) updateAccount(p);
+          })
+          .catch((e) => {
+            if (!disposed) setError(e.message);
+          });
+    });
+    const expired = () => {
+      if (disposed) return;
+      setProfile((p) =>
+        p && p.credentials?.token === profile.credentials?.token
+          ? { ...p, credentials: null }
+          : p,
+      );
+      setAccount(null);
+      setSocial(null);
+      setRoom(null);
+      setError("Ta session a expiré. Reconnecte-toi à ton compte.");
+      void loadProfile().then((p) => {
+        if (p.credentials?.token === profile.credentials?.token)
+          return saveProfile({ ...p, credentials: null });
+      });
+    };
+    s.on("auth:expired", expired);
+    s.on("account:profile", (p: AccountProfile) => {
+      if (!disposed) updateAccount(p);
+    });
+    s.on("social:state", (state: SocialState) => {
+      if (!disposed) setSocial(state);
     });
     s.on("disconnect", () => {
       setOnline(false);
@@ -146,6 +197,10 @@ export default function App() {
     s.on("connect_error", (e) => {
       setOnline(false);
       if (e.message === "SESSION_EXPIRED") {
+        if (profile.credentials?.account) {
+          expired();
+          return;
+        }
         const next = { ...profile, credentials: null };
         void saveProfile(next).then(() => {
           if (!disposed) {
@@ -187,7 +242,7 @@ export default function App() {
       socket.current = null;
       setOnline(false);
     };
-  }, [profile]);
+  }, [profile?.server, profile?.credentials?.token]);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now() + offset.current), 100);
     return () => clearInterval(timer);
@@ -202,15 +257,23 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
-    if (!intent || !profile?.credentials || !online || !synced || busy || room)
+    if (
+      !intent ||
+      !profile?.credentials ||
+      !online ||
+      !synced ||
+      busy ||
+      room ||
+      auth
+    )
       return;
     setIntent(null);
     void run(async () => {
       await command(socket.current, intent.event, intent.data);
     });
-  }, [intent, profile, online, synced, busy, room]);
+  }, [intent, profile, online, synced, busy, room, auth]);
   useEffect(() => {
-    if (!identity && !settings && !quitting && !headerPanel) return;
+    if (!identity && !settings && !quitting && !headerPanel && !auth) return;
     const previous = document.activeElement as HTMLElement | null;
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     const focusable = () =>
@@ -247,7 +310,84 @@ export default function App() {
       document.removeEventListener("keydown", keydown);
       previous?.focus();
     };
-  }, [identity, settings, quitting, headerPanel]);
+  }, [identity, settings, quitting, headerPanel, auth]);
+  function updateAccount(value: AccountProfile) {
+    setAccount(value);
+    setName(value.name);
+    setProfile((p) =>
+      p?.credentials?.id === value.id
+        ? { ...p, credentials: { ...p.credentials, name: value.name } }
+        : p,
+    );
+  }
+  async function authenticated(result: AuthResult, mode: AuthMode) {
+    if (!profile) return;
+    const next = {
+      server: serverUrl(profile.server),
+      credentials: result.credentials,
+    };
+    await saveProfile(next);
+    setProfile(next);
+    setAccount(result.profile);
+    setSocial(null);
+    setRoom(null);
+    setName(result.profile.name);
+    setError("");
+    if (mode === "register" && avatar.photo) {
+      try {
+        updateAccount(
+          await accountApi<AccountProfile>(next, "profile", {
+            photo: avatar.photo,
+          }),
+        );
+      } catch {
+        setPhotoError(
+          "Compte créé. Choisis à nouveau ta photo pour la synchroniser.",
+        );
+      }
+    }
+  }
+  async function logout() {
+    if (!profile) return;
+    await accountApi(profile, "logout", {});
+    const next = { ...profile, credentials: null };
+    await saveProfile(next);
+    setProfile(next);
+    setAccount(null);
+    setSocial(null);
+    setRoom(null);
+    setError("");
+    setName("");
+  }
+  const displayedPhoto = profile?.credentials?.account
+    ? (account?.photo ?? null)
+    : avatar.photo;
+  const cloudAvatar = {
+    photo: displayedPhoto,
+    ready: !!account,
+    busy: photoBusy,
+    error: photoError,
+    update: async (file: File | null) => {
+      if (!profile || photoBusy) return;
+      setPhotoBusy(true);
+      setPhotoError("");
+      try {
+        const photo = file ? await preparePhoto(file) : null;
+        updateAccount(
+          await accountApi<AccountProfile>(profile, "profile", { photo }),
+        );
+      } catch (e) {
+        setPhotoError((e as Error).message);
+      } finally {
+        setPhotoBusy(false);
+      }
+    },
+  };
+  async function socialAction(event: string, data: unknown = {}) {
+    await run(async () => {
+      await command(socket.current, event, data);
+    });
+  }
   async function run(action: () => Promise<void>) {
     if (pending.current) return;
     pending.current = true;
@@ -290,6 +430,8 @@ export default function App() {
       };
       await saveProfile(next);
       setProfile(next);
+      setAccount(null);
+      setSocial(null);
       setRoom(null);
       setSettings(false);
     });
@@ -332,7 +474,7 @@ export default function App() {
       className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
     >
       <PlayerHeader
-        photo={avatar.photo}
+        photo={displayedPhoto}
         profile={() => navigate("profil")}
         profileDisabled={!!room}
         open={setHeaderPanel}
@@ -343,7 +485,7 @@ export default function App() {
         }}
       />
       <main>
-        {error && !settings && !quitting && !identity && (
+        {error && !settings && !quitting && !identity && !auth && (
           <div className="notice error" role="alert">
             {error}
             <button
@@ -361,39 +503,110 @@ export default function App() {
             serveur.
           </div>
         )}
-        {!room && (
-          <Explore
-            screen={navigation.screen}
-            navigate={navigate}
-            back={() => {
-              setError("");
-              setIntent(null);
-              navigation.back();
-            }}
-            profile={profile}
-            photo={avatar.photo}
-            editPhoto={() => setHeaderPanel("photo")}
-            openShortcut={setHeaderPanel}
-            online={online}
-            busy={busy || !!intent}
-            code={code}
-            setCode={setCode}
-            create={() => requestAction({ event: "room:create", data: {} })}
-            solo={() =>
-              requestAction({ event: "room:create", data: { mode: "solo" } })
-            }
-            join={() => requestAction({ event: "room:join", data: { code } })}
-            chooseName={() => {
-              setIntent(null);
-              setIdentity(true);
-              setError("");
-            }}
-            settings={() => {
-              setAddress(profile?.server ?? "");
-              setSettings(true);
-            }}
-          />
-        )}
+        {!!social?.invitations.length &&
+          (!!room || navigation.screen !== "amis") &&
+          (!room || ended || room.phase === "lobby") && (
+            <div className="invitation-inbox" aria-label="Invitations reçues">
+              {social.invitations
+                .filter((i) => i.expiresAt > now)
+                .map((i) => (
+                  <InviteCard
+                    key={i.id}
+                    invite={i}
+                    act={socialAction}
+                    busy={busy || !online}
+                  />
+                ))}
+            </div>
+          )}
+        {!room &&
+          profile &&
+          (navigation.screen === "amis" ||
+            navigation.screen === "historique") && (
+            <section className="explore-screen">
+              <button
+                className="text-button screen-back"
+                onClick={() => navigation.back()}
+              >
+                <ChevronLeft size={18} />
+                Retour
+              </button>
+              <div className="page-heading">
+                <h1>
+                  {navigation.screen === "amis" ? "Mes amis" : "Mes parties"}
+                </h1>
+              </div>
+              {navigation.screen === "amis" ? (
+                <FriendsPanel
+                  state={social}
+                  account={!!profile.credentials?.account}
+                  online={online}
+                  auth={() => setAuth("login")}
+                  act={socialAction}
+                  busy={busy}
+                />
+              ) : (
+                <HistoryPanel
+                  key={`${profile.server}:${profile.credentials?.id ?? "guest"}`}
+                  profile={profile}
+                  auth={() => setAuth("login")}
+                />
+              )}
+            </section>
+          )}
+        {!room &&
+          navigation.screen !== "amis" &&
+          navigation.screen !== "historique" && (
+            <Explore
+              screen={navigation.screen}
+              navigate={navigate}
+              back={() => {
+                setError("");
+                setIntent(null);
+                navigation.back();
+              }}
+              profile={profile}
+              photo={displayedPhoto}
+              accountName={account?.name}
+              friendCount={
+                (social?.incoming.length ?? 0) +
+                (social?.invitations.filter((i) => i.expiresAt > now).length ??
+                  0)
+              }
+              accountContent={
+                <AccountActions
+                  key={account?.id ?? "guest"}
+                  profile={profile}
+                  account={account}
+                  auth={setAuth}
+                  history={() => navigate("historique")}
+                  friends={() => navigate("amis")}
+                  logout={logout}
+                  updated={updateAccount}
+                />
+              }
+              editPhoto={() => setHeaderPanel("photo")}
+              openShortcut={setHeaderPanel}
+              online={online}
+              busy={busy || !!intent}
+              code={code}
+              setCode={setCode}
+              create={() => requestAction({ event: "room:create", data: {} })}
+              solo={() =>
+                requestAction({ event: "room:create", data: { mode: "solo" } })
+              }
+              join={() => requestAction({ event: "room:join", data: { code } })}
+              chooseName={() => {
+                setIntent(null);
+                setIdentity(true);
+                setError("");
+              }}
+              settings={() => {
+                setAddress(profile?.server ?? "");
+                setSettings(true);
+              }}
+            />
+          )}
         {room && (
           <>
             <div className="duel-nav">
@@ -458,8 +671,8 @@ export default function App() {
               {(solo ? [me] : [me, opponent]).map((p, i) => (
                 <div className={`player ${i === 0 ? "you" : ""}`} key={i}>
                   <div className="avatar">
-                    {i === 0 && p && avatar.photo ? (
-                      <img src={avatar.photo} alt="" />
+                    {i === 0 && p && displayedPhoto ? (
+                      <img src={displayedPhoto} alt="" />
                     ) : p ? (
                       p.name.slice(0, 1).toUpperCase()
                     ) : (
@@ -530,6 +743,17 @@ export default function App() {
                   <span>Jusqu’à 1 000 points par bonne réponse</span>
                   <span>Les points diminuent avec le temps de réponse</span>
                 </div>
+                {social?.sentInvitations
+                  .filter((i) => i.kind === "duel" && i.expiresAt > now)
+                  .map((i) => (
+                    <InviteCard
+                      key={i.id}
+                      invite={i}
+                      sent
+                      act={socialAction}
+                      busy={busy || !online}
+                    />
+                  ))}
               </section>
             )}
             {room.phase === "countdown" && (
@@ -663,6 +887,37 @@ export default function App() {
                             ? "La prochaine traversée sera peut-être la tienne."
                             : "Vous connaissez Grand Line aussi bien l’un que l’autre."}
                 </p>
+                {room.phase === "finished" &&
+                  !solo &&
+                  profile?.credentials?.account &&
+                  opponent?.account && (
+                    <div className="rematch-actions">
+                      {social?.sentInvitations
+                        .filter(
+                          (i) => i.kind === "rematch" && i.expiresAt > now,
+                        )
+                        .map((i) => (
+                          <InviteCard
+                            key={i.id}
+                            invite={i}
+                            sent
+                            act={socialAction}
+                            busy={busy || !online}
+                          />
+                        ))}
+                      {!social?.sentInvitations.some(
+                        (i) => i.kind === "rematch" && i.expiresAt > now,
+                      ) && (
+                        <button
+                          className="button primary"
+                          disabled={!online || busy}
+                          onClick={() => void socialAction("room:rematch")}
+                        >
+                          Demander une revanche
+                        </button>
+                      )}
+                    </div>
+                  )}
                 <button
                   className="button primary"
                   disabled={!online || busy}
@@ -681,6 +936,17 @@ export default function App() {
       </main>
       {!room && (
         <BottomNavigation screen={navigation.screen} navigate={navigate} />
+      )}
+      {auth && profile && (
+        <AuthDialog
+          mode={auth}
+          profile={profile}
+          close={() => {
+            setAuth(null);
+            setError("");
+          }}
+          success={authenticated}
+        />
       )}
       {identity && (
         <div className="modal-backdrop">
@@ -731,6 +997,26 @@ export default function App() {
                 <ArrowRight size={18} />
               </button>
             </form>
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => {
+                setIdentity(false);
+                setAuth("login");
+              }}
+            >
+              J’ai déjà un compte
+            </button>
+            <button
+              className="text-button"
+              disabled={busy}
+              onClick={() => {
+                setIdentity(false);
+                setAuth("register");
+              }}
+            >
+              Créer un compte
+            </button>
           </section>
         </div>
       )}
@@ -783,7 +1069,10 @@ export default function App() {
               </form>
             </details>
             <p className="fineprint">
-              Ton pseudo est enregistré sur ce téléphone. Version de test 0.3.
+              {profile?.credentials?.account
+                ? "Ton profil est sauvegardé dans ton compte."
+                : "Tu utilises un profil invité sur cet appareil."}{" "}
+              Version 0.5.
             </p>
           </section>
         </div>
@@ -805,7 +1094,10 @@ export default function App() {
             </button>
             <h2 id="header-panel-title">{headerPanels[headerPanel].title}</h2>
             {headerPanel === "photo" ? (
-              <PhotoEditor avatar={avatar} />
+              <PhotoEditor
+                avatar={profile?.credentials?.account ? cloudAvatar : avatar}
+                cloud={!!profile?.credentials?.account}
+              />
             ) : (
               <>
                 <span className="coming-soon">À venir</span>

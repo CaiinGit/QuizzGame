@@ -2,7 +2,11 @@
 
 Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
-## Version 0.4
+## Version 0.5
+
+Comptes persistants avec pseudo unique, mot de passe et code de secours ; nom et photo synchronisés entre appareils ; historique personnel durable ; amis avec demandes et invitations ; revanche après un duel. Le bouton rond **Mes amis** se trouve à droite du portail. Voir [le fonctionnement des comptes](docs/COMPTES.md). Le mode invité reste disponible. La version web est mise à jour sur le serveur ; une ancienne installation Android conserve son interface jusqu’à sa prochaine mise à jour.
+
+## Versions précédentes
 
 APK 0.4.2 (code Android 6) : réponse enregistrée mise en évidence, écran de question allégé et bilan final question par question avec les choix et points des deux joueurs. Le bilan est sauvegardé côté serveur et disponible après reconnexion ; seules les questions déjà corrigées figurent dans un duel interrompu. Les anciennes parties sans historique ne peuvent pas être reconstituées.
 
@@ -11,7 +15,7 @@ APK 0.4.0 (code Android 4) : nouveau cadre de portrait blanc/cyan en pixel art, 
 APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, domaine public stable via Cloudflare Tunnel, sans Tailscale.
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
-- Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers et mémorisée sur l’appareil. Les photos sont recadrées au centre et réduites à 320 × 320, sans envoi au serveur.
+- Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers. Les photos sont recadrées au centre et réduites à 320 × 320 : locales en mode invité, sauvegardées sur le serveur avec un compte.
 - Roue dentée : réglages avec mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé ; connexion au serveur dans une section dépliable.
 - Emplacements niveau/XP, pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
 - Barre du bas : **Classement · Accueil · Thèmes · Boutique**, icônes pixel en relief et fond identique au bandeau joueur ; masquée dans les salons et duels. Classement et Boutique affichent « À venir ».
@@ -33,7 +37,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 - Reconnexion, sauvegarde des duels et reprise après redémarrage du serveur.
 - Abandon, égalité, salon complet ou expiré et erreurs de connexion gérés.
 
-La banque PostgreSQL contient initialement dix questions de test One Piece. Les nouvelles parties tirent uniquement les questions publiées ; les brouillons et les archives sont exclus. La structure est prête pour les futurs contenus, dont le format d’import sera défini plus tard : voir [la banque de questions](docs/QUESTIONS.md). Niveaux, pièces, succès et autres thèmes restent à venir. Les profils sont des profils de test, pas encore des comptes récupérables. Une connexion au serveur est nécessaire.
+La banque PostgreSQL contient initialement dix questions de test One Piece. Les nouvelles parties tirent uniquement les questions publiées ; les brouillons et les archives sont exclus. La structure est prête pour les futurs contenus, dont le format d’import sera défini plus tard : voir [la banque de questions](docs/QUESTIONS.md). Niveaux, pièces, succès et autres thèmes restent à venir. Les comptes sont récupérables avec leur code de secours ; les profils invités restent liés à leur appareil. Une connexion au serveur est nécessaire.
 
 Le score d’une bonne réponse est `ceil(1000 × temps restant / durée de la question)`, borné entre 0 et 1 000, avec au moins 1 point avant l’échéance. La date de réception est enregistrée par le serveur avant sa file de sauvegarde ; les dates et points envoyés par le client sont ignorés. La latence réseau compte donc dans le délai de réception. Deux réponses dans la même tranche d’un point peuvent donner le même score. Les doubles clics ne changent ni le premier choix ni son horodatage. Les anciennes réponses sauvegardées sans horodatage conservent leur ancien crédit ; les nouvelles utilisent le barème temporel.
 
@@ -80,6 +84,8 @@ L'accès public utilise [Cloudflare Tunnel avec le domaine akashaquiz.com](docs/
 | `server/questions.ts` | Dix questions de test, utilisées une seule fois à l’initialisation |
 | `server/question-bank.ts` | Banque PostgreSQL privée : validation, statuts et tirage des questions |
 | `server/database.ts`  | Sessions et états de duels persistés dans PostgreSQL           |
+| `server/accounts.ts` | Comptes, sessions, récupération et photos                      |
+| `server/social.ts` | Relations d’amitié et invitations persistantes                   |
 | `shared/`             | Données publiques échangées avec l’application                 |
 | `tests/`              | Parcours avec deux navigateurs au format téléphone             |
 | `android/`            | Application native Android Capacitor 7                         |

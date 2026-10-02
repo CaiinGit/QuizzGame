@@ -1,7 +1,7 @@
 {
   "name": "akasha",
   "private": true,
-  "version": "0.4.2",
+  "version": "0.5.0",
   "type": "module",
   "engines": {
     "node": ">=20.11"
@@ -13,7 +13,7 @@
     "start": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --import tsx --test server/engine.test.ts server/app.test.ts server/question-bank.test.ts",
+    "test": "node --import tsx --test server/engine.test.ts server/app.test.ts server/question-bank.test.ts server/accounts.test.ts",
     "test:e2e": "playwright test",
     "check": "npm run test && npm run build",
     "android:sync": "npm run build && cap sync android",
@@ -31,6 +31,7 @@
     "pg": "^8.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sharp": "^0.35.4",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "zod": "^3.24.0"
@@ -46,7 +47,6 @@
     "@vitejs/plugin-react": "^4.4.0",
     "concurrently": "^9.2.4",
     "prettier": "^3.9.9",
-    "sharp": "^0.35.4",
     "tsx": "^4.23.15",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"

@@ -9,6 +9,8 @@ const routes = [
   "one-piece",
   "rejoindre",
   "profil",
+  "amis",
+  "historique",
   "classement",
   "boutique",
 ] as const;
@@ -22,6 +24,8 @@ const parents: Record<Screen, Screen> = {
   "one-piece": "classique",
   rejoindre: "accueil",
   profil: "accueil",
+  amis: "accueil",
+  historique: "profil",
   classement: "accueil",
   boutique: "accueil",
 };

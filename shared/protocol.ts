@@ -9,6 +9,7 @@ export type RoundResult = {
   answers: Record<string, { choice: number | null; points: number }>;
 };
 export type PublicPlayer = {
+  account?: boolean;
   id: string;
   name: string;
   ready: boolean;
@@ -43,4 +44,9 @@ export type RoomView = {
 };
 export type Ack<T = undefined> =
   { ok: true; data: T } | { ok: false; error: string };
-export type Credentials = { id: string; token: string; name: string };
+export type Credentials = {
+  id: string;
+  token: string;
+  name: string;
+  account?: boolean;
+};

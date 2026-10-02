@@ -7,8 +7,11 @@ export type Player = {
   name: string;
   ready: boolean;
   score: number;
+  account?: boolean;
 };
 export type Room = {
+  reservedFor?: string;
+  rematchOf?: string;
   mode: GameMode;
   code: string;
   phase: Phase;
@@ -91,6 +94,12 @@ export function newRoom(
   };
 }
 export function join(room: Room, player: { id: string; name: string }) {
+  if (
+    room.reservedFor &&
+    player.id !== room.reservedFor &&
+    player.id !== room.players[0].id
+  )
+    throw new Error("Ce salon est réservé au joueur invité.");
   if (room.mode === "solo")
     throw new Error("Cette partie est réservée au jeu solo.");
   if (room.players.some((p) => p.id === player.id)) return;

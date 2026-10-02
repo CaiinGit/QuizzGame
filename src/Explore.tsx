@@ -1,4 +1,5 @@
-import { ChevronLeft, ArrowRight, Check, Settings2 } from "lucide-react";
+import { ChevronLeft, ArrowRight, Check, Settings2, Users } from "lucide-react";
+import type { ReactNode } from "react";
 import { PixelIcon } from "./PixelIcon";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import {
@@ -10,6 +11,9 @@ import type { Screen } from "./navigation";
 import type { Profile } from "./client";
 
 type Props = {
+  accountContent?: ReactNode;
+  accountName?: string;
+  friendCount?: number;
   screen: Screen;
   navigate: (screen: Screen) => void;
   back: () => void;
@@ -100,6 +104,20 @@ export function Explore(p: Props) {
           </div>
         </div>
         <div className="portal-stage">
+          <button
+            type="button"
+            className="home-friends"
+            aria-label="Mes amis"
+            title="Mes amis"
+            onClick={() => navigate("amis")}
+          >
+            <Users size={24} />
+            {!!p.friendCount && (
+              <span className="social-badge">
+                {p.friendCount > 9 ? "9+" : p.friendCount}
+              </span>
+            )}
+          </button>
           <img
             className="portal-art"
             src="/art/portal.webp"
@@ -346,10 +364,12 @@ export function Explore(p: Props) {
             {profile?.credentials ? (
               <>
                 <span className="eyebrow">TON PSEUDO</span>
-                <h2>{profile.credentials.name}</h2>
+                <h2>{p.accountName ?? profile.credentials.name}</h2>
                 <p>
                   <Check size={15} />
-                  Enregistré sur ce téléphone
+                  {profile.credentials.account
+                    ? "Compte sauvegardé"
+                    : "Profil invité sur cet appareil"}
                 </p>
               </>
             ) : (
@@ -362,6 +382,7 @@ export function Explore(p: Props) {
               </>
             )}
           </div>
+          {p.accountContent}
           <button className="profile-setting" onClick={p.settings}>
             <Settings2 size={21} />
             <span>
@@ -376,7 +397,7 @@ export function Explore(p: Props) {
             </span>
             <ArrowRight size={18} />
           </button>
-          <p className="version-label">AKASHA · VERSION 0.3</p>
+          <p className="version-label">AKASHA · VERSION 0.5</p>
         </>
       )}
     </section>
