@@ -10,6 +10,8 @@ export type Player = {
   account?: boolean;
 };
 export type Room = {
+  xpVersion?: 1;
+  forfeitedBy?: string;
   reservedFor?: string;
   rematchOf?: string;
   mode: GameMode;
@@ -73,6 +75,7 @@ export function newRoom(
       };
     });
   return {
+    xpVersion: 1,
     mode,
     code,
     phase: mode === "solo" ? "countdown" : "lobby",
@@ -214,6 +217,7 @@ export function leave(room: Room, playerId: string) {
     throw new Error("Tu ne fais pas partie de ce duel.");
   if (!room.dismissed.includes(playerId)) room.dismissed.push(playerId);
   if (isLive(room)) {
+    room.forfeitedBy = playerId;
     if (room.phase === "lobby") {
       room.phase = "cancelled";
       room.reason = "forfeit";
@@ -236,6 +240,7 @@ export function view(
   const show = room.phase === "question" || room.phase === "reveal";
   const q = room.questions[room.index];
   return {
+    matchId: `${room.code}:${room.createdAt}`,
     mode: room.mode,
     code: room.code,
     phase: room.phase,

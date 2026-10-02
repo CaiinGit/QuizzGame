@@ -38,7 +38,8 @@ export const passwordInput = z
   .max(128);
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
-const fields = "id,username,name,photo";
+const fields =
+  'id,username,name,photo,is_admin AS "isAdmin",must_change_password AS "mustChangePassword",total_xp AS "totalXp"';
 let hashing = 0;
 async function derive(password: string, salt: string) {
   if (hashing >= 2)
@@ -81,6 +82,7 @@ const newRecovery = () =>
 const recoveryHash = (code: string) =>
   hashToken(code.replace(/[\s-]/g, "").toUpperCase());
 type PrivateAccount = AccountProfile & {
+  is_admin: boolean;
   password_hash: string;
   recovery_hash: string;
 };
@@ -92,6 +94,10 @@ export class Accounts {
       id TEXT PRIMARY KEY, username TEXT UNIQUE NOT NULL CHECK (username ~ '^[a-z0-9_]{3,20}$'),
       name TEXT NOT NULL, photo TEXT, password_hash TEXT NOT NULL, recovery_hash TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
+    await this.db.query(`ALTER TABLE akasha_accounts
+      ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0 CHECK(total_xp >= 0)`);
     await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_account_sessions (
       token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES akasha_accounts(id) ON DELETE CASCADE,
       expires_at BIGINT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`);
@@ -155,7 +161,7 @@ export class Accounts {
       throw e;
     }
   }
-  async login(input: unknown): Promise<AuthResult> {
+  async login(input: unknown, adminOnly = false): Promise<AuthResult> {
     const data = z
       .object({ username: usernameInput, password: z.string().min(1).max(128) })
       .parse(input);
@@ -167,16 +173,22 @@ export class Accounts {
     ).rows[0];
     if (!(await verify(data.password, account?.password_hash)))
       throw new UserError("Pseudo ou mot de passe incorrect.", 401);
+    if (adminOnly && !account.is_admin)
+      throw new UserError(
+        "Akasha est en test privé. Un compte administrateur est nécessaire.",
+        403,
+      );
     const token = randomBytes(32).toString("hex");
     // Compare again in SQL: a concurrent recovery must invalidate an old password login.
     const result = await this.db.query(
       `INSERT INTO akasha_account_sessions(token_hash,account_id,expires_at)
-      SELECT $1,id,$2 FROM akasha_accounts WHERE id=$3 AND password_hash=$4 RETURNING account_id`,
+      SELECT $1,id,$2 FROM akasha_accounts WHERE id=$3 AND password_hash=$4 AND (NOT $5::boolean OR is_admin) RETURNING account_id`,
       [
         hashToken(token),
         Date.now() + 30 * 86400000,
         account.id,
         account.password_hash,
+        adminOnly,
       ],
     );
     if (!result.rows.length)
@@ -186,7 +198,7 @@ export class Accounts {
       profile: (await this.profile(account.id))!,
     };
   }
-  async recover(input: unknown): Promise<AuthResult> {
+  async recover(input: unknown, adminOnly = false): Promise<AuthResult> {
     const data = z
       .object({
         username: usernameInput,
@@ -199,8 +211,8 @@ export class Accounts {
       recoveryCode = newRecovery();
     const { rows } = await this.db.query<AccountProfile>(
       `WITH changed AS (
-      UPDATE akasha_accounts SET password_hash=$1,recovery_hash=$2,updated_at=now()
-      WHERE username=$3 AND recovery_hash=$4 RETURNING ${fields}
+      UPDATE akasha_accounts SET password_hash=$1,recovery_hash=$2,must_change_password=false,updated_at=now()
+      WHERE username=$3 AND recovery_hash=$4 AND (NOT $7::boolean OR is_admin) RETURNING ${fields}
     ), revoked AS (DELETE FROM akasha_account_sessions WHERE account_id IN (SELECT id FROM changed)),
     session AS (INSERT INTO akasha_account_sessions(token_hash,account_id,expires_at) SELECT $5,id,$6 FROM changed)
     SELECT * FROM changed`,
@@ -211,6 +223,7 @@ export class Accounts {
         recoveryHash(data.code),
         hashToken(token),
         Date.now() + 30 * 86400000,
+        adminOnly,
       ],
     );
     if (!rows.length)
@@ -236,12 +249,16 @@ export class Accounts {
     ).rows[0];
     if (!(await verify(data.currentPassword, account?.password_hash)))
       throw new UserError("Mot de passe actuel incorrect.", 401);
+    if (data.currentPassword === data.password)
+      throw new UserError(
+        "Choisis un nouveau mot de passe différent de l’actuel.",
+      );
     const encoded = await passwordHash(data.password),
       token = randomBytes(32).toString("hex"),
       recoveryCode = newRecovery();
     const { rows } = await this.db.query<AccountProfile>(
       `WITH changed AS (
-      UPDATE akasha_accounts SET password_hash=$1,recovery_hash=$2,updated_at=now() WHERE id=$3 AND password_hash=$4 RETURNING ${fields}
+      UPDATE akasha_accounts SET password_hash=$1,recovery_hash=$2,must_change_password=false,updated_at=now() WHERE id=$3 AND password_hash=$4 RETURNING ${fields}
     ), revoked AS (DELETE FROM akasha_account_sessions WHERE account_id IN (SELECT id FROM changed)),
     session AS (INSERT INTO akasha_account_sessions(token_hash,account_id,expires_at) SELECT $5,id,$6 FROM changed)
     SELECT * FROM changed`,

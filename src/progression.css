@@ -1,0 +1,90 @@
+.private-access {
+  min-height: 100dvh;
+  background: var(--cream);
+}
+.private-access .modal-backdrop {
+  position: static;
+  min-height: 100dvh;
+  padding: 24px 16px;
+}
+.private-access .account-dialog {
+  margin: auto;
+  max-height: none;
+}
+.xp-result {
+  width: 100%;
+  margin: 24px 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: left;
+}
+.xp-result h2 {
+  margin: 4px 0 14px;
+}
+.xp-result dl {
+  margin: 0 0 18px;
+}
+.xp-result dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+}
+.xp-result dd {
+  margin: 0;
+  font-weight: 700;
+}
+.xp-result p {
+  font-size: 14px;
+}
+.xp-progress {
+  display: grid;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.xp-track {
+  height: 14px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #303030;
+}
+.xp-track > span {
+  display: block;
+  height: 100%;
+  background: #8abc79;
+}
+:root[data-theme="dark"] .xp-track > span {
+  background: #92aae1;
+}
+:root[data-theme="dark"] .level-track > span {
+  background: repeating-linear-gradient(90deg, #ffffff16 0 8px, #ffffff00 8px 16px), linear-gradient(#c7d5f5 0 20%, #92aae1 20% 70%, #6e87c5 70%);
+  box-shadow: inset 2px 0 0 #dae4ff, inset 0 2px 0 #dae4ff;
+}
+.level-fill {
+  transition: width 1s ease;
+}
+.xp-result .level-up {
+  font-weight: 700;
+  font-size: 24px;
+  animation: level-arrive 0.4s ease-out;
+}
+@keyframes level-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .level-fill {
+    transition: none;
+  }
+  .xp-result .level-up {
+    animation: none;
+  }
+}

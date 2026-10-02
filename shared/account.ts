@@ -5,6 +5,9 @@ export type AccountProfile = {
   username: string;
   name: string;
   photo: string | null;
+  isAdmin: boolean;
+  mustChangePassword: boolean;
+  totalXp: number;
 };
 export type AuthResult = {
   credentials: Credentials;

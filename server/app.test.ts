@@ -39,6 +39,7 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
         ),
         {
           testMode: true,
+          privateAccess: false,
           times: {
             ...durations,
             countdown: 70,

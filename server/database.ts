@@ -5,6 +5,8 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { view, type Room } from "./engine";
 import { QuestionBank } from "./question-bank";
 import { Accounts } from "./accounts";
+import { rewards } from "./progression";
+import type { XpReward } from "../shared/progression";
 import type { RoomView } from "../shared/protocol";
 import type { HistoryPage, MatchSummary } from "../shared/account";
 export interface Sql {
@@ -48,6 +50,9 @@ export class Repository {
       "CREATE TABLE IF NOT EXISTS akasha_rooms (code TEXT PRIMARY KEY, state JSONB NOT NULL, updated_at BIGINT NOT NULL)",
     );
     await this.accounts.init();
+    await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_xp_awards (
+      match_id TEXT NOT NULL, player_id TEXT NOT NULL REFERENCES akasha_accounts(id) ON DELETE CASCADE,
+      reward JSONB NOT NULL, PRIMARY KEY(match_id,player_id))`);
     await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_match_history (
       id TEXT PRIMARY KEY, players TEXT[] NOT NULL, result JSONB NOT NULL, finished_at BIGINT NOT NULL)`);
     await this.db.query(
@@ -98,9 +103,11 @@ export class Repository {
       id: string;
       name: string;
       account: boolean;
+      isAdmin: boolean;
+      mustChangePassword: boolean;
     }>(
-      `SELECT a.id,a.name,true AS account FROM akasha_account_sessions s JOIN akasha_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>$2
-       UNION ALL SELECT s.id,s.name,false AS account FROM akasha_sessions s WHERE s.token_hash=$1 AND s.expires_at>$2 AND NOT EXISTS(SELECT 1 FROM akasha_accounts a WHERE a.id=s.id)`,
+      `SELECT a.id,a.name,true AS account,a.is_admin AS "isAdmin",a.must_change_password AS "mustChangePassword" FROM akasha_account_sessions s JOIN akasha_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>$2
+       UNION ALL SELECT s.id,s.name,false AS account,false,false FROM akasha_sessions s WHERE s.token_hash=$1 AND s.expires_at>$2 AND NOT EXISTS(SELECT 1 FROM akasha_accounts a WHERE a.id=s.id)`,
       [createHash("sha256").update(token).digest("hex"), Date.now()],
     );
     return result.rows[0] ?? null;
@@ -113,7 +120,18 @@ export class Repository {
           : null;
       await this.db.query(
         `WITH saved AS (INSERT INTO akasha_rooms(code,state,updated_at) VALUES($1,$2::jsonb,$3) ON CONFLICT(code) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at)
-         INSERT INTO akasha_match_history(id,players,result,finished_at) SELECT $4,$5::text[],$6::jsonb,$3 WHERE $6::jsonb IS NOT NULL ON CONFLICT(id) DO NOTHING`,
+         , archived AS (INSERT INTO akasha_match_history(id,players,result,finished_at) SELECT $4,$5::text[],$6::jsonb,$3 WHERE $6::jsonb IS NOT NULL ON CONFLICT(id) DO NOTHING),
+         locked AS MATERIALIZED (
+           SELECT a.id,a.total_xp,r.reward FROM akasha_accounts a
+           JOIN jsonb_to_recordset($7::jsonb) AS r(id text,reward jsonb) ON r.id=a.id
+           WHERE NOT EXISTS(SELECT 1 FROM akasha_xp_awards x WHERE x.match_id=$4 AND x.player_id=a.id)
+           ORDER BY a.id FOR UPDATE OF a
+         ), awarded AS (
+           INSERT INTO akasha_xp_awards(match_id,player_id,reward)
+           SELECT $4,id,reward || jsonb_build_object('before',total_xp,'after',total_xp+(reward->>'total')::integer)
+           FROM locked ON CONFLICT DO NOTHING RETURNING player_id,reward
+         ) UPDATE akasha_accounts a SET total_xp=a.total_xp+(w.reward->>'total')::integer
+           FROM awarded w WHERE a.id=w.player_id`,
         [
           room.code,
           JSON.stringify(room),
@@ -121,6 +139,7 @@ export class Repository {
           `${room.code}:${room.createdAt}`,
           room.players.map((p) => p.id),
           result ? JSON.stringify(result) : null,
+          JSON.stringify(rewards(room)),
         ],
       );
     } catch (error) {
@@ -137,6 +156,16 @@ export class Repository {
         [],
       )
     ).rows.map((r) => r.state);
+  }
+  async reward(id: string, matchId: string) {
+    return (
+      (
+        await this.db.query<{ reward: XpReward }>(
+          "SELECT reward FROM akasha_xp_awards WHERE match_id=$1 AND player_id=$2",
+          [matchId, id],
+        )
+      ).rows[0]?.reward ?? null
+    );
   }
   async history(id: string, offset: number): Promise<HistoryPage> {
     const { rows } = await this.db.query<{

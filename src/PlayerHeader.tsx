@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { PixelIcon } from "./PixelIcon";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import type { useAvatar } from "./avatar";
+import { progression } from "../shared/progression";
 
 export type HeaderPanel =
   | "photo"
@@ -18,13 +19,16 @@ export function PlayerHeader({
   profileDisabled,
   open,
   settings,
+  totalXp,
 }: {
   photo: string | null;
   profile: () => void;
   profileDisabled: boolean;
   open: (panel: HeaderPanel) => void;
   settings: () => void;
+  totalXp?: number;
 }) {
+  const level = totalXp === undefined ? null : progression(totalXp);
   return (
     <header className="player-header" aria-label="Espace joueur">
       <button
@@ -46,14 +50,23 @@ export function PlayerHeader({
       </button>
       <button
         className="header-level"
-        aria-label="Niveau et progression, à venir"
+        aria-label={
+          level
+            ? `Niveau ${level.level}, ${level.current} sur ${level.required} XP`
+            : "Niveau et progression"
+        }
         onClick={() => open("level")}
       >
         <span className="level-label">
-          NIV. <strong>—</strong>
+          NIV. <strong>{level?.level ?? "—"}</strong>
         </span>
         <span className="level-track" aria-hidden="true">
-          <span className="level-fill" />
+          <span
+            className="level-fill"
+            style={{
+              width: `${level ? (100 * level.current) / level.required : 0}%`,
+            }}
+          />
         </span>
       </button>
       <div className="header-counters">

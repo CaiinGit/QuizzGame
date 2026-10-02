@@ -29,8 +29,12 @@ export async function createApp(
     times?: Durations;
     staticDir?: string;
     testMode?: boolean;
+    privateAccess?: boolean;
   } = {},
 ) {
+  const adminOnly = options.privateAccess ?? true;
+  const admitted = (p: Awaited<ReturnType<Repository["authenticate"]>>) =>
+    !!p && !p.mustChangePassword && (!adminOnly || p.isAdmin);
   const repository = new Repository(db);
   await repository.init();
   const social = new Social(db);
@@ -106,15 +110,26 @@ export async function createApp(
   });
   app.use("/api/account/profile", express.json({ limit: "320kb" }));
   app.use(express.json({ limit: "4kb" }));
+  app.get("/api/access", (_req, res) =>
+    res.set("Cache-Control", "no-store").json({ adminOnly }),
+  );
   app.get("/api/health", async (_req, res) => {
     try {
       await db.query("SELECT 1");
-      res.json({ ok: true, app: "Akasha", version: "0.5.0" });
+      res.json({ ok: true, app: "Akasha", version: "0.6.0" });
     } catch {
       res.status(503).json({ ok: false });
     }
   });
   app.post("/api/session", async (req, res) => {
+    if (adminOnly) {
+      res
+        .status(403)
+        .json({
+          error: "Accès réservé aux administrateurs pendant les tests.",
+        });
+      return;
+    }
     if (!allow(`session:${req.ip}`, 12, 3600000)) {
       res
         .status(429)
@@ -176,6 +191,7 @@ export async function createApp(
       }
   }
   accountRoutes(app, repository, {
+    adminOnly,
     allow,
     active,
     revoked: revoke,
@@ -203,6 +219,14 @@ export async function createApp(
     await repository.save(room);
     rooms.set(room.code, room);
     emit(room);
+    if (room.phase === "finished" && previous?.phase !== "finished") {
+      for (const p of room.players) {
+        const profile = await repository.accounts.profile(p.id);
+        if (profile)
+          for (const s of io.sockets.sockets.values())
+            if (s.data.player.id === p.id) s.emit("account:profile", profile);
+      }
+    }
     if (
       (!isLive(room) && (!previous || isLive(previous))) ||
       (room.players.length === 2 && previous?.players.length !== 2)
@@ -263,7 +287,7 @@ export async function createApp(
         .regex(/^[a-f0-9]{64}$/)
         .parse(socket.handshake.auth?.token);
       const player = await repository.authenticate(token);
-      if (!player) throw new Error("SESSION_EXPIRED");
+      if (!player || !admitted(player)) throw new Error("SESSION_EXPIRED");
       if (
         [...io.sockets.sockets.values()].filter(
           (s) => s.data.player.id === player.id,
@@ -297,21 +321,26 @@ export async function createApp(
     } else socket.emit("room:state", null);
     socket.on("sync", (_data: unknown, ack: unknown) => {
       if (!allow(`sync:${player.id}`, 20)) return;
-      if (typeof ack === "function")
-        ack({ ok: true, data: { serverNow: Date.now() } });
-      const room = rooms.get(socket.data.room);
-      if (room)
-        socket.emit("room:state", view(room, player.id, online(), Date.now()));
       void repository
         .authenticate(socket.data.token)
         .then((p) => {
-          if (!p) {
+          if (!admitted(p)) {
             socket.emit("auth:expired");
             socket.disconnect(true);
-          } else if (p.account)
-            return social
-              .state(p.id, online())
-              .then((state) => socket.emit("social:state", state));
+          } else {
+            if (typeof ack === "function")
+              ack({ ok: true, data: { serverNow: Date.now() } });
+            const room = rooms.get(socket.data.room);
+            if (room)
+              socket.emit(
+                "room:state",
+                view(room, player.id, online(), Date.now()),
+              );
+            if (p!.account)
+              return social
+                .state(p!.id, online())
+                .then((state) => socket.emit("social:state", state));
+          }
         })
         .catch(() => {});
     });
@@ -323,7 +352,7 @@ export async function createApp(
         if (typeof ack !== "function") return;
         const receivedAt = Date.now();
         void serial(async () => {
-          if (!(await repository.authenticate(socket.data.token))) {
+          if (!admitted(await repository.authenticate(socket.data.token))) {
             socket.emit("auth:expired");
             socket.disconnect(true);
             throw new Error("Session expirée. Reconnecte-toi.");

@@ -11,6 +11,7 @@ export function accountRoutes(
     active: (id: string) => unknown;
     revoked: (id: string, token?: string) => void;
     updated: (id: string) => Promise<void>;
+    adminOnly: boolean;
   },
 ) {
   const token = (req: Request) => {
@@ -23,6 +24,23 @@ export function accountRoutes(
     const player = await repository.authenticate(token(req));
     if (!player?.account)
       throw new UserError("Connecte-toi à ton compte.", 401);
+    if (hooks.adminOnly && !player.isAdmin)
+      throw new UserError(
+        "Accès réservé aux administrateurs pendant les tests.",
+        403,
+      );
+    if (
+      player.mustChangePassword &&
+      ![
+        "/api/account/me",
+        "/api/account/security",
+        "/api/account/logout",
+      ].includes(req.path)
+    )
+      throw new UserError(
+        "Choisis ton mot de passe personnel avant de continuer.",
+        403,
+      );
     return player;
   };
   const route = (
@@ -44,16 +62,14 @@ export function accountRoutes(
             : e instanceof z.ZodError
               ? 400
               : 503;
-        res
-          .status(status)
-          .json({
-            error:
-              e instanceof UserError
-                ? e.message
-                : e instanceof z.ZodError
-                  ? e.issues[0].message
-                  : "Service temporairement indisponible. Réessaie.",
-          });
+        res.status(status).json({
+          error:
+            e instanceof UserError
+              ? e.message
+              : e instanceof z.ZodError
+                ? e.issues[0].message
+                : "Service temporairement indisponible. Réessaie.",
+        });
         if (status === 503)
           console.error(
             "Account API operation failed",
@@ -73,6 +89,11 @@ export function accountRoutes(
       throw new UserError("Trop de tentatives. Réessaie dans 15 minutes.", 429);
   }
   route("post", "/api/account/register", async (req) => {
+    if (hooks.adminOnly)
+      throw new UserError(
+        "Les inscriptions sont fermées pendant les tests privés.",
+        403,
+      );
     authLimit(req, "register");
     const guest = req.headers.authorization
       ? await repository.authenticate(token(req))
@@ -86,11 +107,11 @@ export function accountRoutes(
   });
   route("post", "/api/account/login", async (req) => {
     authLimit(req, "login");
-    return repository.accounts.login(req.body);
+    return repository.accounts.login(req.body, hooks.adminOnly);
   });
   route("post", "/api/account/recover", async (req) => {
     authLimit(req, "recover");
-    const result = await repository.accounts.recover(req.body);
+    const result = await repository.accounts.recover(req.body, hooks.adminOnly);
     hooks.revoked(result.profile.id);
     return result;
   });
@@ -132,6 +153,13 @@ export function accountRoutes(
         .max(1000000)
         .parse(req.query.offset ?? 0);
     return repository.history(player.id, offset);
+  });
+  route("get", "/api/account/reward/:id", async (req) => {
+    const player = await auth(req);
+    return repository.reward(
+      player.id,
+      z.string().max(100).parse(req.params.id),
+    );
   });
   route("get", "/api/account/history/:id", async (req) => {
     const player = await auth(req);

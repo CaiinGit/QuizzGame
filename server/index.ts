@@ -12,6 +12,7 @@ const database = await connectDatabase(
   process.env.AKASHA_DATA_DIR ?? "work/akasha-db",
 );
 const server = await createApp(database, {
+  privateAccess: process.env.AKASHA_ACCESS !== "public",
   origins: process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()),
   staticDir: "dist",
   testMode,

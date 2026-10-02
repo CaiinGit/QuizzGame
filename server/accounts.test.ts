@@ -58,6 +58,7 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
   async function start() {
     server = await createApp(await db(), {
       testMode: true,
+      privateAccess: false,
       times: { ...durations, countdown: 60, question: 15000, reveal: 100 },
     });
     await new Promise<void>((r) => server!.http.listen(0, "127.0.0.1", r));

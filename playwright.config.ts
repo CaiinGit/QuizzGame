@@ -17,7 +17,11 @@ export default defineConfig({
     {
       command: "npm start",
       url: "http://127.0.0.1:3001/api/health",
-      env: { AKASHA_TEST_MODE: "1", AKASHA_DATA_DIR: "work/e2e-db" },
+      env: {
+        AKASHA_TEST_MODE: "1",
+        AKASHA_ACCESS: "public",
+        AKASHA_DATA_DIR: "work/e2e-db",
+      },
       reuseExistingServer: false,
     },
   ],

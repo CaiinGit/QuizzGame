@@ -39,7 +39,6 @@ test("player header fits small phones and future features do not invent balances
     fullPage: true,
   });
   for (const label of [
-    "Niveau et progression, à venir",
     "Pièces, à venir",
     "Trophées, à venir",
     "Notifications",
@@ -55,6 +54,14 @@ test("player header fits small phones and future features do not invent balances
     ).toBeFocused();
   }
   await expect(page.locator(".header-counters button")).toHaveText(["—", "—"]);
+  await page
+    .getByRole("button", { name: "Niveau et progression", exact: true })
+    .click();
+  await expect(
+    page.getByText("Connecte-toi pour sauvegarder ta progression.", {
+      exact: true,
+    }),
+  ).toBeVisible();
 });
 
 test("photo selection, replacement, cancel and removal persist without server upload", async ({

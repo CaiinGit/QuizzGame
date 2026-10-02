@@ -40,12 +40,19 @@ import type {
 } from "../shared/account";
 import { TimeBar } from "./TimeBar";
 import { MatchReview } from "./MatchReview";
+import { AccessGate } from "./AccessGate";
+import { LevelProgress, XpResult } from "./Progression";
 type Intent =
   | { event: "room:create"; data: { mode?: "duel" | "solo" } }
   | { event: "room:join"; data: { code: string } };
 import type { RoomView } from "../shared/protocol";
 
-export default function App() {
+export default function Root() {
+  return (
+    <AccessGate>{(adminOnly) => <App adminOnly={adminOnly} />}</AccessGate>
+  );
+}
+function App({ adminOnly }: { adminOnly: boolean }) {
   const navigation = useNavigation();
   const avatar = useAvatar();
   const [account, setAccount] = useState<AccountProfile | null>(null),
@@ -108,6 +115,10 @@ export default function App() {
     offset = useRef(0),
     clockSynced = useRef(false),
     pending = useRef(false);
+  useEffect(() => {
+    if (adminOnly && !loading && profile && !profile.credentials && !auth)
+      window.dispatchEvent(new Event("akasha:access-changed"));
+  }, [adminOnly, loading, profile?.credentials?.token, auth]);
   useEffect(() => {
     setIntent(null);
     setIdentity(false);
@@ -474,6 +485,7 @@ export default function App() {
       className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
     >
       <PlayerHeader
+        totalXp={account?.totalXp}
         photo={displayedPhoto}
         profile={() => navigate("profil")}
         profileDisabled={!!room}
@@ -874,6 +886,15 @@ export default function App() {
                         : "LE VERDICT"}
                 </span>
                 <h1>{result}</h1>
+                {room.phase === "finished" &&
+                  room.matchId &&
+                  profile?.credentials?.account && (
+                    <XpResult
+                      key={room.matchId}
+                      profile={profile}
+                      matchId={room.matchId}
+                    />
+                  )}
                 <p>
                   {solo
                     ? `Ton score : ${(me?.score ?? 0).toLocaleString("fr-FR")} points${room.reason === "completed" ? ` sur ${(room.total * 1000).toLocaleString("fr-FR")}` : ""}.`
@@ -939,6 +960,7 @@ export default function App() {
       )}
       {auth && profile && (
         <AuthDialog
+          adminOnly={adminOnly}
           mode={auth}
           profile={profile}
           close={() => {
@@ -1098,6 +1120,23 @@ export default function App() {
                 avatar={profile?.credentials?.account ? cloudAvatar : avatar}
                 cloud={!!profile?.credentials?.account}
               />
+            ) : headerPanel === "level" ? (
+              account ? (
+                <>
+                  <LevelProgress total={account.totalXp} />
+                  <p>
+                    Une partie terminée : 30 XP, puis 10 XP par bonne réponse.
+                    En duel : +30 XP pour une victoire ou +15 XP pour une
+                    égalité.
+                  </p>
+                  <p>
+                    Ta rapidité compte pour le score du match, pas pour l’XP. Un
+                    abandon ne rapporte aucune XP au joueur qui quitte.
+                  </p>
+                </>
+              ) : (
+                <p>Connecte-toi pour sauvegarder ta progression.</p>
+              )
             ) : (
               <>
                 <span className="coming-soon">À venir</span>

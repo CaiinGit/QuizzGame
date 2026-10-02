@@ -18,6 +18,7 @@ export type PublicPlayer = {
   answered: boolean;
 };
 export type RoomView = {
+  matchId?: string;
   mode: GameMode;
   code: string;
   phase: Phase;

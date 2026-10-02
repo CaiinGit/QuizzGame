@@ -9,11 +9,15 @@ export function AuthDialog({
   profile,
   close,
   success,
+  locked = false,
+  adminOnly = false,
 }: {
   mode: AuthMode;
   profile: Profile;
   close: () => void;
   success: (result: AuthResult, mode: AuthMode) => Promise<void>;
+  locked?: boolean;
+  adminOnly?: boolean;
 }) {
   const [mode, setMode] = useState(initial),
     [username, setUsername] = useState(""),
@@ -67,7 +71,7 @@ export function AuthDialog({
         data-recovery={recovery ? "true" : undefined}
         data-busy={busy ? "true" : undefined}
       >
-        {!recovery && (
+        {!recovery && !locked && (
           <button
             className="icon-button close"
             aria-label="Fermer le compte"
@@ -77,8 +81,17 @@ export function AuthDialog({
             <X />
           </button>
         )}
-        <span className="eyebrow">TON ESCALE AKASHA</span>
+        <span className="eyebrow">
+          {adminOnly ? "AKASHA · TEST PRIVÉ" : "TON ESCALE AKASHA"}
+        </span>
         <h2 id="account-title">{recovery ? "Ton code de secours" : title}</h2>
+        {locked && !recovery && (
+          <p>
+            {mode === "security"
+              ? "Remplace ton mot de passe temporaire pour accéder à l’application."
+              : "L’accès est réservé aux trois administrateurs pendant le développement."}
+          </p>
+        )}
         {error && (
           <div className="notice error" role="alert">
             {error}
@@ -232,7 +245,7 @@ export function AuthDialog({
             {mode !== "security" && (
               <div className="account-links">
                 {(["register", "login", "recover"] as const)
-                  .filter((m) => m !== mode)
+                  .filter((m) => m !== mode && (!adminOnly || m !== "register"))
                   .map((m) => (
                     <button
                       key={m}
