@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { Sql } from "./database";
 import { questions as starterQuestions, type Question } from "./questions";
 
-const questionInput = z
+export const questionInput = z
   .object({
     id: z
       .string()
@@ -16,7 +16,11 @@ const questionInput = z
     choices: z.array(z.string().trim().max(500)).max(4).default([]),
     correct: z.number().int().min(0).max(3).nullable().default(null),
     explanation: z.string().trim().max(4000).default(""),
-    difficulty: z.enum(["easy", "medium", "hard"]).nullable().default(null),
+    difficulty: z
+      .enum(["easy", "medium", "hard", "very_hard", "expert"])
+      .nullable()
+      .default(null),
+    spoilerUntil: z.string().trim().max(500).default(""),
     status: z.enum(["draft", "published", "archived"]).default("draft"),
     source: z.string().trim().max(2000).default(""),
   })
@@ -72,6 +76,21 @@ export class QuestionBank {
     await this.db.query(
       `CREATE INDEX IF NOT EXISTS akasha_questions_theme_status ON akasha_questions(theme_id,status)`,
     );
+    await this.db.query(`DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM akasha_migrations WHERE id='question-sheets-v1') THEN
+        ALTER TABLE akasha_questions DROP CONSTRAINT akasha_questions_difficulty_check;
+        ALTER TABLE akasha_questions ADD CONSTRAINT akasha_questions_difficulty_check
+          CHECK (difficulty IN ('easy','medium','hard','very_hard','expert'));
+        ALTER TABLE akasha_questions ADD COLUMN spoiler_until TEXT NOT NULL DEFAULT '' CHECK(length(spoiler_until)<=500);
+        ALTER TABLE akasha_questions ADD COLUMN sheet_id TEXT;
+        ALTER TABLE akasha_questions ADD COLUMN sheet_question_id TEXT;
+        CREATE UNIQUE INDEX akasha_questions_sheet_id ON akasha_questions(sheet_id,sheet_question_id);
+        CREATE TABLE akasha_question_sync (
+          sheet_id TEXT PRIMARY KEY, attempted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          succeeded_at TIMESTAMPTZ, report JSONB NOT NULL DEFAULT '{}');
+        INSERT INTO akasha_migrations(id) VALUES ('question-sheets-v1');
+      END IF;
+    END $$`);
     // A single statement makes the seed and its marker atomic on PostgreSQL/PGlite.
     // Restarting must never resurrect deleted questions or overwrite editorial work.
     await this.db.query(
@@ -98,11 +117,12 @@ export class QuestionBank {
     const q = questionInput.parse(input);
     await this.db.query(
       `INSERT INTO akasha_questions
-      (id,theme_id,text,choices,correct,explanation,difficulty,status,source)
-      VALUES ($1,$2,$3,$4::text[],$5,$6,$7,$8,$9)
+      (id,theme_id,text,choices,correct,explanation,difficulty,status,source,spoiler_until)
+      VALUES ($1,$2,$3,$4::text[],$5,$6,$7,$8,$9,$10)
       ON CONFLICT (id) DO UPDATE SET theme_id=excluded.theme_id,text=excluded.text,
       choices=excluded.choices,correct=excluded.correct,explanation=excluded.explanation,
-      difficulty=excluded.difficulty,status=excluded.status,source=excluded.source,updated_at=now()`,
+      difficulty=excluded.difficulty,status=excluded.status,source=excluded.source,
+      spoiler_until=excluded.spoiler_until,updated_at=now()`,
       [
         q.id,
         q.themeId,
@@ -113,6 +133,7 @@ export class QuestionBank {
         q.difficulty,
         q.status,
         q.source,
+        q.spoilerUntil,
       ],
     );
     return q;
