@@ -178,7 +178,13 @@
   image-rendering: pixelated;
 }
 [data-theme="dark"] .play-symbol-image {
-  filter: grayscale(1) brightness(0.2);
+  filter: none;
+}
+[data-theme="dark"] .play-label {
+  color: #fff;
+  -webkit-text-stroke: 2px #000;
+  paint-order: stroke fill;
+  text-shadow: 0 2px 0 #000;
 }
 .play-arrow {
   font-family: ui-monospace, monospace;
