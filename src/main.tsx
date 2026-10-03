@@ -15,8 +15,9 @@ import "./account-social.css";
 import "./profile-favorites.css";
 import "./match-experience.css";
 import { initializeTheme } from "./theme";
+import { initializeSound } from "./sound";
 
-void initializeTheme().then(() =>
+void Promise.all([initializeTheme(), initializeSound()]).then(() =>
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
       <App />

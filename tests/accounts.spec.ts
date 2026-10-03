@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-const password = "Ma longue phrase de test Akasha!";
+import { observeAudio } from "./helpers/audio";
+const password = "Akasha!8";
 async function register(page: Page, username: string) {
   await page.goto("/");
   await page
@@ -141,6 +142,7 @@ test("round home friends button, friendship, direct invitation, match history an
     q = await b.newPage();
   try {
     await register(p, alice);
+    await observeAudio(q);
     await register(q, bob);
     await p
       .getByRole("navigation")
@@ -158,6 +160,11 @@ test("round home friends button, friendship, direct invitation, match history an
     await friends.click();
     await p.getByLabel("Ajouter un ami par son pseudo unique").fill(bob);
     await p.getByRole("button", { name: "Ajouter", exact: true }).click();
+    await expect
+      .poll(() =>
+        q.evaluate(() => window.akashaTestSounds.some((note) => note === 1100)),
+      )
+      .toBe(true);
     await expect(
       p.getByRole("heading", { name: "Demandes envoyées" }),
     ).toBeVisible();

@@ -4,7 +4,7 @@
 
 - Ouvrir la photo de profil, puis **Créer un compte** ou **Me connecter**. Le jeu invité reste accessible pour tester rapidement.
 - Le pseudo unique de connexion utilise 3 à 20 lettres sans accents, chiffres ou underscores. Il ne dépend pas de la casse. Le nom affiché peut ensuite être modifié, avec accents, sans changer l’identifiant de connexion.
-- Choisir un mot de passe de 15 à 128 caractères. Une phrase est acceptée.
+- Choisir un mot de passe de 8 à 128 caractères. Une phrase est acceptée.
 - Conserver le **code de secours**, affiché après inscription. Il permet de définir un nouveau mot de passe depuis **Mot de passe oublié ?** sans service d’e-mail. Chaque récupération et chaque changement de mot de passe révoquent les anciennes sessions et délivrent un nouveau code ; le précédent cesse de fonctionner.
 - Le pseudo affiché et la photo sont sauvegardés sur le serveur et synchronisés entre appareils connectés. Une inscription depuis un profil invité rattache son identité, ses résultats encore disponibles et sa photo locale au compte. Se connecter à un autre compte ne fusionne pas les historiques.
 - **Mes parties**, dans le profil, affiche les résultats personnels et les réponses question par question. Les salons annulés avant le début du jeu n’y figurent pas.

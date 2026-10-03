@@ -25,6 +25,8 @@ import {
 import { Explore, BottomNavigation } from "./Explore";
 import { useNavigation } from "./navigation";
 import { ThemeToggle } from "./ThemeToggle";
+import { SoundToggle } from "./SoundToggle";
+import { listenForSoundInteractions, playSound } from "./sound";
 import {
   PlayerHeader,
   PhotoEditor,
@@ -54,6 +56,7 @@ type Intent =
 import type { RoomView } from "../shared/protocol";
 
 export default function Root() {
+  useEffect(listenForSoundInteractions, []);
   return (
     <AccessGate>{(adminOnly) => <App adminOnly={adminOnly} />}</AccessGate>
   );
@@ -166,6 +169,8 @@ function App({ adminOnly }: { adminOnly: boolean }) {
     const s = connect(profile);
     socket.current = s;
     let disposed = false;
+    let seenNotifications: Set<string> | null = null;
+    let previousRoom: RoomView | null = null;
     const sync = async () => {
       const sent = Date.now();
       try {
@@ -210,7 +215,22 @@ function App({ adminOnly }: { adminOnly: boolean }) {
       if (!disposed) updateAccount(p);
     });
     s.on("social:state", (state: SocialState) => {
-      if (!disposed) setSocial(state);
+      if (disposed) return;
+      const ids = new Set([
+        ...state.incoming.map((request) => `friend:${request.id}`),
+        ...state.invitations
+          .filter(
+            (invitation) => invitation.expiresAt > Date.now() + offset.current,
+          )
+          .map((invitation) => `invite:${invitation.id}`),
+      ]);
+      if (
+        seenNotifications &&
+        [...ids].some((id) => !seenNotifications!.has(id))
+      )
+        playSound("notification");
+      seenNotifications = ids;
+      setSocial(state);
     });
     s.on("disconnect", () => {
       setOnline(false);
@@ -239,6 +259,21 @@ function App({ adminOnly }: { adminOnly: boolean }) {
         );
     });
     s.on("room:state", (state: RoomView | null) => {
+      if (disposed) return;
+      if (
+        state?.phase === "reveal" &&
+        previousRoom?.phase === "question" &&
+        state.matchId === previousRoom.matchId &&
+        state.round === previousRoom.round
+      ) {
+        playSound(
+          state.selected !== null &&
+            state.selected === state.correction?.correct
+            ? "correct"
+            : "wrong",
+        );
+      }
+      previousRoom = state;
       // State packets must not reset the clock on every opponent answer.
       if (state && !clockSynced.current)
         offset.current = state.serverNow - Date.now();
@@ -1101,6 +1136,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
             </button>
             <h2 id="settings-title">Réglages</h2>
             <ThemeToggle />
+            <SoundToggle />
             <details className="connection-settings">
               <summary>Connexion au serveur</summary>
               <p>Les deux joueurs doivent utiliser la même adresse.</p>

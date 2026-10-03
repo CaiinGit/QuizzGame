@@ -1,4 +1,5 @@
 import type { Credentials, RoomView } from "./protocol";
+export const MIN_PASSWORD_LENGTH = 8;
 
 export type AccountProfile = {
   id: string;

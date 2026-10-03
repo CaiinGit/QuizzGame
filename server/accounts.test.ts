@@ -106,10 +106,16 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     await wait(() => !!state.social);
     return { s, state };
   }
-  const pass = "Un long mot de passe Akasha 2026!",
-    nextPass = "Une autre longue phrase secrète!";
+  const pass = "Akasha!8",
+    nextPass = "Retour!8";
   try {
     await start();
+    await request(
+      "account/register",
+      { username: "short", password: "Court!7" },
+      undefined,
+      400,
+    );
     const guest: Credentials = await request(
       "session",
       { name: "Ancien joueur" },
@@ -276,6 +282,12 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     assert.ok(pa.state.room!.players.every((p) => !p.ready));
     await command(pa.s, "room:leave");
     await command(pb.s, "room:leave");
+    await request(
+      "account/recover",
+      { username: "alice", code: a.recoveryCode, password: "Court!7" },
+      undefined,
+      400,
+    );
     const recovered: AuthResult = await request("account/recover", {
       username: "alice",
       code: a.recoveryCode,
@@ -296,6 +308,12 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
       { username: "alice", password: pass },
       undefined,
       401,
+    );
+    await request(
+      "account/security",
+      { currentPassword: nextPass, password: "Court!7" },
+      recovered.credentials,
+      400,
     );
     const updated: AuthResult = await request(
       "account/security",

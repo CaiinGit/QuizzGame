@@ -9,7 +9,11 @@ import { z } from "zod";
 import sharp from "sharp";
 import { themes } from "../shared/themes";
 import type { Sql } from "./database";
-import type { AccountProfile, AuthResult } from "../shared/account";
+import {
+  MIN_PASSWORD_LENGTH,
+  type AccountProfile,
+  type AuthResult,
+} from "../shared/account";
 
 export class UserError extends Error {
   constructor(
@@ -35,7 +39,10 @@ export const nameInput = z
   .regex(/^[\p{L}\p{N} _.-]+$/u);
 export const passwordInput = z
   .string()
-  .min(15, "Choisis un mot de passe d’au moins 15 caractères.")
+  .min(
+    MIN_PASSWORD_LENGTH,
+    `Choisis un mot de passe d’au moins ${MIN_PASSWORD_LENGTH} caractères.`,
+  )
   .max(128);
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");

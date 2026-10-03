@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { Copy, History, LogOut, Shield, Users, X } from "lucide-react";
 import { accountApi, type Profile } from "./client";
-import type { AccountProfile, AuthResult } from "../shared/account";
+import {
+  MIN_PASSWORD_LENGTH,
+  type AccountProfile,
+  type AuthResult,
+} from "../shared/account";
 import { LevelProgress } from "./Progression";
 import { ProfileStatistics } from "./ProfileStatistics";
 
@@ -208,7 +212,7 @@ export function AuthDialog({
                 autoComplete={
                   mode === "login" ? "current-password" : "new-password"
                 }
-                minLength={mode === "login" ? 1 : 15}
+                minLength={mode === "login" ? 1 : MIN_PASSWORD_LENGTH}
                 maxLength={128}
                 required
                 value={password}
@@ -218,7 +222,8 @@ export function AuthDialog({
               {mode !== "login" && (
                 <>
                   <small>
-                    15 caractères minimum. Tu peux utiliser une phrase.
+                    {MIN_PASSWORD_LENGTH} caractères minimum. Tu peux utiliser
+                    une phrase.
                   </small>
                   <label htmlFor="confirm-password">
                     Confirmer le mot de passe
@@ -227,7 +232,7 @@ export function AuthDialog({
                     id="confirm-password"
                     type="password"
                     autoComplete="new-password"
-                    minLength={15}
+                    minLength={MIN_PASSWORD_LENGTH}
                     maxLength={128}
                     required
                     value={confirm}

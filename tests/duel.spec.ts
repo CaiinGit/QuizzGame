@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { questions } from "../server/questions";
+import { observeAudio } from "./helpers/audio";
 async function chooseTheme(page: Page) {
   await page
     .getByRole("navigation")
@@ -24,6 +25,7 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
   const p = await a.newPage(),
     q = await b.newPage();
   try {
+    await observeAudio(p);
     await p.goto("/");
     await p.getByRole("button", { name: "Réglages", exact: true }).click();
     await p.getByRole("button", { name: "Mode sombre", exact: true }).click();
@@ -83,6 +85,9 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       const options = await p.locator(".answer-copy > span").allTextContents();
       const correctIndex = options.indexOf(original.choices[original.correct]);
       await p.locator(".answer").nth(correctIndex).click();
+      await expect
+        .poll(() => p.evaluate(() => window.akashaTestSounds.includes(360)))
+        .toBe(true);
       await expect(p.locator(".answer.selected")).toBeDisabled();
       await expect(p.locator(".answer.selected")).toHaveAttribute(
         "aria-pressed",

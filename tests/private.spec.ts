@@ -65,7 +65,7 @@ test("private gate, first login, saved recovery, solo XP, level-up and logout", 
       page.getByRole("heading", { name: "Sécurité du compte", exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("navigation")).toHaveCount(0);
-    const password = "Une longue phrase de test privée!";
+    const password = "Prive!08";
     await page
       .getByLabel("Mot de passe actuel", { exact: true })
       .fill(admins[0].password!);

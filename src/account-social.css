@@ -181,11 +181,12 @@
 .friend-presence:before {
   content: "";
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
+  vertical-align: -1px;
   border-radius: 50%;
   background: var(--muted);
-  margin-right: 5px;
+  margin-right: 7px;
 }
 .friend-presence.is-online:before {
   background: var(--green);

@@ -486,8 +486,8 @@ svg {
   border-color: var(--green);
 }
 .avatar b {
-  width: 9px;
-  height: 9px;
+  width: 13px;
+  height: 13px;
   border: 2px solid var(--cream);
   position: absolute;
   right: 0;
