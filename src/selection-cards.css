@@ -55,9 +55,9 @@
   transform: none;
 }
 [data-theme="dark"] .selection-card {
-  --tile-light: #d9e5ff;
-  --tile-edge: #6e87bc;
-  --tile-shadow: #45587f;
+  --tile-light: #ffe2a3;
+  --tile-edge: #c78000;
+  --tile-shadow: #805200;
 }
 [data-theme="dark"] .selection-card-future {
   --tile-face: #454545;

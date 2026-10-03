@@ -78,9 +78,9 @@ test("home puts daily challenge and three empty favorites above the portal", asy
   await page.keyboard.press("Escape");
   await expect(favorites.getByRole("button").first()).toHaveCSS(
     "--tile-face",
-    "#92aae1",
+    "#ffa800",
   );
-  await expect(play).toHaveCSS("--tile-face", "#92aae1");
+  await expect(play).toHaveCSS("--tile-face", "#ffa800");
   await page.mouse.move(0, 0);
   await page.screenshot({
     path: "test-results/akasha-home-shortcuts-dark.png",

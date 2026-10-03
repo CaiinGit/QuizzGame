@@ -26,7 +26,7 @@ test("compact mode and theme tiles fit phones in both palettes and keep the duel
         await expect(
           page.getByRole("button", { name: "À venir", exact: true }),
         ).toBeDisabled();
-      await expect(tile).toHaveCSS("--tile-face", dark ? "#92aae1" : "#234836");
+      await expect(tile).toHaveCSS("--tile-face", dark ? "#ffa800" : "#234836");
       await expect(page.locator('img[src*="one-piece-island"]')).toHaveCount(0);
       if (screen === "mode") {
         await expect

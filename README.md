@@ -25,13 +25,13 @@ APK 0.4.0 (code Android 4) : nouveau cadre de portrait blanc/cyan en pixel art, 
 APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, domaine public stable via Cloudflare Tunnel, sans Tailscale.
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
-- Bandeau joueur vert (clair) ou bleu (sombre), photo personnelle importable depuis la galerie ou les fichiers. Les photos sont recadrées au centre et réduites à 320 × 320 : locales en mode invité, sauvegardées sur le serveur avec un compte.
-- Roue dentée : réglages avec mode sombre gris `#303030` et bleu `#92AAE1`, choix mémorisé ; connexion au serveur dans une section dépliable.
+- Bandeau joueur vert (clair) ou jaune orangé (sombre), photo personnelle importable depuis la galerie ou les fichiers. Les photos sont recadrées au centre et réduites à 320 × 320 : locales en mode invité, sauvegardées sur le serveur avec un compte.
+- Roue dentée : réglages avec mode sombre gris `#303030` et jaune orangé `#FFA800`, choix mémorisé ; connexion au serveur dans une section dépliable.
 - Emplacements pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
 - Barre du bas : **Classement · Accueil · Thèmes · Boutique**, icônes pixel en relief et fond identique au bandeau joueur ; masquée dans les salons et duels. Classement et Boutique affichent « À venir ».
 - Profil accessible par la photo du bandeau ; changement de photo depuis la page Profil.
-- Grand bouton **JOUER** au pied du portail, vert en clair et bleu en sombre : ouvre la sélection des modes. L’onglet **Thèmes** ouvre directement la sélection des thèmes, avec One Piece.
-- Modes et thèmes : grille de deux colonnes, cases compactes en relief avec logo au-dessus du nom, vertes en clair et bleues en sombre. Classique reprend l’image d’épées fournie ; One Piece utilise le logo tête de mort au chapeau de paille fourni, également affiché dans les favoris et sur l’écran de lancement. Les cases « À venir » sont désactivées. L’ancienne illustration d’île n’est plus affichée.
+- Grand bouton **JOUER** au pied du portail, vert en clair et jaune orangé en sombre : ouvre la sélection des modes. L’onglet **Thèmes** ouvre directement la sélection des thèmes, avec One Piece.
+- Modes et thèmes : grille de deux colonnes, cases compactes en relief avec logo au-dessus du nom, vertes en clair et jaune orangé en sombre. Classique reprend l’image d’épées fournie ; One Piece utilise le logo tête de mort au chapeau de paille fourni, également affiché dans les favoris et sur l’écran de lancement. Les cases « À venir » sont désactivées. L’ancienne illustration d’île n’est plus affichée.
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris au-dessus du portail ; le défi du jour reste à venir.
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Parcours individuel : **JOUER → Solo → One Piece → Commencer en solo**. Même moteur et même barème que le duel, démarrage sans adversaire, résultat individuel, reconnexion et abandon pris en charge. Le Solo nécessite lui aussi le serveur.

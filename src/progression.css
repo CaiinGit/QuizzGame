@@ -56,11 +56,11 @@
   background: #8abc79;
 }
 :root[data-theme="dark"] .xp-track > span {
-  background: #92aae1;
+  background: #ffa800;
 }
 :root[data-theme="dark"] .level-track > span {
-  background: repeating-linear-gradient(90deg, #ffffff16 0 8px, #ffffff00 8px 16px), linear-gradient(#c7d5f5 0 20%, #92aae1 20% 70%, #6e87c5 70%);
-  box-shadow: inset 2px 0 0 #dae4ff, inset 0 2px 0 #dae4ff;
+  background: repeating-linear-gradient(90deg, #ffffff16 0 8px, #ffffff00 8px 16px), linear-gradient(#ffd17a 0 20%, #ffa800 20% 70%, #bd7900 70%);
+  box-shadow: inset 2px 0 0 #ffe5b3, inset 0 2px 0 #ffe5b3;
 }
 .level-fill {
   transition: width 1s ease;

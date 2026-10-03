@@ -34,7 +34,7 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     await expect(p.getByTestId("room-code")).toBeVisible();
     await expect(p.getByTestId("room-code")).toHaveCSS(
       "color",
-      "rgb(146, 170, 225)",
+      "rgb(255, 168, 0)",
     );
     const code = await p.getByTestId("room-code").innerText();
     await expect(p.getByRole("navigation")).toHaveCount(0);

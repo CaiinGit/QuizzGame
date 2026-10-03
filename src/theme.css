@@ -9,7 +9,7 @@
   padding-left: 4px;
 }
 .theme-toggle[aria-pressed="true"] {
-  background: #92aae11a;
+  background: #ffa8001a;
 }
 .theme-save-notice {
   position: absolute;
@@ -27,10 +27,10 @@
   color-scheme: dark;
   --cream: #303030;
   --paper: #303030;
-  --green: #92aae1;
-  --muted: #b5bfd6;
-  --border: #92aae166;
-  --dark-highlight: #92aae11a;
+  --green: #ffa800;
+  --muted: #d6c3a3;
+  --border: #ffa80066;
+  --dark-highlight: #ffa8001a;
   --dark-shadow: #0005;
 }
 [data-theme="dark"] body,
@@ -45,7 +45,7 @@
   background: var(--cream);
 }
 [data-theme="dark"] .app-shell {
-  --gold: #92aae1;
+  --gold: #ffa800;
   box-shadow: none;
 }
 [data-theme="dark"] .bottom-nav,
@@ -78,7 +78,7 @@
   box-shadow: none;
 }
 [data-theme="dark"] .primary:not(:disabled):hover {
-  background: #a6bbed;
+  background: #ffbb38;
 }
 [data-theme="dark"] .secondary:hover,
 [data-theme="dark"] .icon-button:hover,
@@ -131,7 +131,7 @@
 }
 [data-theme="dark"] .portal-sparks i {
   background: var(--green);
-  box-shadow: 0 0 8px #92aae1b3;
+  box-shadow: 0 0 8px #ffa800b3;
 }
 [data-theme="dark"] .portal-art {
   filter: drop-shadow(0 5px 6px #0003);

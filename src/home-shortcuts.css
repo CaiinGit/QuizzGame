@@ -185,15 +185,15 @@
   font-size: 42px;
 }
 [data-theme="dark"] .home-play {
-  --tile-light: #d9e5ff;
-  --tile-edge: #6e87bc;
-  --tile-shadow: #45587f;
+  --tile-light: #ffe2a3;
+  --tile-edge: #c78000;
+  --tile-shadow: #805200;
 }
 [data-theme="dark"] .favorite-slot {
-  --tile-face: #92aae1;
-  --tile-light: #d9e5ff;
-  --tile-edge: #6e87bc;
-  --tile-shadow: #45587f;
+  --tile-face: #ffa800;
+  --tile-light: #ffe2a3;
+  --tile-edge: #c78000;
+  --tile-shadow: #805200;
 }
 @media (max-width: 350px) {
   .home-play {
