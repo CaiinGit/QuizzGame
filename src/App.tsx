@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   Copy,
+  RotateCcw,
   Trophy,
   Wifi,
   X,
@@ -40,6 +41,11 @@ import type {
 } from "../shared/account";
 import { TimeBar } from "./TimeBar";
 import { MatchReview } from "./MatchReview";
+import {
+  MatchCountdown,
+  RoundFeedback,
+  ResultScoreboard,
+} from "./MatchExperience";
 import { AccessGate } from "./AccessGate";
 import { LevelProgress, XpResult } from "./Progression";
 type Intent =
@@ -126,7 +132,12 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   }, [navigation.screen]);
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [room?.code, room?.phase === "finished", room?.phase === "cancelled"]);
+  }, [
+    room?.code,
+    room?.round,
+    room?.phase === "finished",
+    room?.phase === "cancelled",
+  ]);
   useEffect(() => {
     let mounted = true;
     loadProfile()
@@ -462,7 +473,20 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   const ended = room?.phase === "finished" || room?.phase === "cancelled";
   const isQuestion = room?.phase === "question" || room?.phase === "reveal";
   const solo = room?.mode === "solo";
-  const myPoints = room?.correction?.answers[me?.id ?? ""]?.points ?? 0;
+  const rematchAvailable =
+    room?.phase === "finished" &&
+    !solo &&
+    !!profile?.credentials?.account &&
+    !!opponent?.account;
+  const isOpponentRematch = (
+    i: NonNullable<SocialState>["invitations"][number],
+  ) =>
+    rematchAvailable &&
+    i.kind === "rematch" &&
+    i.player.id === opponent?.id &&
+    i.expiresAt > now;
+  const incomingRematch = social?.invitations.find(isOpponentRematch);
+  const sentRematch = social?.sentInvitations.find(isOpponentRematch);
   const result = solo
     ? room?.reason === "forfeit"
       ? "Partie interrompue"
@@ -520,7 +544,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
           (!room || ended || room.phase === "lobby") && (
             <div className="invitation-inbox" aria-label="Invitations reçues">
               {social.invitations
-                .filter((i) => i.expiresAt > now)
+                .filter((i) => i.expiresAt > now && !isOpponentRematch(i))
                 .map((i) => (
                   <InviteCard
                     key={i.id}
@@ -693,50 +717,62 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                 </button>
               </>
             )}
-            <section
-              className={`players ${solo ? "players-solo" : ""}`}
-              aria-label="Joueurs et scores"
-            >
-              {(solo ? [me] : [me, opponent]).map((p, i) => (
-                <div className={`player ${i === 0 ? "you" : ""}`} key={i}>
-                  <div className="avatar">
-                    {i === 0 && p && displayedPhoto ? (
-                      <img src={displayedPhoto} alt="" />
-                    ) : p ? (
-                      p.name.slice(0, 1).toUpperCase()
-                    ) : (
-                      <span>?</span>
-                    )}
-                    {p && (
-                      <b className={p.online ? "online-dot" : "offline-dot"} />
+            {!ended && (
+              <section
+                className={`players ${solo ? "players-solo" : ""} ${isQuestion ? "is-playing" : ""}`}
+                aria-label="Joueurs et scores"
+              >
+                {(solo ? [me] : [me, opponent]).map((p, i) => (
+                  <div
+                    className={`player ${i === 0 ? "you" : ""} ${p?.ready && (room.phase === "lobby" || room.phase === "countdown") ? "is-ready" : ""}`}
+                    key={i}
+                  >
+                    <div className="avatar">
+                      {i === 0 && p && displayedPhoto ? (
+                        <img src={displayedPhoto} alt="" />
+                      ) : p ? (
+                        p.name.slice(0, 1).toUpperCase()
+                      ) : (
+                        <span>?</span>
+                      )}
+                      {p && (
+                        <b
+                          className={p.online ? "online-dot" : "offline-dot"}
+                        />
+                      )}
+                    </div>
+                    <strong>{p?.name ?? "Ton ami"}</strong>
+                    <small className="ready-state">
+                      {p?.ready &&
+                        (room.phase === "lobby" ||
+                          room.phase === "countdown") && (
+                          <Check size={13} aria-hidden="true" />
+                        )}
+                      {!p
+                        ? "En attente…"
+                        : room.phase === "lobby" || room.phase === "countdown"
+                          ? p.ready
+                            ? "Prêt à jouer"
+                            : p.online
+                              ? "Dans le salon"
+                              : "Hors ligne"
+                          : i === 0
+                            ? "TOI"
+                            : p.online
+                              ? "ADVERSAIRE"
+                              : "HORS LIGNE"}
+                    </small>
+                    {isQuestion && (
+                      <span className="score">
+                        {(p?.score ?? 0).toLocaleString("fr-FR")}{" "}
+                        <small>PTS</small>
+                      </span>
                     )}
                   </div>
-                  <strong>{p?.name ?? "Ton ami"}</strong>
-                  <small>
-                    {!p
-                      ? "En attente…"
-                      : room.phase === "lobby"
-                        ? p.ready
-                          ? "Prêt à jouer"
-                          : p.online
-                            ? "Dans le salon"
-                            : "Hors ligne"
-                        : i === 0
-                          ? "TOI"
-                          : p.online
-                            ? "ADVERSAIRE"
-                            : "HORS LIGNE"}
-                  </small>
-                  {room.phase !== "lobby" && (
-                    <span className="score">
-                      {(p?.score ?? 0).toLocaleString("fr-FR")}{" "}
-                      <small>PTS</small>
-                    </span>
-                  )}
-                </div>
-              ))}
-              {!solo && <span className="versus">VS</span>}
-            </section>
+                ))}
+                {!solo && <span className="versus">VS</span>}
+              </section>
+            )}
             {room.phase === "lobby" && (
               <section className="lobby-bottom">
                 <button
@@ -786,14 +822,13 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               </section>
             )}
             {room.phase === "countdown" && (
-              <section className="countdown" role="status">
-                <span className="eyebrow">PRÊTS À PRENDRE LA MER ?</span>
-                <strong>{seconds || 1}</strong>
-                <p>{solo ? "Ta partie commence…" : "Votre duel commence…"}</p>
-              </section>
+              <MatchCountdown seconds={seconds} solo={solo} />
             )}
             {isQuestion && room.question && (
-              <section className="question-section">
+              <section
+                className="question-section"
+                key={`${room.code}:${room.round}`}
+              >
                 <div className="question-meta">
                   <span>
                     QUESTION <b>{String(room.round).padStart(2, "0")}</b> /{" "}
@@ -811,6 +846,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                   offset={offset}
                 />
                 <h1 className="question-title">{room.question.text}</h1>
+                <RoundFeedback room={room} playerId={me?.id ?? ""} />
                 <div
                   className={`answers ${room.submitted ? "has-selection" : ""} ${room.phase === "question" ? "accepting-answers" : ""}`}
                 >
@@ -863,27 +899,9 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                     );
                   })}
                 </div>
-                <div aria-live="polite" className="round-status">
-                  {room.phase === "reveal" ? (
-                    <>
-                      <strong>
-                        {myPoints
-                          ? `+${myPoints.toLocaleString("fr-FR")} points · Bien joué !`
-                          : room.selected === null
-                            ? "Temps écoulé"
-                            : "La bonne réponse"}
-                      </strong>
-                      <p>{room.correction?.explanation}</p>
-                    </>
-                  ) : room.submitted ? (
-                    <p>
-                      <Check size={17} />
-                      {solo
-                        ? "Réponse envoyée…"
-                        : "Réponse envoyée. À ton ami de jouer…"}
-                    </p>
-                  ) : opponent?.answered ? null : (
-                    <p>Une seule réponse. Fais-toi confiance.</p>
+                <div className="round-status">
+                  {room.phase === "reveal" && (
+                    <p>{room.correction?.explanation}</p>
                   )}
                 </div>
               </section>
@@ -903,6 +921,9 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                         : "LE VERDICT"}
                 </span>
                 <h1>{result}</h1>
+                {room.phase === "finished" && (
+                  <ResultScoreboard room={room} playerId={me?.id ?? ""} />
+                )}
                 {room.phase === "finished" &&
                   room.matchId &&
                   profile?.credentials?.account && (
@@ -912,7 +933,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                       matchId={room.matchId}
                     />
                   )}
-                <p>
+                <p className="result-description">
                   {solo
                     ? `Ton score : ${(me?.score ?? 0).toLocaleString("fr-FR")} points${room.reason === "completed" ? ` sur ${(room.total * 1000).toLocaleString("fr-FR")}` : ""}.`
                     : room.reason === "expired"
@@ -925,45 +946,48 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                             ? "La prochaine traversée sera peut-être la tienne."
                             : "Vous connaissez Grand Line aussi bien l’un que l’autre."}
                 </p>
-                {room.phase === "finished" &&
-                  !solo &&
-                  profile?.credentials?.account &&
-                  opponent?.account && (
+                <div className="result-actions">
+                  {rematchAvailable && (
                     <div className="rematch-actions">
-                      {social?.sentInvitations
-                        .filter(
-                          (i) => i.kind === "rematch" && i.expiresAt > now,
-                        )
-                        .map((i) => (
-                          <InviteCard
-                            key={i.id}
-                            invite={i}
-                            sent
-                            act={socialAction}
-                            busy={busy || !online}
-                          />
-                        ))}
-                      {!social?.sentInvitations.some(
-                        (i) => i.kind === "rematch" && i.expiresAt > now,
-                      ) && (
+                      {incomingRematch && (
+                        <InviteCard
+                          invite={incomingRematch}
+                          act={socialAction}
+                          busy={busy || !online}
+                        />
+                      )}
+                      {sentRematch && (
+                        <InviteCard
+                          invite={sentRematch}
+                          sent
+                          act={socialAction}
+                          busy={busy || !online}
+                        />
+                      )}
+                      {!sentRematch && !incomingRematch && (
                         <button
                           className="button primary"
                           disabled={!online || busy}
                           onClick={() => void socialAction("room:rematch")}
                         >
-                          Demander une revanche
+                          <RotateCcw size={20} aria-hidden="true" />
+                          Revanche
                         </button>
+                      )}
+                      {!sentRematch && !incomingRematch && (
+                        <p>Rejouer contre {opponent?.name} · One Piece</p>
                       )}
                     </div>
                   )}
-                <button
-                  className="button primary"
-                  disabled={!online || busy}
-                  onClick={() => void leave()}
-                >
-                  Retour à l’accueil
-                  <ArrowRight size={20} />
-                </button>
+                  <button
+                    className="button secondary"
+                    disabled={!online || busy}
+                    onClick={() => void leave()}
+                  >
+                    Retour à l’accueil
+                    <ArrowRight size={20} />
+                  </button>
+                </div>
                 {room.phase === "finished" && (
                   <MatchReview room={room} playerId={me?.id ?? ""} />
                 )}

@@ -13,6 +13,7 @@ import "./selection-cards.css";
 import "./match-review.css";
 import "./account-social.css";
 import "./profile-favorites.css";
+import "./match-experience.css";
 import { initializeTheme } from "./theme";
 
 void initializeTheme().then(() =>

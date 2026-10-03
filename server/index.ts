@@ -16,9 +16,7 @@ const server = await createApp(database, {
   origins: process.env.ALLOWED_ORIGINS?.split(",").map((s) => s.trim()),
   staticDir: "dist",
   testMode,
-  times: testMode
-    ? { ...durations, question: 4000, reveal: 180, countdown: 180 }
-    : durations,
+  times: testMode ? { ...durations, question: 4000, reveal: 900 } : durations,
 });
 const port = Number(process.env.PORT ?? 3001);
 server.http.listen(port, process.env.HOST ?? "127.0.0.1", () =>

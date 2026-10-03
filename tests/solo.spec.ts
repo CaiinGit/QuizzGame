@@ -87,7 +87,16 @@ test("Solo completes alone, resumes on reload, and timer moves between integer s
 test("Solo timeout advances without a guest and quitting does not promise a winner", async ({
   page,
 }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await startSolo(page);
+  await expect(page.locator(".question-section")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  await expect(page.locator(".round-feedback.timeout")).toContainText(
+    "Temps écoulé",
+    { timeout: 7000 },
+  );
   await expect(page.locator(".question-meta b")).toHaveText("02", {
     timeout: 10000,
   });

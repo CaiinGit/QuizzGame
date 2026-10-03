@@ -48,7 +48,20 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
     await identify(q, "Zoro");
     await expect(q.getByTestId("room-code")).toHaveText(code);
     await p.getByRole("button", { name: "Je suis prêt" }).click();
+    await expect(p.locator(".player.is-ready")).toHaveCount(1);
+    await expect(p.locator(".question-section")).toHaveCount(0);
     await q.getByRole("button", { name: "Je suis prêt" }).click();
+    for (const number of ["3", "2", "1"]) {
+      await expect(p.locator(".countdown-number")).toHaveText(number);
+      await expect(q.locator(".countdown-number")).toHaveText(number);
+      if (number === "3") {
+        await expect(p.locator(".players .is-ready")).toHaveCount(2);
+        await p.screenshot({
+          path: "test-results/match-countdown-dark.png",
+          fullPage: true,
+        });
+      }
+    }
     for (let i = 1; i <= 10; i++) {
       await expect(p.locator(".question-meta b")).toHaveText(
         String(i).padStart(2, "0"),
@@ -78,6 +91,9 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       await expect(p.locator(".answer.selected")).toContainText(
         "Réponse enregistrée",
       );
+      await expect(p.locator(".round-feedback.locked")).toContainText(
+        "Réponse enregistrée",
+      );
       if (i === 1) {
         await p.reload();
         await expect(p.locator(".answer.selected")).toHaveCount(1);
@@ -94,6 +110,18 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
         .locator(".answer")
         .nth((correctIndex + 1) % 4)
         .click();
+      if (i === 1) {
+        await expect(p.locator(".round-feedback.right")).toContainText(
+          "Bonne réponse !",
+        );
+        await expect(q.locator(".round-feedback.incorrect")).toContainText(
+          "Mauvaise réponse",
+        );
+        await q.screenshot({
+          path: "test-results/match-feedback-light.png",
+          fullPage: true,
+        });
+      }
     }
     await expect(
       p.getByRole("heading", {
@@ -106,6 +134,14 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       }),
     ).toBeVisible();
     await expect(p.locator(".review-round")).toHaveCount(10);
+    await expect(p.locator(".result-player")).toHaveCount(2);
+    await expect(p.locator(".result-player.is-winner")).toContainText("Luffy");
+    await expect(p.locator(".result-player").first()).toContainText(
+      "10 / 10 bonnes réponses",
+    );
+    await expect(p.locator(".result-player").last()).toContainText(
+      "0 / 10 bonnes réponses",
+    );
     await expect(p.locator(".review-answer.right")).toHaveCount(10);
     await expect(p.locator(".review-answer.incorrect")).toHaveCount(10);
     await p.reload();

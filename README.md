@@ -6,6 +6,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface bei
 
 Profil avec statistiques Solo et duel séparées, favoris de thèmes synchronisés entre appareils et statuts des amis en temps réel. Les favoris de l’accueil ouvrent le choix du mode avec One Piece déjà sélectionné. Voir [profil, favoris et amis](docs/PROFIL-FAVORIS-AMIS.md).
 
+Les parties affichent un départ animé 3–2–1 synchronisé sur le serveur, les joueurs prêts et des transitions courtes entre les questions. Un bandeau confirme la réponse enregistrée, puis indique bonne réponse, erreur ou temps écoulé avec les points effectivement gagnés. Le bilan rassemble les scores côte à côte, les bonnes réponses, l’XP et le détail par question. **Revanche** permet aux comptes de rejouer contre le même adversaire après son acceptation ; la demande peut être refusée ou annulée depuis le bilan. Les animations respectent la préférence de réduction des mouvements. Aucun son ni vibration n’est ajouté.
+
 ## Version 0.6
 
 Accès privé réservé à trois administrateurs, mot de passe personnel obligatoire après la première connexion, XP persistante et niveaux avec bilan de fin de partie. Voir [accès privé et progression](docs/PROGRESSION-ACCES.md). Les inscriptions et invités sont fermés par défaut, y compris pour les anciens clients.

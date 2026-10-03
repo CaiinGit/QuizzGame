@@ -204,16 +204,40 @@ test("round home friends button, friendship, direct invitation, match history an
       await q.locator(".answer").first().click();
     }
     await expect(
-      p.getByRole("button", { name: "Demander une revanche", exact: true }),
+      p.getByRole("button", { name: "Revanche", exact: true }),
     ).toBeVisible();
+    await expect(
+      p.getByRole("region", { name: "Expérience gagnée" }),
+    ).toBeVisible();
+    await expect(p.locator(".result-player")).toHaveCount(2);
+    await p.screenshot({
+      path: "test-results/match-results-dark.png",
+      fullPage: true,
+    });
+    await p.getByRole("button", { name: "Revanche", exact: true }).click();
+    await expect(p.locator(".rematch-actions")).toContainText(
+      "Invitation envoyée",
+    );
+    await expect(q.locator(".rematch-actions")).toContainText(alice);
+    await q.getByRole("button", { name: "Refuser", exact: true }).click();
+    await expect(
+      p.getByRole("button", { name: "Revanche", exact: true }),
+    ).toBeVisible();
+    await p.getByRole("button", { name: "Revanche", exact: true }).click();
     await p
-      .getByRole("button", { name: "Demander une revanche", exact: true })
+      .locator(".rematch-actions")
+      .getByRole("button", { name: "Annuler", exact: true })
       .click();
+    await expect(q.locator(".rematch-actions .invite-card")).toHaveCount(0);
+    await p.getByRole("button", { name: "Revanche", exact: true }).click();
     await q.getByRole("button", { name: "Accepter", exact: true }).click();
     await expect(p.getByTestId("room-code")).not.toHaveText(first);
     await expect(q.getByTestId("room-code")).toHaveText(
       await p.getByTestId("room-code").innerText(),
     );
+    await expect(p.locator(".players")).toContainText(alice);
+    await expect(p.locator(".players")).toContainText(bob);
+    await expect(p.locator(".player.is-ready")).toHaveCount(0);
     await p.getByRole("button", { name: "Quitter", exact: true }).click();
     await p
       .getByRole("dialog")
