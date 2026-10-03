@@ -73,12 +73,9 @@
 .theme-selection .selection-logo,
 .theme-selection .selection-logo > img,
 .theme-selection .selection-logo > svg,
-.theme-selection .theme-logo-placeholder {
+.theme-selection .theme-logo {
   width: 48px;
   height: 48px;
-}
-.theme-selection .theme-logo-placeholder {
-  font-size: 30px;
 }
 .favorite-toggle:focus-visible {
   outline: 2px solid var(--cream);
@@ -96,11 +93,9 @@
 [data-theme="dark"] .favorite-slot {
   color: #303030;
 }
-.favorite-slot .theme-logo-placeholder {
+.favorite-slot .theme-logo {
   width: 40px;
   height: 40px;
-  font-size: 24px;
-  border-width: 2px;
 }
 .favorite-name {
   font-family: var(--font-arcade);
@@ -114,9 +109,8 @@
   background: #bc6640;
 }
 @media (max-width: 350px) {
-  .favorite-slot .theme-logo-placeholder {
+  .favorite-slot .theme-logo {
     width: 32px;
     height: 32px;
-    font-size: 20px;
   }
 }

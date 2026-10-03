@@ -52,11 +52,15 @@ export function FutureSelectionCard() {
   );
 }
 
-/** Temporary mark until a theme logo is supplied. */
 export function OnePieceLogo() {
   return (
-    <span className="theme-logo-placeholder" aria-hidden="true">
-      OP
-    </span>
+    <img
+      className="theme-logo"
+      src="/art/one-piece-logo.png"
+      width="512"
+      height="512"
+      alt=""
+      aria-hidden="true"
+    />
   );
 }

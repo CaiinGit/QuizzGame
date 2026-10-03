@@ -74,14 +74,14 @@
   letter-spacing: 0;
   margin-top: 0;
 }
-.theme-logo-placeholder {
-  display: grid;
-  place-items: center;
+.theme-logo {
+  display: block;
   width: 64px;
   height: 64px;
-  border: 2px dashed currentColor;
-  font: 36px/1 var(--font-arcade);
-  opacity: 0.8;
+  object-fit: contain;
+}
+.selection-logo > img.theme-logo {
+  image-rendering: auto;
 }
 .duel-theme-logo {
   display: flex;
