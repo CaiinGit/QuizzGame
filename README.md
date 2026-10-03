@@ -26,6 +26,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 
 - Accueil avec portail frontal isolé en pixel art, palette beige et verte.
 - Bandeau joueur vert (clair) ou jaune orangé (sombre), photo personnelle importable depuis la galerie ou les fichiers. Les photos sont recadrées au centre et réduites à 320 × 320 : locales en mode invité, sauvegardées sur le serveur avec un compte.
+- Le bandeau joueur est masqué du compte à rebours jusqu’aux résultats pour laisser la place aux questions et aux réponses. Il reste présent dans le salon d’attente et revient à l’accueil. Les espacements du quiz sont réduits sur les écrans de faible hauteur.
 - Roue dentée : réglages avec mode sombre gris `#303030` et jaune orangé `#FFA800`, choix mémorisé ; connexion au serveur dans une section dépliable.
 - Emplacements pièces, trophées et notifications : présentations « À venir », sans progression simulée, solde inventé ni achat actif.
 - Barre du bas : **Classement · Accueil · Thèmes · Boutique**, icônes pixel en relief et fond identique au bandeau joueur ; masquée dans les salons et duels. Classement et Boutique affichent « À venir ».

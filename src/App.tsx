@@ -539,22 +539,25 @@ function App({ adminOnly }: { adminOnly: boolean }) {
         Akasha<span>Préparation de ton escale…</span>
       </main>
     );
+  const focusedMatch = !!room && room.phase !== "lobby";
   return (
     <div
-      className={`app-shell ${room ? "in-duel" : "has-navigation"} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
+      className={`app-shell ${room ? "in-duel" : "has-navigation"} ${focusedMatch ? "focused-match" : ""} ${!room && navigation.screen === "accueil" ? "on-home" : ""}`}
     >
-      <PlayerHeader
-        totalXp={account?.totalXp}
-        photo={displayedPhoto}
-        profile={() => navigate("profil")}
-        profileDisabled={!!room}
-        open={setHeaderPanel}
-        settings={() => {
-          setIntent(null);
-          setAddress(profile?.server ?? "");
-          setSettings(true);
-        }}
-      />
+      {!focusedMatch && (
+        <PlayerHeader
+          totalXp={account?.totalXp}
+          photo={displayedPhoto}
+          profile={() => navigate("profil")}
+          profileDisabled={!!room}
+          open={setHeaderPanel}
+          settings={() => {
+            setIntent(null);
+            setAddress(profile?.server ?? "");
+            setSettings(true);
+          }}
+        />
+      )}
       <main>
         {error && !settings && !quitting && !identity && !auth && (
           <div className="notice error" role="alert">

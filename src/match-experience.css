@@ -278,6 +278,37 @@
     gap: 8px;
   }
 }
+@media (max-height: 700px) {
+  .focused-match .players.is-playing {
+    margin: 8px 0;
+  }
+  .focused-match .question-section {
+    margin-top: 12px;
+  }
+  .focused-match .question-title {
+    font-size: 22px;
+    min-height: 0;
+    margin-bottom: 8px;
+  }
+  .focused-match .time-track {
+    margin: 10px 0 12px;
+  }
+  .focused-match .round-feedback {
+    min-height: 40px;
+    margin-bottom: 8px;
+  }
+  .focused-match .feedback-content {
+    min-height: 40px;
+    padding: 6px 8px;
+  }
+  .focused-match .answers {
+    gap: 8px;
+  }
+  .focused-match .answer {
+    min-height: 50px;
+    padding: 8px 12px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .countdown-number,
   .question-section,
@@ -289,4 +320,10 @@
   .question-section .answer {
     transition: none;
   }
+}
+.app-shell.focused-match {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+.focused-match .duel-nav {
+  margin: 0 0 16px;
 }

@@ -127,12 +127,10 @@ test("private gate, first login, saved recovery, solo XP, level-up and logout", 
     await expect(
       page.getByText("Niveau 2 atteint !", { exact: true }),
     ).toBeVisible();
+    await expect(page.locator(".player-header")).toHaveCount(0);
     await expect(
-      page.getByRole("button", {
-        name: "Niveau 2, 100 sur 250 XP",
-        exact: true,
-      }),
-    ).toBeVisible();
+      page.getByRole("progressbar", { name: "Progression vers le niveau 3" }),
+    ).toHaveAttribute("aria-valuenow", "100");
     await page.screenshot({
       path: "test-results/private-xp-light.png",
       fullPage: true,

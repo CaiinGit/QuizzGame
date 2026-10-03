@@ -19,12 +19,13 @@ async function startSolo(page: Page) {
 test("Solo completes alone, resumes on reload, and timer moves between integer seconds", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 568 });
   await startSolo(page);
   await expect(page.locator(".players .player")).toHaveCount(1);
   await expect(page.locator(".versus")).toHaveCount(0);
   await expect(page.getByTestId("room-code")).toHaveCount(0);
   await expect(page.getByRole("navigation")).toHaveCount(0);
+  await expect(page.locator(".player-header")).toHaveCount(0);
   const samples = await page.locator(".time-track > div").evaluate(
     (el) =>
       new Promise<number[]>((resolve) => {
@@ -59,12 +60,14 @@ test("Solo completes alone, resumes on reload, and timer moves between integer s
       String(round).padStart(2, "0"),
     );
     await expect(page.locator(".answer").first()).toBeEnabled();
+    await expect(page.locator(".answer").last()).toBeInViewport({ ratio: 1 });
     await page.locator(".answer").first().click();
   }
   await expect(
     page.getByRole("heading", { name: "Partie terminée", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".results")).toContainText("Ton score");
+  await expect(page.locator(".player-header")).toHaveCount(0);
   await expect(page.locator(".review-round")).toHaveCount(10);
   await expect(
     page.locator(".review-round").first().locator(".review-answer"),
@@ -82,6 +85,7 @@ test("Solo completes alone, resumes on reload, and timer moves between integer s
   await expect(
     page.getByRole("button", { name: "Jouer", exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".player-header")).toBeVisible();
 });
 
 test("Solo timeout advances without a guest and quitting does not promise a winner", async ({
