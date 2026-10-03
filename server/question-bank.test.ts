@@ -5,6 +5,61 @@ import pg from "pg";
 import { connectDatabase, type Sql } from "./database";
 import { QuestionBank } from "./question-bank";
 import { questions } from "./questions";
+import { difficultyChoices } from "../shared/difficulty";
+
+test("difficulty counts and draws exclude drafts, archives and disabled themes, with an exact ten-question threshold", async () => {
+  const db = await isolatedDatabase(),
+    bank = new QuestionBank(db);
+  try {
+    await bank.init();
+    for (const difficulty of difficultyChoices.slice(1)) {
+      if (difficulty === "all") continue;
+      for (let i = 0; i < 12; i++)
+        await bank.saveQuestion({
+          ...questions[i % 10],
+          id: `${difficulty}-${i}`,
+          themeId: "one-piece",
+          difficulty,
+          status: i < 9 ? "published" : i === 9 ? "draft" : "archived",
+        });
+      assert.equal(
+        (await bank.availability()).find((v) => v.difficulty === difficulty)
+          ?.available,
+        false,
+      );
+      await assert.rejects(
+        bank.drawQuestions("one-piece", difficulty),
+        /10 questions publiées/,
+      );
+      await bank.saveQuestion({
+        ...questions[0],
+        id: `${difficulty}-9`,
+        themeId: "one-piece",
+        difficulty,
+        status: "published",
+      });
+      const option = (await bank.availability()).find(
+        (v) => v.difficulty === difficulty,
+      )!;
+      assert.equal(option.count, 10);
+      assert.equal(option.available, true);
+      const drawn = await bank.drawQuestions("one-piece", difficulty);
+      assert.equal(drawn.length, 10);
+      assert.equal(new Set(drawn.map((q) => q.id)).size, 10);
+      assert.ok(drawn.every((q) => q.id.startsWith(`${difficulty}-`)));
+    }
+    assert.equal((await bank.availability())[0].count, 60);
+    await db.query(
+      "UPDATE akasha_themes SET enabled=false WHERE id='one-piece'",
+    );
+    assert.ok(
+      (await bank.availability()).every((o) => o.count === 0 && !o.available),
+    );
+    await assert.rejects(bank.drawQuestions("one-piece", "easy"));
+  } finally {
+    await db.close();
+  }
+});
 
 async function isolatedDatabase(): Promise<Sql> {
   if (!process.env.TEST_DATABASE_URL) return connectDatabase();

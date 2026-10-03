@@ -50,8 +50,13 @@ import {
 } from "./MatchExperience";
 import { AccessGate } from "./AccessGate";
 import { LevelProgress, XpResult } from "./Progression";
+import { DifficultyPicker, useDifficulties } from "./DifficultyPicker";
+import { difficultyLabels, type DifficultyChoice } from "../shared/difficulty";
 type Intent =
-  | { event: "room:create"; data: { mode?: "duel" | "solo" } }
+  | {
+      event: "room:create";
+      data: { mode?: "duel" | "solo"; difficulty?: DifficultyChoice };
+    }
   | { event: "room:join"; data: { code: string } };
 import type { RoomView } from "../shared/protocol";
 
@@ -109,6 +114,15 @@ function App({ adminOnly }: { adminOnly: boolean }) {
 
   const [profile, setProfile] = useState<Profile | null>(null),
     [room, setRoom] = useState<RoomView | null>(null);
+  const [difficulty, setDifficulty] = useState<DifficultyChoice>("all");
+  const availability = useDifficulties(
+    profile,
+    !room &&
+      ["one-piece", "solo-one-piece", "amis"].includes(navigation.screen),
+  );
+  const canStart = !!availability.options?.find(
+    (o) => o.difficulty === difficulty,
+  )?.available;
   const [name, setName] = useState(""),
     [code, setCode] = useState(""),
     [online, setOnline] = useState(false),
@@ -441,6 +455,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
     },
   };
   async function socialAction(event: string, data: unknown = {}) {
+    if (event === "friends:invite") data = { ...(data as object), difficulty };
     await run(async () => {
       await command(socket.current, event, data);
     });
@@ -612,6 +627,15 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               </div>
               {navigation.screen === "amis" ? (
                 <FriendsPanel
+                  difficultyPicker={
+                    <DifficultyPicker
+                      value={difficulty}
+                      onChange={setDifficulty}
+                      availability={availability}
+                      disabled={busy}
+                    />
+                  }
+                  canInvite={canStart}
                   now={now}
                   state={social}
                   account={!!profile.credentials?.account}
@@ -633,6 +657,15 @@ function App({ adminOnly }: { adminOnly: boolean }) {
           navigation.screen !== "amis" &&
           navigation.screen !== "historique" && (
             <Explore
+              difficultyPicker={
+                <DifficultyPicker
+                  value={difficulty}
+                  onChange={setDifficulty}
+                  availability={availability}
+                  disabled={busy || !!intent}
+                />
+              }
+              canStart={canStart}
               favorites={account?.favorites ?? []}
               toggleFavorite={(themeId) => {
                 if (!profile?.credentials?.account) {
@@ -682,9 +715,14 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               busy={busy || !!intent}
               code={code}
               setCode={setCode}
-              create={() => requestAction({ event: "room:create", data: {} })}
+              create={() =>
+                requestAction({ event: "room:create", data: { difficulty } })
+              }
               solo={() =>
-                requestAction({ event: "room:create", data: { mode: "solo" } })
+                requestAction({
+                  event: "room:create",
+                  data: { mode: "solo", difficulty },
+                })
               }
               join={() => requestAction({ event: "room:join", data: { code } })}
               chooseName={() => {
@@ -709,6 +747,11 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                 ONE PIECE <i> / </i> {solo ? "CLASSIQUE SOLO" : "DUEL 1V1"}
               </span>
             </div>
+            {(room.phase === "lobby" || ended) && (
+              <p className="match-difficulty">
+                Difficulté : {difficultyLabels[room.difficulty ?? "all"]}
+              </p>
+            )}
             {room.phase === "lobby" && (
               <>
                 <section className="lobby-title">

@@ -17,6 +17,10 @@ Au premier démarrage avec cette version, les dix questions de test de `server/q
 
 Chaque nouvelle partie tire dix questions publiées distinctes au hasard, puis mélange leurs propositions côté serveur. Il faut au moins dix questions publiées pour lancer une partie ; sinon un message explique l’indisponibilité. Il n’existe pas de repli silencieux vers les anciennes questions du code.
 
+Le choix de difficulté filtre ce tirage côté serveur : `all` mélange tous les niveaux publiés (y compris les anciennes questions sans difficulté), tandis que `easy`, `medium`, `hard`, `very_hard` et `expert` ne tirent que leur niveau exact. Le seuil de dix s’applique au niveau choisi. `GET /api/questions/availability` retourne les six effectifs et disponibilités, jamais les énoncés ou corrections ; l’accès reste réservé aux administrateurs lorsque l’application est privée. Le sélecteur actualise les effectifs à son ouverture, au retour dans l’application et chaque minute.
+
+La difficulté choisie est sauvegardée dans le salon et son résultat. Rejoindre par code ou invitation reprend celle du créateur ; une revanche la conserve et échoue explicitement si le niveau n’a plus assez de questions publiées. Les salons antérieurs sans ce champ correspondent à `all`.
+
 Le salon sauvegarde une copie complète des questions tirées. Modifier la banque n’affecte donc ni une partie déjà créée, ni sa correction, ni son bilan après reconnexion. Les bonnes réponses restent privées jusqu’à la correction de chaque question.
 
 ## Synchronisation Google Sheets

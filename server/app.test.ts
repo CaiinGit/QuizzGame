@@ -99,16 +99,41 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
       [ca.id],
     );
     assert.notEqual(hashed.rows[0].token_hash, ca.token);
+    await server!.repository.db.query(
+      "UPDATE akasha_questions SET difficulty='easy'",
+    );
+    const availability = await (
+      await fetch(base + "/api/questions/availability")
+    ).json();
+    assert.deepEqual(
+      availability.find((o: { difficulty: string }) => o.difficulty === "easy"),
+      { difficulty: "easy", count: 10, available: true },
+    );
+    assert.ok(
+      availability.every(
+        (o: object) =>
+          !Object.hasOwn(o, "text") && !Object.hasOwn(o, "correct"),
+      ),
+    );
+    await assert.rejects(
+      request(a.s, "room:create", { difficulty: "unknown" }),
+    );
+    await assert.rejects(
+      request(a.s, "room:create", { difficulty: "hard" }),
+      /10 questions publiées/,
+    );
     const editedQuestion = {
       ...questions[0],
       themeId: "one-piece",
       status: "published" as const,
+      difficulty: "easy" as const,
       text: "Énoncé tiré de la base",
     };
     await server!.repository.questionBank.saveQuestion(editedQuestion);
-    await request(a.s, "room:create");
+    await request(a.s, "room:create", { difficulty: "easy" });
     await waitFor(() => !!a.state());
     const code = a.state()!.code;
+    assert.equal(a.state()!.difficulty, "easy");
     assert.equal(
       server!.rooms.get(code)!.questions.find((q) => q.id === editedQuestion.id)
         ?.text,
@@ -119,6 +144,7 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
       text: "Nouvelle version pour les prochaines parties",
     });
     await request(b.s, "room:join", { code });
+    assert.equal(b.state()!.difficulty, "easy");
     await assert.rejects(request(c.s, "room:join", { code }));
     await request(a.s, "room:ready");
     await request(b.s, "room:ready");
@@ -167,6 +193,7 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await waitFor(() => restored.state()?.code === code);
     assert.equal(restored.state()!.players[0].score, earned);
     assert.equal(restored.state()!.phase, "reveal");
+    assert.equal(restored.state()!.difficulty, "easy");
     assert.deepEqual(restored.state()!.history, []);
     await request(restored.s, "room:leave");
     const other = await client(cb);
@@ -178,13 +205,17 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await assert.rejects(
       request(restored.s, "room:create", { mode: "invalid" }),
     );
-    await request(restored.s, "room:create", { mode: "solo" });
+    await request(restored.s, "room:create", {
+      mode: "solo",
+      difficulty: "easy",
+    });
     await waitFor(
       () =>
         restored.state()?.mode === "solo" &&
         restored.state()?.phase === "question",
     );
     const soloCode = restored.state()!.code;
+    assert.equal(restored.state()!.difficulty, "easy");
     assert.equal(restored.state()!.players.length, 1);
     assert.equal(restored.state()!.correction, null);
     assert.equal(Object.hasOwn(restored.state()!, "answerTimes"), false);

@@ -173,6 +173,13 @@ test(
         provisionAdmins(server.repository, ["aab", "aab", "ccc"]),
       );
       assert.equal((await api("access", 200)).adminOnly, true);
+      await api("questions/availability", 403);
+      await api(
+        "questions/availability",
+        403,
+        undefined,
+        outsider.credentials.token,
+      );
       await api("session", 403, { name: "Intrus" });
       await api("account/register", 403, {
         username: "intrus",

@@ -21,6 +21,7 @@ import {
 import type { Ack } from "../shared/protocol";
 import { accountRoutes } from "./account-routes";
 import { Social } from "./social";
+import { difficultyChoices, type DifficultyChoice } from "../shared/difficulty";
 
 export async function createApp(
   db: Sql,
@@ -159,6 +160,35 @@ export async function createApp(
         .json({ error: "Le serveur est temporairement indisponible." });
     }
   });
+  app.get("/api/questions/availability", async (req, res) => {
+    res.set("Cache-Control", "no-store");
+    if (!allow(`availability:${req.ip}`, 120)) {
+      res.status(429).json({ error: "Patiente avant de réessayer." });
+      return;
+    }
+    try {
+      if (
+        adminOnly &&
+        !admitted(
+          await repository.authenticate(
+            req.headers.authorization?.replace(/^Bearer /, "") ?? "",
+          ),
+        )
+      ) {
+        res
+          .status(403)
+          .json({ error: "Connecte-toi pour choisir une difficulté." });
+        return;
+      }
+      res.json(await repository.questionBank.availability());
+    } catch {
+      res
+        .status(503)
+        .json({
+          error: "Difficultés indisponibles. Réessaie dans un instant.",
+        });
+    }
+  });
   let queue: Promise<unknown> = Promise.resolve();
   const serial = <T>(job: () => Promise<T>): Promise<T> => {
     const task = queue.then(job);
@@ -252,6 +282,7 @@ export async function createApp(
   async function makeRoom(
     player: { id: string; name: string; account?: boolean },
     mode: "duel" | "solo" = "duel",
+    difficulty: DifficultyChoice = "all",
   ) {
     if ([...rooms.values()].filter(isLive).length >= 200)
       throw new Error("Tous les salons sont occupés. Réessaie bientôt.");
@@ -266,10 +297,11 @@ export async function createApp(
     return newRoom(
       code,
       player,
-      await repository.questionBank.drawQuestions(),
+      await repository.questionBank.drawQuestions("one-piece", difficulty),
       Date.now(),
       times,
       mode,
+      difficulty,
     );
   }
   function active(id: string) {
@@ -393,8 +425,11 @@ export async function createApp(
       if (updated.revision !== draft.revision) await persist(updated);
     };
     command("room:create", async (data) => {
-      const { mode } = z
-        .object({ mode: z.enum(["duel", "solo"]).default("duel") })
+      const { mode, difficulty } = z
+        .object({
+          mode: z.enum(["duel", "solo"]).default("duel"),
+          difficulty: z.enum(difficultyChoices).default("all"),
+        })
         .parse(data);
       const existing = active(player.id);
       if (existing) {
@@ -402,7 +437,7 @@ export async function createApp(
         emit(existing);
         return;
       }
-      const room = await makeRoom(player, mode);
+      const room = await makeRoom(player, mode, difficulty);
       await repository.save(room);
       rooms.set(room.code, room);
       attach(room, player.id);
@@ -474,7 +509,12 @@ export async function createApp(
     });
     command("friends:invite", async (data) => {
       accountOnly();
-      const d = z.object({ id: z.string().uuid() }).parse(data);
+      const d = z
+        .object({
+          id: z.string().uuid(),
+          difficulty: z.enum(difficultyChoices).default("all"),
+        })
+        .parse(data);
       if (!(await social.areFriends(player.id, d.id)))
         throw new Error("Ajoute d’abord ce joueur à tes amis.");
       if (active(d.id))
@@ -492,7 +532,9 @@ export async function createApp(
           (room.reservedFor && room.reservedFor !== d.id))
       )
         throw new Error("Quitte ton salon actuel avant d’inviter cet ami.");
-      room = structuredClone(room ?? (await makeRoom(player)));
+      room = structuredClone(
+        room ?? (await makeRoom(player, "duel", d.difficulty)),
+      );
       room.reservedFor = d.id;
       await repository.save(room);
       rooms.set(room.code, room);
@@ -601,11 +643,15 @@ export async function createApp(
           throw new Error("Ce duel n’est plus disponible pour une revanche.");
         if (active(player.id) || active(sender.id))
           throw new Error("Un joueur est déjà dans une autre partie.");
-        room = await makeRoom({
-          id: sender.id,
-          name: sender.name,
-          account: true,
-        });
+        room = await makeRoom(
+          {
+            id: sender.id,
+            name: sender.name,
+            account: true,
+          },
+          "duel",
+          source.difficulty ?? "all",
+        );
         room.rematchOf = invitation.id;
         room.reservedFor = player.id;
         join(room, player);

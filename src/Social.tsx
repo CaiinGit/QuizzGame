@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { ArrowLeft, Check, UserPlus, Users, X } from "lucide-react";
 import type {
   SocialState,
@@ -58,6 +59,8 @@ export function InviteCard({
   );
 }
 export function FriendsPanel({
+  difficultyPicker,
+  canInvite = true,
   state,
   account,
   online,
@@ -66,6 +69,8 @@ export function FriendsPanel({
   busy,
   now,
 }: {
+  difficultyPicker?: ReactNode;
+  canInvite?: boolean;
   state: SocialState | null;
   account: boolean;
   online: boolean;
@@ -208,83 +213,87 @@ export function FriendsPanel({
             Ta liste est encore vide. Ajoute ton premier ami avec son pseudo.
           </p>
         ) : (
-          state.friends.map((f) => (
-            <article key={f.id} className="social-card friend-card">
-              <div className="friend-initial" aria-hidden="true">
-                {f.name[0].toUpperCase()}
-              </div>
-              <div>
-                <strong>{f.name}</strong>
-                <small>@{f.username}</small>
-                <span
-                  className={`friend-presence ${f.online ? "is-online" : ""} is-${f.presence}`}
-                >
-                  {f.presence === "lobby"
-                    ? "Dans un salon"
-                    : f.presence === "playing"
-                      ? "En partie"
-                      : f.online
-                        ? "En ligne"
-                        : "Hors ligne"}
-                  {!f.online &&
-                  (f.presence === "lobby" || f.presence === "playing")
-                    ? " · déconnecté"
-                    : ""}
-                </span>
-              </div>
-              <div className="social-buttons">
-                <button
-                  className="button primary"
-                  disabled={
-                    busy ||
-                    f.presence === "lobby" ||
-                    f.presence === "playing" ||
-                    state.sentInvitations.some(
-                      (i) => i.player.id === f.id && i.expiresAt > now,
-                    )
-                  }
-                  onClick={() => void act("friends:invite", { id: f.id })}
-                >
-                  {f.presence === "lobby" || f.presence === "playing"
-                    ? "Occupé"
-                    : state.sentInvitations.some(
-                          (i) => i.player.id === f.id && i.expiresAt > now,
-                        )
-                      ? "Invité"
-                      : "Inviter"}
-                </button>
-                <button
-                  className="text-button"
-                  aria-label={`Retirer ${f.username}`}
-                  onClick={() => setRemove(remove === f.id ? null : f.id)}
-                >
-                  Retirer
-                </button>
-              </div>
-              {remove === f.id && (
-                <div className="inline-confirm">
-                  <p>Retirer {f.name} de tes amis ?</p>
+          <>
+            {difficultyPicker}
+            {state.friends.map((f) => (
+              <article key={f.id} className="social-card friend-card">
+                <div className="friend-initial" aria-hidden="true">
+                  {f.name[0].toUpperCase()}
+                </div>
+                <div>
+                  <strong>{f.name}</strong>
+                  <small>@{f.username}</small>
+                  <span
+                    className={`friend-presence ${f.online ? "is-online" : ""} is-${f.presence}`}
+                  >
+                    {f.presence === "lobby"
+                      ? "Dans un salon"
+                      : f.presence === "playing"
+                        ? "En partie"
+                        : f.online
+                          ? "En ligne"
+                          : "Hors ligne"}
+                    {!f.online &&
+                    (f.presence === "lobby" || f.presence === "playing")
+                      ? " · déconnecté"
+                      : ""}
+                  </span>
+                </div>
+                <div className="social-buttons">
                   <button
-                    className="button secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      void act("friends:remove", { id: f.id }).then(() =>
-                        setRemove(null),
+                    className="button primary"
+                    disabled={
+                      busy ||
+                      !canInvite ||
+                      f.presence === "lobby" ||
+                      f.presence === "playing" ||
+                      state.sentInvitations.some(
+                        (i) => i.player.id === f.id && i.expiresAt > now,
                       )
                     }
+                    onClick={() => void act("friends:invite", { id: f.id })}
                   >
-                    Confirmer
+                    {f.presence === "lobby" || f.presence === "playing"
+                      ? "Occupé"
+                      : state.sentInvitations.some(
+                            (i) => i.player.id === f.id && i.expiresAt > now,
+                          )
+                        ? "Invité"
+                        : "Inviter"}
                   </button>
                   <button
                     className="text-button"
-                    onClick={() => setRemove(null)}
+                    aria-label={`Retirer ${f.username}`}
+                    onClick={() => setRemove(remove === f.id ? null : f.id)}
                   >
-                    Annuler
+                    Retirer
                   </button>
                 </div>
-              )}
-            </article>
-          ))
+                {remove === f.id && (
+                  <div className="inline-confirm">
+                    <p>Retirer {f.name} de tes amis ?</p>
+                    <button
+                      className="button secondary"
+                      disabled={busy}
+                      onClick={() =>
+                        void act("friends:remove", { id: f.id }).then(() =>
+                          setRemove(null),
+                        )
+                      }
+                    >
+                      Confirmer
+                    </button>
+                    <button
+                      className="text-button"
+                      onClick={() => setRemove(null)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </>
         )}
       </section>
     </div>

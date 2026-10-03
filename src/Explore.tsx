@@ -20,6 +20,8 @@ import type { Screen } from "./navigation";
 import type { Profile } from "./client";
 
 type Props = {
+  difficultyPicker: ReactNode;
+  canStart: boolean;
   accountContent?: ReactNode;
   accountName?: string;
   friendCount?: number;
@@ -310,14 +312,17 @@ export function Explore(p: Props) {
       )}
       {(screen === "one-piece" || screen === "solo-one-piece") && (
         <>
-          <div className="page-heading">
-            <span className="eyebrow">
-              CLASSIQUE · {screen === "solo-one-piece" ? "SOLO" : "1 CONTRE 1"}
-            </span>
-            <h1>One Piece</h1>
-          </div>
-          <div className="duel-theme-logo">
-            <OnePieceLogo />
+          <div className="match-theme-heading">
+            <div className="page-heading">
+              <span className="eyebrow">
+                CLASSIQUE ·{" "}
+                {screen === "solo-one-piece" ? "SOLO" : "1 CONTRE 1"}
+              </span>
+              <h1>One Piece</h1>
+            </div>
+            <div className="duel-theme-logo">
+              <OnePieceLogo />
+            </div>
           </div>
           <div className="duel-rules">
             <span>
@@ -332,9 +337,10 @@ export function Explore(p: Props) {
             </span>
           </div>
           <div className="theme-actions">
+            {p.difficultyPicker}
             <button
               className="button primary arcade-button"
-              disabled={busy}
+              disabled={busy || !p.canStart}
               onClick={screen === "solo-one-piece" ? p.solo : p.create}
             >
               <PixelIcon name="swords" />

@@ -2,6 +2,12 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { Sql } from "./database";
 import { questions as starterQuestions, type Question } from "./questions";
+import {
+  difficultyChoices,
+  difficultyLabels,
+  type DifficultyChoice,
+  type DifficultyAvailability,
+} from "../shared/difficulty";
 
 export const questionInput = z
   .object({
@@ -139,17 +145,40 @@ export class QuestionBank {
     return q;
   }
 
-  async drawQuestions(themeId = "one-piece"): Promise<Question[]> {
+  async availability(themeId = "one-piece"): Promise<DifficultyAvailability> {
+    const { rows } = await this.db.query<{
+      difficulty: string | null;
+      count: string;
+    }>(
+      `SELECT q.difficulty,count(*) AS count FROM akasha_questions q JOIN akasha_themes t ON t.id=q.theme_id
+       WHERE q.theme_id=$1 AND q.status='published' AND t.enabled GROUP BY q.difficulty`,
+      [themeId],
+    );
+    return difficultyChoices.map((difficulty) => {
+      const count = rows
+        .filter((r) => difficulty === "all" || r.difficulty === difficulty)
+        .reduce((sum, r) => sum + Number(r.count), 0);
+      return { difficulty, count, available: count >= 10 };
+    });
+  }
+
+  async drawQuestions(
+    themeId = "one-piece",
+    difficulty: DifficultyChoice = "all",
+  ): Promise<Question[]> {
     const { rows } = await this.db.query<Question>(
       `SELECT q.id,q.text,q.choices,q.correct,q.explanation
       FROM akasha_questions q JOIN akasha_themes t ON t.id=q.theme_id
       WHERE q.theme_id=$1 AND q.status='published' AND t.enabled
+      AND ($2='all' OR q.difficulty=$2)
       ORDER BY random() LIMIT 10`,
-      [themeId],
+      [themeId, difficulty],
     );
     if (rows.length < 10)
       throw new Error(
-        "Ce thème ne contient pas encore 10 questions publiées. Réessaie plus tard.",
+        difficulty === "all"
+          ? "Ce thème ne contient pas encore 10 questions publiées. Réessaie plus tard."
+          : `Le niveau ${difficultyLabels[difficulty]} ne contient pas encore 10 questions publiées. Choisis une autre difficulté.`,
       );
     return rows;
   }

@@ -204,12 +204,19 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     );
     await command(pb.s, "room:leave");
     await wait(() => pa.state.social!.friends[0].presence === "online");
-    await command(pa.s, "friends:invite", { id: b.credentials.id });
+    await server!.repository.db.query(
+      "UPDATE akasha_questions SET difficulty='expert'",
+    );
+    await command(pa.s, "friends:invite", {
+      id: b.credentials.id,
+      difficulty: "expert",
+    });
     await wait(
       () => pb.state.social!.invitations.length === 1 && !!pa.state.room,
     );
     const invited = pb.state.social!.invitations[0].id,
       firstCode = pa.state.room!.code;
+    assert.equal(pa.state.room!.difficulty, "expert");
     assert.equal(pb.state.social!.friends[0].presence, "lobby");
     await assert.rejects(
       command(pc.s, "room:join", { code: firstCode }),
@@ -279,6 +286,8 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
         pb.state.room?.code === pa.state.room.code,
     );
     assert.equal(pa.state.room!.players.length, 2);
+    assert.equal(pa.state.room!.difficulty, "expert");
+    assert.equal(pb.state.room!.difficulty, "expert");
     assert.ok(pa.state.room!.players.every((p) => !p.ready));
     await command(pa.s, "room:leave");
     await command(pb.s, "room:leave");

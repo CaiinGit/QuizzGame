@@ -2,6 +2,7 @@ import { randomInt } from "node:crypto";
 import type { Phase, RoomView, GameMode } from "../shared/protocol";
 import { pointsForTime } from "../shared/scoring";
 import type { Question } from "./questions";
+import type { DifficultyChoice } from "../shared/difficulty";
 export type Player = {
   id: string;
   name: string;
@@ -10,6 +11,7 @@ export type Player = {
   account?: boolean;
 };
 export type Room = {
+  difficulty?: DifficultyChoice;
   xpVersion?: 1;
   forfeitedBy?: string;
   reservedFor?: string;
@@ -61,6 +63,7 @@ export function newRoom(
   now: number,
   times = durations,
   mode: GameMode = "duel",
+  difficulty: DifficultyChoice = "all",
 ): Room {
   if (questions.length < 10)
     throw new Error("Il faut dix questions pour créer une partie.");
@@ -76,6 +79,7 @@ export function newRoom(
     });
   return {
     xpVersion: 1,
+    difficulty,
     mode,
     code,
     phase: mode === "solo" ? "countdown" : "lobby",
@@ -241,6 +245,7 @@ export function view(
   const q = room.questions[room.index];
   return {
     matchId: `${room.code}:${room.createdAt}`,
+    difficulty: room.difficulty ?? "all",
     mode: room.mode,
     code: room.code,
     phase: room.phase,
