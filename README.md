@@ -4,6 +4,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece** et **MCU**. Ch
 
 ## Version 0.7
 
+Dans le salon et pendant un duel, les participants voient la photo enregistrée sur le compte de leur adversaire. Les changements et suppressions sont répercutés en direct et après reconnexion ; sans photo, l’initiale reste affichée. Les images sont chargées séparément des mises à jour du jeu, réservées aux participants du salon et ne sont pas dupliquées dans l’historique.
+
 Avant chaque question, en Solo comme en duel, une phase de lecture synchronisée affiche la question en grand sur un fond flouté pendant 3 secondes, puis la ramène à sa place en 0,4 seconde. Le serveur masque les choix et refuse les réponses pendant cette phase. Les 20 secondes de réponse et le calcul des points démarrent ensuite, sans pénalité pour le temps de lecture. Une reconnexion reprend la phase en cours ; la réduction des mouvements conserve la lecture mais supprime le déplacement.
 
 Profil avec statistiques Solo et duel séparées, favoris de thèmes synchronisés entre appareils et statuts des amis en temps réel. Les favoris de l’accueil ouvrent le choix du mode avec One Piece déjà sélectionné. Voir [profil, favoris et amis](docs/PROFIL-FAVORIS-AMIS.md).

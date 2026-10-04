@@ -12,7 +12,12 @@ import { connectDatabase, type Sql } from "./database";
 import { durations, newRoom } from "./engine";
 import { questions } from "./questions";
 import type { AuthResult, SocialState, HistoryPage } from "../shared/account";
-import type { Credentials, RoomView, Ack } from "../shared/protocol";
+import type {
+  Credentials,
+  RoomView,
+  RoomPhotos,
+  Ack,
+} from "../shared/protocol";
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function wait(fn: () => boolean) {
@@ -22,12 +27,12 @@ async function wait(fn: () => boolean) {
   }
   throw Error("Timed out");
 }
-function command(socket: Socket, event: string, data: unknown = {}) {
-  return new Promise<void>((resolve, reject) =>
+function command<T = void>(socket: Socket, event: string, data: unknown = {}) {
+  return new Promise<T>((resolve, reject) =>
     socket
       .timeout(3000)
-      .emit(event, data, (e: Error | null, r: Ack<unknown>) =>
-        e ? reject(e) : r.ok ? resolve() : reject(Error(r.error)),
+      .emit(event, data, (e: Error | null, r: Ack<T>) =>
+        e ? reject(e) : r.ok ? resolve(r.data) : reject(Error(r.error)),
       ),
   );
 }
@@ -254,8 +259,45 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     );
     await command(pb.s, "invitation:respond", { id: invited, accept: true });
     await wait(() => pb.state.room?.code === firstCode);
+    const portraits = await command<RoomPhotos>(pb.s, "room:photos", {
+      code: firstCode,
+    });
+    assert.equal(portraits.photos[a.credentials.id], photo.photo);
+    assert.equal(portraits.photos[b.credentials.id], null);
+    assert.deepEqual(
+      Object.keys(portraits.photos).sort(),
+      [a.credentials.id, b.credentials.id].sort(),
+    );
+    assert.ok(!JSON.stringify(pa.state.room).includes(photo.photo));
+    await assert.rejects(
+      command(pc.s, "room:photos", { code: firstCode }),
+      /Accès/,
+    );
+    let photoChanges = 0;
+    pa.s.on("room:photos-changed", () => photoChanges++);
+    await request("account/profile", { photo: photo.photo }, b.credentials);
+    await wait(() => photoChanges > 0);
+    assert.match(
+      (await command<RoomPhotos>(pa.s, "room:photos", { code: firstCode }))
+        .photos[b.credentials.id]!,
+      /^data:image\/webp;base64,/,
+    );
+    await request("account/profile", { photo: null }, b.credentials);
+    assert.equal(
+      (await command<RoomPhotos>(pa.s, "room:photos", { code: firstCode }))
+        .photos[b.credentials.id],
+      null,
+    );
     const secondDevice = await client(login.credentials);
     await wait(() => secondDevice.state.room?.code === firstCode);
+    assert.equal(
+      (
+        await command<RoomPhotos>(secondDevice.s, "room:photos", {
+          code: firstCode,
+        })
+      ).photos[a.credentials.id],
+      photo.photo,
+    );
     await command(pa.s, "room:ready");
     await command(pb.s, "room:ready");
     await wait(() => pa.state.social!.friends[0].presence === "playing");

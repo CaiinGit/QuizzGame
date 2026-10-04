@@ -247,6 +247,11 @@ export async function createApp(
           s.data.player.name = profile!.name;
           s.emit("account:profile", profile);
         }
+      for (const s of io.sockets.sockets.values()) {
+        const room = rooms.get(s.data.room);
+        if (room?.players.some((p) => p.id === id))
+          s.emit("room:photos-changed", { code: room.code });
+      }
       await refreshSocial();
     },
   });
@@ -435,6 +440,31 @@ export async function createApp(
       fn(updated);
       if (updated.revision !== draft.revision) await persist(updated);
     };
+    command("room:photos", async (data) => {
+      const { code } = z
+        .object({ code: z.string().regex(/^[A-Z2-9]{6}$/) })
+        .parse(data);
+      const room = rooms.get(code);
+      if (
+        !room ||
+        socket.data.room !== code ||
+        !room.players.some((p) => p.id === player.id) ||
+        room.dismissed.includes(player.id)
+      )
+        throw new Error("Accès au salon refusé.");
+      // Send only avatars, once on entry or profile changes. Do not duplicate image
+      // bytes in every game update, persisted room, or historical result.
+      const photos = await Promise.all(
+        room.players.map(
+          async (p) =>
+            [
+              p.id,
+              (await repository.accounts.profile(p.id))?.photo ?? null,
+            ] as const,
+        ),
+      );
+      return { code, photos: Object.fromEntries(photos) };
+    });
     command("room:create", async (data) => {
       const { mode, difficulty, themeId } = z
         .object({

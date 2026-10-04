@@ -7,6 +7,10 @@ export type Phase =
   | "finished"
   | "cancelled";
 export type GameMode = "duel" | "solo";
+export type RoomPhotos = {
+  code: string;
+  photos: Record<string, string | null>;
+};
 export type RoundResult = {
   round: number;
   question: string;

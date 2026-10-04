@@ -35,6 +35,7 @@ import {
   type HeaderPanel,
 } from "./PlayerHeader";
 import { useAvatar, preparePhoto } from "./avatar";
+import { useRoomPhotos } from "./useRoomPhotos";
 import { AccountActions, AuthDialog, type AuthMode } from "./Account";
 import { FriendsPanel, HistoryPanel, InviteCard } from "./Social";
 import type {
@@ -535,6 +536,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   const isQuestion =
     reading || room?.phase === "question" || room?.phase === "reveal";
   const questionTitle = useRef<HTMLHeadingElement>(null);
+  const roomPhotos = useRoomPhotos(socket, room, profile, online);
   const solo = room?.mode === "solo";
   const rematchAvailable =
     room?.phase === "finished" &&
@@ -845,8 +847,11 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                     key={i}
                   >
                     <div className="avatar">
-                      {i === 0 && p && displayedPhoto ? (
-                        <img src={displayedPhoto} alt="" />
+                      {p && (i === 0 ? displayedPhoto : roomPhotos[p.id]) ? (
+                        <img
+                          src={(i === 0 ? displayedPhoto : roomPhotos[p.id])!}
+                          alt={`Photo de ${p.name}`}
+                        />
                       ) : p ? (
                         p.name.slice(0, 1).toUpperCase()
                       ) : (
