@@ -17,7 +17,8 @@
   margin: 0;
   color: var(--green);
   overflow-wrap: anywhere;
-  text-align: left;
+  text-align: center;
+  text-wrap: balance;
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
   touch-action: pan-y;

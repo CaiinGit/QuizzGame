@@ -2,6 +2,8 @@
   --font-arcade: "Jersey 10", ui-sans-serif, system-ui, sans-serif;
 }
 .question-title {
+  text-align: center;
+  text-wrap: balance;
   font-family: ui-sans-serif, system-ui, sans-serif;
   font-weight: 600;
 }
