@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import type { Phase, RoomView, GameMode } from "../shared/protocol";
 import { pointsForTime } from "../shared/scoring";
+import { questionIntroDuration } from "../shared/question-intro";
 import type { Question } from "./questions";
 import type { DifficultyChoice } from "../shared/difficulty";
 import type { ThemeId } from "../shared/themes";
@@ -38,12 +39,14 @@ export type Room = {
   reason: RoomView["reason"];
 };
 export type Durations = {
+  reading: number;
   question: number;
   reveal: number;
   countdown: number;
   lobby: number;
 };
 export const durations: Durations = {
+  reading: questionIntroDuration,
   question: 20000,
   reveal: 4500,
   countdown: 3000,
@@ -177,6 +180,8 @@ export function tick(room: Room, now: number, times = durations) {
     reveal(room, now, times);
     return;
   } else if (room.phase === "countdown") {
+    startPhase(room, "reading", now, times.reading);
+  } else if (room.phase === "reading") {
     startPhase(room, "question", now, times.question);
   } else if (room.phase === "reveal") {
     if (room.index === room.questions.length - 1) {
@@ -190,7 +195,7 @@ export function tick(room: Room, now: number, times = durations) {
       room.answers = {};
       room.answerTimes = {};
       room.correction = null;
-      startPhase(room, "question", now, times.question);
+      startPhase(room, "reading", now, times.reading);
     }
   }
   room.revision++;
@@ -207,6 +212,7 @@ export function answer(
     throw new Error("Tu ne fais pas partie de ce duel.");
   if (
     room.phase !== "question" ||
+    now < room.phaseStartedAt ||
     now >= room.deadline ||
     round !== room.index + 1
   )
@@ -267,7 +273,12 @@ export function view(
       online: online.has(p.id),
       answered: Object.hasOwn(room.answers, p.id),
     })),
-    question: show ? { text: q.text, choices: q.choices } : null,
+    // Answer choices are withheld until the shared reading phase ends.
+    question: show
+      ? { text: q.text, choices: q.choices }
+      : room.phase === "reading"
+        ? { text: q.text, choices: [] }
+        : null,
     selected: room.answers[playerId] ?? null,
     submitted: Object.hasOwn(room.answers, playerId),
     history: room.phase === "finished" ? structuredClone(room.history) : [],

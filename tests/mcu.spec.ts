@@ -11,7 +11,13 @@ test("MCU stays unavailable until published, supports favorites, and keeps its t
     privateAccess: false,
     testMode: true,
     origins: [new URL(baseURL!).origin],
-    times: { ...durations, countdown: 120, question: 10000, reveal: 100 },
+    times: {
+      ...durations,
+      reading: 100,
+      countdown: 120,
+      question: 10000,
+      reveal: 100,
+    },
   });
   try {
     const account = await server.repository.accounts.register({

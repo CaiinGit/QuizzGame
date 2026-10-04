@@ -84,7 +84,6 @@
 }
 .question-section {
   margin-top: 22px;
-  animation: question-enter 220ms ease-out;
 }
 .question-section .time-track {
   height: 6px;

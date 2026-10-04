@@ -43,6 +43,7 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
           times: {
             ...durations,
             countdown: 70,
+            reading: 1000,
             question: 30000,
             reveal: 30000,
           },
@@ -167,6 +168,16 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await assert.rejects(request(c.s, "room:join", { code }));
     await request(a.s, "room:ready");
     await request(b.s, "room:ready");
+    await waitFor(
+      () => a.state()?.phase === "reading" && b.state()?.phase === "reading",
+    );
+    assert.deepEqual(a.state()!.question, b.state()!.question);
+    assert.deepEqual(a.state()!.question!.choices, []);
+    assert.equal(a.state()!.deadline, b.state()!.deadline);
+    assert.equal(a.state()!.correction, null);
+    await assert.rejects(request(a.s, "room:answer", { round: 1, choice: 0 }));
+    assert.equal(a.state()!.submitted, false);
+
     await waitFor(
       () => a.state()?.phase === "question" && b.state()?.phase === "question",
     );

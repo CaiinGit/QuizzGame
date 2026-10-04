@@ -43,6 +43,7 @@ import type {
   SocialState,
 } from "../shared/account";
 import { TimeBar } from "./TimeBar";
+import { QuestionIntro } from "./QuestionIntro";
 import { MatchReview } from "./MatchReview";
 import {
   MatchCountdown,
@@ -530,7 +531,10 @@ function App({ adminOnly }: { adminOnly: boolean }) {
     ? Math.max(0, Math.ceil((room.deadline - now) / 1000))
     : 0;
   const ended = room?.phase === "finished" || room?.phase === "cancelled";
-  const isQuestion = room?.phase === "question" || room?.phase === "reveal";
+  const reading = room?.phase === "reading";
+  const isQuestion =
+    reading || room?.phase === "question" || room?.phase === "reveal";
+  const questionTitle = useRef<HTMLHeadingElement>(null);
   const solo = room?.mode === "solo";
   const rematchAvailable =
     room?.phase === "finished" &&
@@ -582,7 +586,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
           }}
         />
       )}
-      <main>
+      <main inert={reading}>
         {error && !settings && !quitting && !identity && !auth && (
           <div className="notice error" role="alert">
             {error}
@@ -943,7 +947,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
             )}
             {isQuestion && room.question && (
               <section
-                className="question-section"
+                className={`question-section ${reading ? "is-reading" : ""}`}
                 key={`${room.code}:${room.round}`}
               >
                 <div className="question-meta">
@@ -951,18 +955,41 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                     QUESTION <b>{String(room.round).padStart(2, "0")}</b> /{" "}
                     {room.total}
                   </span>
-                  <span className={`timer ${seconds <= 5 ? "urgent" : ""}`}>
-                    {room.phase === "reveal" ? "SUITE DANS " : ""}
-                    {seconds} s
+                  <span
+                    className={`timer ${seconds <= 5 && !reading ? "urgent" : ""}`}
+                  >
+                    {reading ? (
+                      "LECTURE"
+                    ) : (
+                      <>
+                        {room.phase === "reveal" ? "SUITE DANS " : ""}
+                        {seconds} s
+                      </>
+                    )}
                   </span>
                 </div>
-                <TimeBar
-                  key={`${room.code}:${room.round}:${room.phase}`}
-                  deadline={room.deadline}
-                  duration={room.phaseDuration}
-                  offset={offset}
-                />
-                <h1 className="question-title">{room.question.text}</h1>
+                {reading ? (
+                  <div className="time-track" />
+                ) : (
+                  <TimeBar
+                    key={`${room.code}:${room.round}:${room.phase}`}
+                    deadline={room.deadline}
+                    duration={room.phaseDuration}
+                    offset={offset}
+                  />
+                )}
+                <h1 ref={questionTitle} className="question-title">
+                  {room.question.text}
+                </h1>
+                {reading && (
+                  <QuestionIntro
+                    text={room.question.text}
+                    startedAt={room.phaseStartedAt}
+                    duration={room.phaseDuration}
+                    offset={offset}
+                    target={questionTitle}
+                  />
+                )}
                 <RoundFeedback room={room} playerId={me?.id ?? ""} />
                 <div
                   className={`answers ${room.submitted ? "has-selection" : ""} ${room.phase === "question" ? "accepting-answers" : ""}`}

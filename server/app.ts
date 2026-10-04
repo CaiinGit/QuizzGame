@@ -53,9 +53,11 @@ export async function createApp(
         ? times.lobby
         : room.phase === "countdown"
           ? times.countdown
-          : room.phase === "question"
-            ? times.question
-            : times.reveal;
+          : room.phase === "reading"
+            ? times.reading
+            : room.phase === "question"
+              ? times.question
+              : times.reveal;
     room.phaseStartedAt ??= room.deadline - room.phaseDuration;
     room.answerTimes ??= Object.fromEntries(
       Object.keys(room.answers).map((id) => [id, room.phaseStartedAt]),

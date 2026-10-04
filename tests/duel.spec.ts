@@ -19,7 +19,7 @@ async function identify(page: Page, name: string) {
 test("mode then theme creates a real duel; direct invite, profile and reconnect work", async ({
   browser,
 }) => {
-  test.setTimeout(60000);
+  test.setTimeout(100000);
   const a = await browser.newContext({ viewport: { width: 390, height: 844 } }),
     b = await browser.newContext({ viewport: { width: 360, height: 800 } });
   const p = await a.newPage(),
@@ -73,6 +73,18 @@ test("mode then theme creates a real duel; direct invite, profile and reconnect 
       await expect(q.locator(".question-meta b")).toHaveText(
         String(i).padStart(2, "0"),
       );
+      await expect(p.locator(".question-intro-title")).toBeVisible();
+      await expect(q.locator(".question-intro-title")).toHaveText(
+        await p.locator(".question-intro-title").innerText(),
+      );
+      await expect(p.locator(".answer")).toHaveCount(0);
+      await expect(q.locator(".answer")).toHaveCount(0);
+      if (i === 1)
+        await p.screenshot({
+          path: "test-results/question-intro-duel-dark.png",
+        });
+      await expect(p.locator(".answer").first()).toBeEnabled();
+      await expect(q.locator(".answer").first()).toBeEnabled();
       await expect(p.locator(".question-title")).toHaveText(
         await q.locator(".question-title").innerText(),
       );

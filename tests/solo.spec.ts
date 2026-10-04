@@ -14,11 +14,13 @@ async function startSolo(page: Page) {
   await page.getByLabel("Ton pseudo", { exact: true }).fill("TestSolo");
   await page.getByRole("button", { name: "Continuer", exact: true }).click();
   await expect(page.locator(".question-meta b")).toHaveText("01");
+  await expect(page.locator(".answer").first()).toBeEnabled();
 }
 
 test("Solo completes alone, resumes on reload, and timer moves between integer seconds", async ({
   page,
 }) => {
+  test.setTimeout(90000);
   await page.setViewportSize({ width: 320, height: 568 });
   await startSolo(page);
   await expect(page.locator(".players .player")).toHaveCount(1);

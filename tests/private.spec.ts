@@ -12,7 +12,13 @@ test("private gate, first login, saved recovery, solo XP, level-up and logout", 
   const server = await createApp(await connectDatabase(), {
     origins: [new URL(baseURL!).origin],
     testMode: true,
-    times: { ...durations, question: 10000, countdown: 120, reveal: 200 },
+    times: {
+      ...durations,
+      reading: 100,
+      question: 10000,
+      countdown: 120,
+      reveal: 200,
+    },
   });
   try {
     const admins = await provisionAdmins(server.repository, [

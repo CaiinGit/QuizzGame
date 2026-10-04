@@ -11,7 +11,7 @@ test("difficulty selection uses live counts and filters real solo and shared due
   const server = await createApp(await connectDatabase(), {
     privateAccess: false,
     origins: [new URL(baseURL!).origin],
-    times: { ...durations, countdown: 150, question: 30000 },
+    times: { ...durations, reading: 100, countdown: 150, question: 30000 },
   });
   await server.repository.db.query(
     "UPDATE akasha_questions SET difficulty='easy'",

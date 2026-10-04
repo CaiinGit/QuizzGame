@@ -4,6 +4,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece** et **MCU**. Ch
 
 ## Version 0.7
 
+Avant chaque question, en Solo comme en duel, une phase de lecture synchronisée affiche la question en grand sur un fond flouté pendant 3 secondes, puis la ramène à sa place en 0,4 seconde. Le serveur masque les choix et refuse les réponses pendant cette phase. Les 20 secondes de réponse et le calcul des points démarrent ensuite, sans pénalité pour le temps de lecture. Une reconnexion reprend la phase en cours ; la réduction des mouvements conserve la lecture mais supprime le déplacement.
+
 Profil avec statistiques Solo et duel séparées, favoris de thèmes synchronisés entre appareils et statuts des amis en temps réel. Les favoris de l’accueil ouvrent le choix du mode avec One Piece déjà sélectionné. Voir [profil, favoris et amis](docs/PROFIL-FAVORIS-AMIS.md).
 
 Les parties affichent un départ animé 3–2–1 synchronisé sur le serveur, les joueurs prêts et des transitions courtes entre les questions. Un bandeau confirme la réponse enregistrée, puis indique bonne réponse, erreur ou temps écoulé avec les points effectivement gagnés. Le bilan rassemble les scores côte à côte, les bonnes réponses, l’XP et le détail par question. **Revanche** permet aux comptes de rejouer contre le même adversaire après son acceptation ; la demande peut être refusée ou annulée depuis le bilan. Les animations respectent la préférence de réduction des mouvements. Des effets sonores discrets accompagnent les clics, la navigation, les réponses et les nouvelles demandes d’amis ou invitations. Ils commencent après une interaction et peuvent être désactivés dans Réglages ; ce choix est mémorisé sur l’appareil. Aucune vibration.

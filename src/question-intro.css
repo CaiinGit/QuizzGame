@@ -1,0 +1,33 @@
+.question-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  isolation: isolate;
+  touch-action: none;
+}
+.question-intro-backdrop {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  background: color-mix(in srgb, var(--cream) 45%, #000 12%);
+}
+.question-intro-title {
+  position: absolute;
+  margin: 0;
+  color: var(--green);
+  overflow-wrap: anywhere;
+  text-align: left;
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+.question-section.is-reading {
+  animation: none;
+}
+.is-reading .question-title {
+  visibility: hidden;
+}
+.is-reading .time-track {
+  visibility: hidden;
+}

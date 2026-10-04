@@ -1,5 +1,11 @@
 export type Phase =
-  "lobby" | "countdown" | "question" | "reveal" | "finished" | "cancelled";
+  | "lobby"
+  | "countdown"
+  | "reading"
+  | "question"
+  | "reveal"
+  | "finished"
+  | "cancelled";
 export type GameMode = "duel" | "solo";
 export type RoundResult = {
   round: number;
