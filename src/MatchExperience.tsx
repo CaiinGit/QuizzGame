@@ -1,10 +1,13 @@
 import { Check, Clock3, LockKeyhole, X } from "lucide-react";
 import type { RoomView } from "../shared/protocol";
+import { themeName, type ThemeId } from "../shared/themes";
 
 export function MatchCountdown({
+  themeId,
   seconds,
   solo,
 }: {
+  themeId?: ThemeId;
   seconds: number;
   solo: boolean;
 }) {
@@ -28,7 +31,7 @@ export function MatchCountdown({
           <span key={step} className={step >= count ? "is-lit" : ""} />
         ))}
       </div>
-      <p>10 questions · One Piece</p>
+      <p>10 questions · {themeName(themeId)}</p>
     </section>
   );
 }

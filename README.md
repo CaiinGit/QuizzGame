@@ -1,6 +1,6 @@
 # Akasha · Android
 
-Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece**. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
+Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece** et **MCU**. Chaque thème possède sa banque synchronisée depuis un Google Sheet distinct et devient jouable à partir de dix questions publiées. Interface beige et verte ; l’emblème couronne/A est réservé à l’icône Android. Le dépôt conserve son nom historique `QuizzGame`.
 
 ## Version 0.7
 
@@ -36,7 +36,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris au-dessus du portail ; le défi du jour reste à venir.
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Parcours individuel : **JOUER → Solo → One Piece → Commencer en solo**. Même moteur et même barème que le duel, démarrage sans adversaire, résultat individuel, reconnexion et abandon pris en charge. Le Solo nécessite lui aussi le serveur.
-- Sur la page One Piece, choisir **Toutes, Facile, Intermédiaire, Difficile, Très difficile ou Professionnel** avant de créer une partie. Les effectifs viennent des questions publiées ; moins de dix rend le niveau indisponible. Le créateur fixe la difficulté du duel, conservée pour les invités, les reconnexions et les revanches. Le même sélecteur est disponible avant une invitation depuis les amis.
+- Sur la page du thème, choisir **Toutes, Facile, Intermédiaire, Difficile, Très difficile ou Professionnel** avant de créer une partie. Les effectifs viennent des questions publiées de ce thème ; moins de dix rend le niveau indisponible. Le créateur fixe le thème et la difficulté du duel, conservés pour les invités, les reconnexions et les revanches. Les mêmes sélecteurs sont disponibles avant une invitation depuis les amis. MCU peut être ajouté aux favoris et apparaît dans l’historique ; son badge texte provisoire attend un logo définitif.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
 - Illustrations et provenance : [direction artistique](docs/ART.md).
 

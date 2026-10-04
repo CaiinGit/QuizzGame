@@ -10,6 +10,7 @@ import type {
 import type { RoomView } from "../shared/protocol";
 import { accountApi, type Profile } from "./client";
 import { MatchReview } from "./MatchReview";
+import { themeName } from "../shared/themes";
 
 export function InviteCard({
   invite,
@@ -28,8 +29,8 @@ export function InviteCard({
         <strong>{invite.player.name}</strong>
         <small>
           {invite.kind === "rematch"
-            ? "Revanche · One Piece"
-            : "Duel classique · One Piece"}
+            ? `Revanche · ${themeName(invite.themeId)}`
+            : `Duel classique · ${themeName(invite.themeId)}`}
         </small>
         <span>{sent ? "Invitation envoyée" : "T’invite à jouer"}</span>
       </div>
@@ -59,6 +60,7 @@ export function InviteCard({
   );
 }
 export function FriendsPanel({
+  themePicker,
   difficultyPicker,
   canInvite = true,
   state,
@@ -69,6 +71,7 @@ export function FriendsPanel({
   busy,
   now,
 }: {
+  themePicker?: ReactNode;
   difficultyPicker?: ReactNode;
   canInvite?: boolean;
   state: SocialState | null;
@@ -214,6 +217,7 @@ export function FriendsPanel({
           </p>
         ) : (
           <>
+            {themePicker}
             {difficultyPicker}
             {state.friends.map((f) => (
               <article key={f.id} className="social-card friend-card">
@@ -350,7 +354,10 @@ export function HistoryPanel({
           <ArrowLeft size={18} />
           Toutes mes parties
         </button>
-        <h2>{detail.mode === "solo" ? "Partie Solo" : "Duel One Piece"}</h2>
+        <h2>
+          {detail.mode === "solo" ? "Solo" : "Duel"} ·{" "}
+          {themeName(detail.themeId)}
+        </h2>
         <MatchReview room={detail} playerId={id} />
         {!detail.history.length && (
           <p className="muted">Aucune question corrigée dans cette partie.</p>
@@ -402,7 +409,10 @@ export function HistoryPanel({
           >
             <span>
               <strong>{result}</strong>
-              <small>{other ? `contre ${other.name}` : "One Piece"}</small>
+              <small>
+                {themeName(m.themeId)}
+                {other ? ` · contre ${other.name}` : ""}
+              </small>
               <time>
                 {new Date(m.finishedAt).toLocaleString("fr-FR", {
                   dateStyle: "short",

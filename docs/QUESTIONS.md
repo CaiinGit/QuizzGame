@@ -1,12 +1,13 @@
 # Banque de questions
 
-Les parties Solo et Classique tirent leurs questions dans PostgreSQL sur le serveur Akasha. Le développement utilise sa propre base PGlite locale. Un Google Sheet peut alimenter le thème One Piece en lecture seule ; aucun accès Google n’est effectué depuis les téléphones.
+Les parties Solo et Classique tirent leurs questions dans PostgreSQL sur le serveur Akasha. Le développement utilise sa propre base PGlite locale. Chaque thème (`one-piece`, `mcu`) peut être alimenté par un Google Sheet distinct en lecture seule ; aucun accès Google n’est effectué depuis les téléphones. Les deux synchronisations sont indépendantes : l’indisponibilité d’un document ne bloque pas l’autre.
 
 ## Structure
 
 - `akasha_themes` : identifiant, nom, activation et dates de création/modification. Un thème désactivé ne peut pas fournir de questions à une nouvelle partie.
 - `akasha_questions` : identifiant stable, thème, énoncé, quatre propositions, index de la bonne réponse (0 à 3), explication, difficulté facultative (`easy`, `medium`, `hard`, `very_hard`, `expert`), spoiler, référence/source facultative, statut et dates. Les imports conservent aussi l’identifiant du document et celui de la question dans le Sheet.
 - `akasha_question_sync` : dernière tentative, dernière application réussie et bilan des erreurs par onglet/ligne. Ce bilan n’est pas exposé publiquement.
+- `akasha_question_sources` : association permanente entre document Google et thème ; un fichier déjà importé ne peut pas être réaffecté silencieusement à un autre thème. Les associations existantes sont reprises au démarrage.
 - `akasha_migrations` : trace des initialisations déjà appliquées.
 
 Une nouvelle question est un **brouillon** (`draft`) par défaut : son texte, ses propositions et sa correction peuvent encore être incomplets. Seules les questions **publiées** (`published`) sont jouables. La publication exige un énoncé, quatre propositions non vides et distinctes et une bonne réponse. Une question **archivée** (`archived`) est conservée sans être tirée. Ces règles sont contrôlées par le serveur et par les contraintes PostgreSQL.
@@ -17,9 +18,9 @@ Au premier démarrage avec cette version, les dix questions de test de `server/q
 
 Chaque nouvelle partie tire dix questions publiées distinctes au hasard, puis mélange leurs propositions côté serveur. Il faut au moins dix questions publiées pour lancer une partie ; sinon un message explique l’indisponibilité. Il n’existe pas de repli silencieux vers les anciennes questions du code.
 
-Le choix de difficulté filtre ce tirage côté serveur : `all` mélange tous les niveaux publiés (y compris les anciennes questions sans difficulté), tandis que `easy`, `medium`, `hard`, `very_hard` et `expert` ne tirent que leur niveau exact. Le seuil de dix s’applique au niveau choisi. `GET /api/questions/availability` retourne les six effectifs et disponibilités, jamais les énoncés ou corrections ; l’accès reste réservé aux administrateurs lorsque l’application est privée. Le sélecteur actualise les effectifs à son ouverture, au retour dans l’application et chaque minute.
+Le choix de difficulté filtre ce tirage côté serveur : `all` mélange tous les niveaux publiés **du thème choisi** (y compris les anciennes questions sans difficulté), tandis que `easy`, `medium`, `hard`, `very_hard` et `expert` ne tirent que leur niveau exact. Le seuil de dix s’applique au thème et au niveau choisis. `GET /api/questions/availability?themeId=mcu` retourne les six effectifs et disponibilités, jamais les énoncés ou corrections ; sans paramètre, le thème reste One Piece pour les anciens clients. Un thème inconnu est refusé. L’accès reste réservé aux administrateurs lorsque l’application est privée. Le sélecteur actualise les effectifs à son ouverture, au changement de thème, au retour dans l’application et chaque minute.
 
-La difficulté choisie est sauvegardée dans le salon et son résultat. Rejoindre par code ou invitation reprend celle du créateur ; une revanche la conserve et échoue explicitement si le niveau n’a plus assez de questions publiées. Les salons antérieurs sans ce champ correspondent à `all`.
+Le thème et la difficulté choisis sont sauvegardés dans le salon et son résultat. Rejoindre par code ou invitation reprend ceux du créateur ; une revanche les conserve et échoue explicitement si le niveau n’a plus assez de questions publiées. Les salons antérieurs sans ces champs correspondent à One Piece et `all`.
 
 Le salon sauvegarde une copie complète des questions tirées. Modifier la banque n’affecte donc ni une partie déjà créée, ni sa correction, ni son bilan après reconnexion. Les bonnes réponses restent privées jusqu’à la correction de chaque question.
 
@@ -48,14 +49,22 @@ Les dix questions de démarrage restent conservées et jouables tant qu’elles 
 
 Cette première connexion utilise l’export CSV d’un document **déjà accessible en lecture par lien**. Elle ne modifie aucun partage Google. Les détenteurs du lien peuvent donc lire les bonnes réponses. Pour un document privé, il faudra une connexion Google authentifiée ; ne pas publier un document privé pour contourner ce besoin.
 
-Configurer `AKASHA_QUESTION_SHEET_ID` dans le `.env` du serveur, puis recréer uniquement le service `app`. Laisser cette variable vide en développement pour garder les deux bases indépendantes. Le serveur vérifie le document au démarrage puis 60 secondes après chaque tentative, sans chevauchement. Le délai inclut la réponse et l’éventuel cache de Google : ce n’est pas une synchronisation instantanée. Les données déjà enregistrées restent disponibles en cas de coupure Google ou de retrait du partage.
+Configurer `AKASHA_QUESTION_SHEETS` dans le `.env` du serveur, puis recréer uniquement le service `app` :
+
+```dotenv
+AKASHA_QUESTION_SHEETS='{"one-piece":"IDENTIFIANT_ONE_PIECE","mcu":"IDENTIFIANT_MCU"}'
+```
+
+Chaque document doit être distinct et chaque clé correspondre à un thème connu. Cette variable prend priorité sur `AKASHA_QUESTION_SHEET_ID`, qui reste compatible pour une installation One Piece seule. Laisser les deux variables vides en développement pour garder les bases indépendantes. Le serveur vérifie chaque document au démarrage puis 60 secondes après chaque tentative, sans chevauchement pour un même fichier. Le délai inclut la réponse et l’éventuel cache de Google : ce n’est pas une synchronisation instantanée. Les données déjà enregistrées restent disponibles en cas de coupure Google ou de retrait du partage.
 
 Vérification **sans écriture en base** :
 
 ```sh
-npm run questions:preview -- IDENTIFIANT_DU_DOCUMENT
+npm run questions:preview -- IDENTIFIANT_DU_DOCUMENT mcu
 ```
 
 Le bilan indique uniquement les nombres et les problèmes de structure, sans afficher les réponses. Code de sortie 1 si des corrections sont nécessaires. Sur le serveur, consulter les journaux du service `app` ou `akasha_question_sync` pour les diagnostics. La synchronisation n’expose aucune route d’import publique.
+
+Utiliser un préfixe lisible par thème (`OP-001`, `MCU-001`). Les identifiants internes incluent le document Google : deux fichiers utilisant le même ID de ligne ne se remplacent pas. Les lignes encore vides avec un ID et le statut Brouillon sont conservées comme emplacements de rédaction ; elles ne comptent pas dans les disponibilités. Aucun statut n’est publié automatiquement lors du branchement d’un nouveau thème.
 
 Les sauvegardes PostgreSQL existantes (`pg_dump` de la base complète) incluent les thèmes et les questions. Avant une première mise à jour de production, sauvegarder la base ; au démarrage, les nouvelles tables sont ajoutées sans supprimer les sessions ou les parties existantes.

@@ -82,6 +82,11 @@ export class QuestionBank {
     await this.db.query(
       `CREATE INDEX IF NOT EXISTS akasha_questions_theme_status ON akasha_questions(theme_id,status)`,
     );
+    await this.db.query(
+      `INSERT INTO akasha_themes(id,name,enabled) VALUES('mcu','MCU',true) ON CONFLICT DO NOTHING`,
+    );
+    await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_question_sources (
+      sheet_id TEXT PRIMARY KEY, theme_id TEXT NOT NULL REFERENCES akasha_themes(id))`);
     await this.db.query(`DO $$ BEGIN
       IF NOT EXISTS (SELECT 1 FROM akasha_migrations WHERE id='question-sheets-v1') THEN
         ALTER TABLE akasha_questions DROP CONSTRAINT akasha_questions_difficulty_check;
@@ -117,6 +122,8 @@ export class QuestionBank {
     ON CONFLICT DO NOTHING`,
       [JSON.stringify(starterQuestions)],
     );
+    await this.db.query(`INSERT INTO akasha_question_sources(sheet_id,theme_id)
+      SELECT DISTINCT sheet_id,theme_id FROM akasha_questions WHERE sheet_id IS NOT NULL ON CONFLICT DO NOTHING`);
   }
 
   async saveQuestion(input: z.input<typeof questionInput>) {

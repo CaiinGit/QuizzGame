@@ -99,6 +99,25 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
       [ca.id],
     );
     assert.notEqual(hashed.rows[0].token_hash, ca.token);
+    const mcuEmpty = await (
+      await fetch(base + "/api/questions/availability?themeId=mcu")
+    ).json();
+    assert.ok(
+      mcuEmpty.every(
+        (o: { count: number; available: boolean }) =>
+          o.count === 0 && !o.available,
+      ),
+    );
+    assert.equal(
+      (await fetch(base + "/api/questions/availability?themeId=unknown"))
+        .status,
+      400,
+    );
+    await assert.rejects(request(a.s, "room:create", { themeId: "unknown" }));
+    await assert.rejects(
+      request(a.s, "room:create", { themeId: "mcu" }),
+      /10 questions publiées/,
+    );
     await server!.repository.db.query(
       "UPDATE akasha_questions SET difficulty='easy'",
     );
@@ -205,9 +224,18 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
     await assert.rejects(
       request(restored.s, "room:create", { mode: "invalid" }),
     );
+    for (const q of questions)
+      await server!.repository.questionBank.saveQuestion({
+        ...q,
+        id: `mcu-${q.id}`,
+        themeId: "mcu",
+        difficulty: "easy",
+        status: "published",
+      });
     await request(restored.s, "room:create", {
       mode: "solo",
       difficulty: "easy",
+      themeId: "mcu",
     });
     await waitFor(
       () =>
@@ -215,6 +243,12 @@ test("real clients: joining, privacy, duplicate requests, reconnect, persisted r
         restored.state()?.phase === "question",
     );
     const soloCode = restored.state()!.code;
+    assert.equal(restored.state()!.themeId, "mcu");
+    assert.ok(
+      server!.rooms
+        .get(soloCode)!
+        .questions.every((q) => q.id.startsWith("mcu-")),
+    );
     assert.equal(restored.state()!.difficulty, "easy");
     assert.equal(restored.state()!.players.length, 1);
     assert.equal(restored.state()!.correction, null);

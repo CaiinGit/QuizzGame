@@ -271,3 +271,17 @@
     right: -2px;
   }
 }
+.friend-theme-picker {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.friend-theme-picker select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--green);
+  font: inherit;
+}

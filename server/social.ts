@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { Sql } from "./database";
 import { UserError, usernameInput } from "./accounts";
 import type { Friend, SocialState } from "../shared/account";
+import type { ThemeId } from "../shared/themes";
 
 export type InviteRow = {
   id: string;
@@ -163,15 +164,22 @@ export class Social {
       [id],
     );
     const invites = await this.db.query<
-      InviteRow & { player_id: string; username: string; name: string }
+      InviteRow & {
+        player_id: string;
+        username: string;
+        name: string;
+        theme_id: ThemeId | null;
+      }
     >(
-      `SELECT i.*,a.id AS player_id,a.username,a.name FROM akasha_invitations i JOIN akasha_accounts a
-       ON a.id=CASE WHEN i.sender=$1 THEN i.recipient ELSE i.sender END WHERE (i.sender=$1 OR i.recipient=$1) AND i.status='pending' AND i.expires_at>$2 ORDER BY i.expires_at`,
+      `SELECT i.*,a.id AS player_id,a.username,a.name,r.state->>'themeId' AS theme_id FROM akasha_invitations i JOIN akasha_accounts a
+       ON a.id=CASE WHEN i.sender=$1 THEN i.recipient ELSE i.sender END LEFT JOIN akasha_rooms r ON r.code=i.room_code
+       WHERE (i.sender=$1 OR i.recipient=$1) AND i.status='pending' AND i.expires_at>$2 ORDER BY i.expires_at`,
       [id, Date.now()],
     );
     const mapInvite = (r: (typeof invites.rows)[number]) => ({
       id: r.id,
       kind: r.kind,
+      themeId: r.theme_id ?? "one-piece",
       player: friend(r),
       expiresAt: Number(r.expires_at),
     });

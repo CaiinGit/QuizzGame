@@ -185,6 +185,7 @@ export class Repository {
       id: r.id,
       finishedAt: Number(r.finished_at),
       mode: r.result.mode,
+      themeId: r.result.themeId ?? "one-piece",
       players: r.result.players,
       winnerId: r.result.winnerId,
       reason: r.result.reason,

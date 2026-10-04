@@ -25,6 +25,7 @@ export type Friend = {
 };
 export type FriendRequest = { id: string; player: Friend };
 export type Invitation = {
+  themeId?: import("./themes").ThemeId;
   id: string;
   kind: "duel" | "rematch";
   player: Friend;
@@ -38,6 +39,7 @@ export type SocialState = {
   sentInvitations: Invitation[];
 };
 export type MatchSummary = {
+  themeId?: import("./themes").ThemeId;
   id: string;
   finishedAt: number;
   mode: "duel" | "solo";

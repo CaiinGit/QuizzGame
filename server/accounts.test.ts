@@ -207,9 +207,23 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     await server!.repository.db.query(
       "UPDATE akasha_questions SET difficulty='expert'",
     );
+    for (const q of questions)
+      await server!.repository.questionBank.saveQuestion({
+        ...q,
+        id: `mcu-${q.id}`,
+        themeId: "mcu",
+        difficulty: "expert",
+        status: "published",
+      });
+    const mcuProfile = await server!.repository.accounts.favorite(
+      a.credentials.id,
+      { themeId: "mcu", favorite: true },
+    );
+    assert.ok(mcuProfile.favorites.includes("mcu"));
     await command(pa.s, "friends:invite", {
       id: b.credentials.id,
       difficulty: "expert",
+      themeId: "mcu",
     });
     await wait(
       () => pb.state.social!.invitations.length === 1 && !!pa.state.room,
@@ -217,6 +231,13 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     const invited = pb.state.social!.invitations[0].id,
       firstCode = pa.state.room!.code;
     assert.equal(pa.state.room!.difficulty, "expert");
+    assert.equal(pa.state.room!.themeId, "mcu");
+    assert.equal(pb.state.social!.invitations[0].themeId, "mcu");
+    assert.ok(
+      server!.rooms
+        .get(firstCode)!
+        .questions.every((q) => q.id.startsWith("mcu-")),
+    );
     assert.equal(pb.state.social!.friends[0].presence, "lobby");
     await assert.rejects(
       command(pc.s, "room:join", { code: firstCode }),
@@ -251,12 +272,14 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     );
     assert.equal(history.matches.length, 2);
     const match = history.matches[0];
+    assert.equal(match.themeId, "mcu");
     const review = await request(
       `account/history/${encodeURIComponent(match.id)}`,
       undefined,
       b.credentials,
     );
     assert.equal(review.history.length, 10);
+    assert.equal(review.themeId, "mcu");
     assert.equal(Object.hasOwn(review, "questions"), false);
     await request(
       `account/history/${encodeURIComponent(match.id)}`,
@@ -288,6 +311,8 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     assert.equal(pa.state.room!.players.length, 2);
     assert.equal(pa.state.room!.difficulty, "expert");
     assert.equal(pb.state.room!.difficulty, "expert");
+    assert.equal(pa.state.room!.themeId, "mcu");
+    assert.equal(pb.state.room!.themeId, "mcu");
     assert.ok(pa.state.room!.players.every((p) => !p.ready));
     await command(pa.s, "room:leave");
     await command(pb.s, "room:leave");

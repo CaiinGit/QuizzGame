@@ -7,6 +7,7 @@ services:
     environment:
       AKASHA_ACCESS: ${AKASHA_ACCESS:-private}
       AKASHA_QUESTION_SHEET_ID: ${AKASHA_QUESTION_SHEET_ID:-}
+      AKASHA_QUESTION_SHEETS: ${AKASHA_QUESTION_SHEETS:-}
       DATABASE_URL: postgres://akasha:${POSTGRES_PASSWORD:?Configure POSTGRES_PASSWORD dans .env}@db:5432/akasha
       ALLOWED_ORIGINS: https://localhost,capacitor://localhost,${AKASHA_ORIGIN:?Configure AKASHA_ORIGIN dans .env}
       TRUST_PROXY: "1"

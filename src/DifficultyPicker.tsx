@@ -5,12 +5,19 @@ import {
   type DifficultyAvailability,
 } from "../shared/difficulty";
 import type { Profile } from "./client";
+import type { ThemeId } from "../shared/themes";
 import "./difficulty.css";
 
-export function useDifficulties(profile: Profile | null, enabled: boolean) {
+export function useDifficulties(
+  profile: Profile | null,
+  enabled: boolean,
+  themeId: ThemeId = "one-piece",
+) {
   const [options, setOptions] = useState<DifficultyAvailability | null>(null);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const key = `${profile?.server}:${profile?.credentials?.id}:${themeId}`;
+  const [loadedKey, setLoadedKey] = useState("");
   useEffect(() => {
     if (!enabled || !profile?.server) return;
     let disposed = false,
@@ -23,7 +30,7 @@ export function useDifficulties(profile: Profile | null, enabled: boolean) {
       fetching = true;
       try {
         const response = await fetch(
-          `${profile!.server}/api/questions/availability`,
+          `${profile!.server}/api/questions/availability?themeId=${themeId}`,
           {
             headers: profile!.credentials
               ? { Authorization: `Bearer ${profile!.credentials.token}` }
@@ -38,6 +45,7 @@ export function useDifficulties(profile: Profile | null, enabled: boolean) {
         const values: DifficultyAvailability = await response.json();
         if (!disposed) {
           setOptions(values);
+          setLoadedKey(key);
           setError("");
         }
       } catch {
@@ -61,8 +69,19 @@ export function useDifficulties(profile: Profile | null, enabled: boolean) {
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [profile?.server, profile?.credentials?.token, enabled, retry]);
-  return { options, error, retry: () => setRetry((v) => v + 1) };
+  }, [
+    profile?.server,
+    profile?.credentials?.token,
+    enabled,
+    retry,
+    themeId,
+    key,
+  ]);
+  return {
+    options: loadedKey === key ? options : null,
+    error,
+    retry: () => setRetry((v) => v + 1),
+  };
 }
 
 export function DifficultyPicker({

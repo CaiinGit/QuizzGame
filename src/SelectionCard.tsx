@@ -1,4 +1,15 @@
 import type { ReactNode } from "react";
+import type { ThemeId } from "../shared/themes";
+
+export function ThemeLogo({ themeId }: { themeId: ThemeId }) {
+  return themeId === "one-piece" ? (
+    <OnePieceLogo />
+  ) : (
+    <span className="theme-logo mcu-logo" aria-hidden="true">
+      MCU
+    </span>
+  );
+}
 
 export function SelectionCard({
   label,

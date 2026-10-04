@@ -3,6 +3,7 @@ import type { Phase, RoomView, GameMode } from "../shared/protocol";
 import { pointsForTime } from "../shared/scoring";
 import type { Question } from "./questions";
 import type { DifficultyChoice } from "../shared/difficulty";
+import type { ThemeId } from "../shared/themes";
 export type Player = {
   id: string;
   name: string;
@@ -11,6 +12,7 @@ export type Player = {
   account?: boolean;
 };
 export type Room = {
+  themeId?: ThemeId;
   difficulty?: DifficultyChoice;
   xpVersion?: 1;
   forfeitedBy?: string;
@@ -64,6 +66,7 @@ export function newRoom(
   times = durations,
   mode: GameMode = "duel",
   difficulty: DifficultyChoice = "all",
+  themeId: ThemeId = "one-piece",
 ): Room {
   if (questions.length < 10)
     throw new Error("Il faut dix questions pour créer une partie.");
@@ -79,6 +82,7 @@ export function newRoom(
     });
   return {
     xpVersion: 1,
+    themeId,
     difficulty,
     mode,
     code,
@@ -245,6 +249,7 @@ export function view(
   const q = room.questions[room.index];
   return {
     matchId: `${room.code}:${room.createdAt}`,
+    themeId: room.themeId ?? "one-piece",
     difficulty: room.difficulty ?? "all",
     mode: room.mode,
     code: room.code,

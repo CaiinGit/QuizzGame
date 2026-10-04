@@ -2,6 +2,33 @@ import { createHash } from "node:crypto";
 import type { z } from "zod";
 import type { Sql } from "./database";
 import { questionInput } from "./question-bank";
+import { themeIds, type ThemeId } from "../shared/themes";
+
+export function questionSources(env: Record<string, string | undefined>) {
+  const config: unknown = env.AKASHA_QUESTION_SHEETS
+    ? JSON.parse(env.AKASHA_QUESTION_SHEETS)
+    : env.AKASHA_QUESTION_SHEET_ID
+      ? { "one-piece": env.AKASHA_QUESTION_SHEET_ID }
+      : {};
+  if (!config || typeof config !== "object" || Array.isArray(config))
+    throw new Error(
+      "AKASHA_QUESTION_SHEETS doit associer chaque thème à son document Google.",
+    );
+  const seen = new Set<string>();
+  return Object.entries(config).map(([themeId, sheetId]) => {
+    if (
+      !themeIds.includes(themeId as ThemeId) ||
+      typeof sheetId !== "string" ||
+      !/^[A-Za-z0-9_-]{20,100}$/.test(sheetId) ||
+      seen.has(sheetId)
+    )
+      throw new Error(
+        "Configuration Google Sheets invalide : un document distinct par thème connu est requis.",
+      );
+    seen.add(sheetId);
+    return { themeId: themeId as ThemeId, sheetId };
+  });
+}
 
 export const questionTabs = [
   "Facile",
@@ -112,6 +139,7 @@ export function parseCsv(input: string): string[][] {
 export function previewSheets(
   sheetId: string,
   tabs: { name: string; csv: string }[],
+  themeId: ThemeId = "one-piece",
 ): SheetPreview {
   const records: SheetRecord[] = [],
     issues: SheetIssue[] = [];
@@ -188,7 +216,7 @@ export function previewSheets(
       }
       const parsed = questionInput.safeParse({
         id: `gs-${createHash("sha256").update(`${sheetId}:${externalId}`).digest("hex")}`,
-        themeId: "one-piece",
+        themeId,
         text: get("Question"),
         choices: [
           get("Bonne réponse"),
@@ -226,6 +254,7 @@ export function previewSheets(
 export async function readQuestionSheets(
   sheetId: string,
   request: typeof fetch = fetch,
+  themeId: ThemeId = "one-piece",
 ) {
   if (!/^[A-Za-z0-9_-]{20,100}$/.test(sheetId))
     throw new Error("Identifiant Google Sheet invalide.");
@@ -271,31 +300,44 @@ export async function readQuestionSheets(
       return { name, csv: Buffer.concat(chunks).toString("utf8") };
     }),
   );
-  return previewSheets(sheetId, tabs);
+  return previewSheets(sheetId, tabs, themeId);
 }
 
 export async function applySheetPreview(
   db: Sql,
   sheetId: string,
   preview: SheetPreview,
+  themeId: ThemeId = "one-piece",
 ): Promise<SheetReport> {
   if (!preview.report.ok) {
     await recordSyncFailure(db, sheetId, preview.report);
     return preview.report;
   }
+  if (preview.records.some((q) => q.themeId !== themeId))
+    throw new Error("Le thème de l’import ne correspond pas à sa source.");
+  await db.query(
+    `INSERT INTO akasha_question_sources(sheet_id,theme_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,
+    [sheetId, themeId],
+  );
+  const source = await db.query<{ theme_id: string }>(
+    `SELECT theme_id FROM akasha_question_sources WHERE sheet_id=$1`,
+    [sheetId],
+  );
+  if (source.rows[0]?.theme_id !== themeId)
+    throw new Error("Ce document est déjà associé à un autre thème.");
   // A single statement atomically updates the valid rows and the synchronization report.
   // Missing IDs/rows never mean deletion. Namespaced IDs cannot overwrite native questions.
   const { rows } = await db.query<{ report: SheetReport }>(
     `WITH changed AS (
     INSERT INTO akasha_questions(id,theme_id,text,choices,correct,explanation,difficulty,status,source,spoiler_until,sheet_id,sheet_question_id)
-    SELECT q.id,'one-piece',q.text,ARRAY(SELECT jsonb_array_elements_text(q.choices)),q.correct,q.explanation,
+    SELECT q.id,$4,q.text,ARRAY(SELECT jsonb_array_elements_text(q.choices)),q.correct,q.explanation,
       q.difficulty,q.status,q.source,q."spoilerUntil",$1,q."externalId"
     FROM jsonb_to_recordset($2::jsonb) AS q(id text,text text,choices jsonb,correct smallint,explanation text,
       difficulty text,status text,source text,"spoilerUntil" text,"externalId" text)
     ON CONFLICT(id) DO UPDATE SET text=excluded.text,choices=excluded.choices,correct=excluded.correct,
       explanation=excluded.explanation,difficulty=excluded.difficulty,status=excluded.status,
       spoiler_until=excluded.spoiler_until,source=excluded.source,updated_at=now()
-    WHERE akasha_questions.sheet_id=$1 AND
+    WHERE akasha_questions.sheet_id=$1 AND akasha_questions.theme_id=$4 AND
       (akasha_questions.text,akasha_questions.choices,akasha_questions.correct,akasha_questions.explanation,
        akasha_questions.difficulty,akasha_questions.status,akasha_questions.spoiler_until,akasha_questions.source)
       IS DISTINCT FROM (excluded.text,excluded.choices,excluded.correct,excluded.explanation,
@@ -305,7 +347,12 @@ export async function applySheetPreview(
     VALUES($1,now(),$3::jsonb || jsonb_build_object('changed',(SELECT count(*) FROM changed)))
     ON CONFLICT(sheet_id) DO UPDATE SET attempted_at=now(),succeeded_at=now(),report=excluded.report
     RETURNING report`,
-    [sheetId, JSON.stringify(preview.records), JSON.stringify(preview.report)],
+    [
+      sheetId,
+      JSON.stringify(preview.records),
+      JSON.stringify(preview.report),
+      themeId,
+    ],
   );
   return rows[0].report;
 }
@@ -326,9 +373,15 @@ export async function synchronizeQuestions(
   db: Sql,
   sheetId: string,
   read = readQuestionSheets,
+  themeId: ThemeId = "one-piece",
 ): Promise<SheetReport> {
   try {
-    return await applySheetPreview(db, sheetId, await read(sheetId));
+    return await applySheetPreview(
+      db,
+      sheetId,
+      await read(sheetId, fetch, themeId),
+      themeId,
+    );
   } catch {
     // Never log response bodies, answer keys, credentials or SQL parameter dumps.
     const report: SheetReport = {
@@ -348,16 +401,25 @@ export async function synchronizeQuestions(
   }
 }
 
-export function startQuestionSync(db: Sql, sheetId: string) {
+export function startQuestionSync(
+  db: Sql,
+  sheetId: string,
+  themeId: ThemeId = "one-piece",
+) {
   let stopped = false,
     timer: ReturnType<typeof setTimeout> | undefined;
   let previous = "";
   const run = async () => {
     try {
-      const report = await synchronizeQuestions(db, sheetId);
+      const report = await synchronizeQuestions(
+        db,
+        sheetId,
+        readQuestionSheets,
+        themeId,
+      );
       const message = JSON.stringify(report);
       if (message !== previous) {
-        console.log("Questions Google Sheets:", message);
+        console.log(`Questions Google Sheets (${themeId}):`, message);
         previous = message;
       }
     } catch {

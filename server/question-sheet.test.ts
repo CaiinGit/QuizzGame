@@ -11,9 +11,35 @@ import {
   questionTabs,
   readQuestionSheets,
   synchronizeQuestions,
+  questionSources,
 } from "./question-sheet";
 
 const sheetId = "test_spreadsheet_identifier_12345";
+test("source configuration requires distinct documents and known themes, with legacy compatibility", () => {
+  const mcu = "another_spreadsheet_identifier_12345";
+  assert.deepEqual(questionSources({ AKASHA_QUESTION_SHEET_ID: sheetId }), [
+    { themeId: "one-piece", sheetId },
+  ]);
+  assert.deepEqual(
+    questionSources({
+      AKASHA_QUESTION_SHEETS: JSON.stringify({ "one-piece": sheetId, mcu }),
+    }).map((s) => s.themeId),
+    ["one-piece", "mcu"],
+  );
+  assert.throws(() =>
+    questionSources({
+      AKASHA_QUESTION_SHEETS: JSON.stringify({
+        "one-piece": sheetId,
+        mcu: sheetId,
+      }),
+    }),
+  );
+  assert.throws(() =>
+    questionSources({
+      AKASHA_QUESTION_SHEETS: JSON.stringify({ unknown: sheetId }),
+    }),
+  );
+});
 const headings = [
   "Difficulté",
   "Question",
@@ -244,6 +270,33 @@ test("database sync is atomic, idempotent and preserves existing questions throu
       original.map((q) => q.id).sort(),
     );
     assert.ok(original.every((q) => !q.text.includes("Correction"))); // Existing game snapshots unchanged.
+    const mcuId = "mcu_spreadsheet_identifier_12345";
+    const mcu = previewSheets(mcuId, sheets(), "mcu");
+    assert.equal((await applySheetPreview(db, mcuId, mcu, "mcu")).changed, 5);
+    assert.equal((await applySheetPreview(db, mcuId, mcu, "mcu")).changed, 0);
+    assert.deepEqual(await query(), saved);
+    assert.equal((await bank.availability("mcu"))[0].count, 5);
+    assert.ok(
+      mcu.records.every(
+        (q) => q.themeId === "mcu" && !saved.rows.some((r) => r.id === q.id),
+      ),
+    );
+    await assert.rejects(
+      applySheetPreview(
+        db,
+        sheetId,
+        previewSheets(sheetId, sheets(), "mcu"),
+        "mcu",
+      ),
+      /autre thème/,
+    );
+    await assert.rejects(
+      applySheetPreview(db, mcuId, mcu, "one-piece"),
+      /ne correspond/,
+    );
+    await bank.init();
+    assert.equal((await bank.availability("mcu"))[0].count, 5);
+    assert.deepEqual(await query(), saved);
   } finally {
     await db.close();
   }

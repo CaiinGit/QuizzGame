@@ -1,7 +1,8 @@
 import { connectDatabase } from "./database";
 import { createApp } from "./app";
 import { durations } from "./engine";
-import { startQuestionSync } from "./question-sheet";
+import { startQuestionSync, questionSources } from "./question-sheet";
+const sources = questionSources(process.env);
 const production = process.env.NODE_ENV === "production";
 if (production && !process.env.DATABASE_URL)
   throw new Error("DATABASE_URL est obligatoire en production.");
@@ -20,9 +21,12 @@ const server = await createApp(database, {
   times: testMode ? { ...durations, question: 4000, reveal: 900 } : durations,
 });
 const port = Number(process.env.PORT ?? 3001);
-const stopQuestionSync = process.env.AKASHA_QUESTION_SHEET_ID
-  ? startQuestionSync(database, process.env.AKASHA_QUESTION_SHEET_ID)
-  : async () => {};
+const syncStops = sources.map(({ sheetId, themeId }) =>
+  startQuestionSync(database, sheetId, themeId),
+);
+const stopQuestionSync = async () => {
+  await Promise.all(syncStops.map((stop) => stop()));
+};
 server.http.listen(port, process.env.HOST ?? "127.0.0.1", () =>
   console.log(`Akasha écoute sur le port ${port}`),
 );

@@ -22,6 +22,7 @@ import type { Ack } from "../shared/protocol";
 import { accountRoutes } from "./account-routes";
 import { Social } from "./social";
 import { difficultyChoices, type DifficultyChoice } from "../shared/difficulty";
+import { themeIds, type ThemeId } from "../shared/themes";
 
 export async function createApp(
   db: Sql,
@@ -180,13 +181,19 @@ export async function createApp(
           .json({ error: "Connecte-toi pour choisir une difficulté." });
         return;
       }
-      res.json(await repository.questionBank.availability());
+      const theme = z
+        .enum(themeIds)
+        .default("one-piece")
+        .safeParse(req.query.themeId);
+      if (!theme.success) {
+        res.status(400).json({ error: "Thème inconnu." });
+        return;
+      }
+      res.json(await repository.questionBank.availability(theme.data));
     } catch {
-      res
-        .status(503)
-        .json({
-          error: "Difficultés indisponibles. Réessaie dans un instant.",
-        });
+      res.status(503).json({
+        error: "Difficultés indisponibles. Réessaie dans un instant.",
+      });
     }
   });
   let queue: Promise<unknown> = Promise.resolve();
@@ -283,6 +290,7 @@ export async function createApp(
     player: { id: string; name: string; account?: boolean },
     mode: "duel" | "solo" = "duel",
     difficulty: DifficultyChoice = "all",
+    themeId: ThemeId = "one-piece",
   ) {
     if ([...rooms.values()].filter(isLive).length >= 200)
       throw new Error("Tous les salons sont occupés. Réessaie bientôt.");
@@ -297,11 +305,12 @@ export async function createApp(
     return newRoom(
       code,
       player,
-      await repository.questionBank.drawQuestions("one-piece", difficulty),
+      await repository.questionBank.drawQuestions(themeId, difficulty),
       Date.now(),
       times,
       mode,
       difficulty,
+      themeId,
     );
   }
   function active(id: string) {
@@ -425,10 +434,11 @@ export async function createApp(
       if (updated.revision !== draft.revision) await persist(updated);
     };
     command("room:create", async (data) => {
-      const { mode, difficulty } = z
+      const { mode, difficulty, themeId } = z
         .object({
           mode: z.enum(["duel", "solo"]).default("duel"),
           difficulty: z.enum(difficultyChoices).default("all"),
+          themeId: z.enum(themeIds).default("one-piece"),
         })
         .parse(data);
       const existing = active(player.id);
@@ -437,7 +447,7 @@ export async function createApp(
         emit(existing);
         return;
       }
-      const room = await makeRoom(player, mode, difficulty);
+      const room = await makeRoom(player, mode, difficulty, themeId);
       await repository.save(room);
       rooms.set(room.code, room);
       attach(room, player.id);
@@ -513,6 +523,7 @@ export async function createApp(
         .object({
           id: z.string().uuid(),
           difficulty: z.enum(difficultyChoices).default("all"),
+          themeId: z.enum(themeIds).default("one-piece"),
         })
         .parse(data);
       if (!(await social.areFriends(player.id, d.id)))
@@ -533,7 +544,7 @@ export async function createApp(
       )
         throw new Error("Quitte ton salon actuel avant d’inviter cet ami.");
       room = structuredClone(
-        room ?? (await makeRoom(player, "duel", d.difficulty)),
+        room ?? (await makeRoom(player, "duel", d.difficulty, d.themeId)),
       );
       room.reservedFor = d.id;
       await repository.save(room);
@@ -651,6 +662,7 @@ export async function createApp(
           },
           "duel",
           source.difficulty ?? "all",
+          source.themeId ?? "one-piece",
         );
         room.rematchOf = invitation.id;
         room.reservedFor = player.id;

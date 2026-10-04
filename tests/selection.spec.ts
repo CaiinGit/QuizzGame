@@ -16,7 +16,7 @@ test("compact mode and theme tiles fit phones in both palettes and keep the duel
       await page.goto(`/#${screen}`);
       const tile = page.locator(".selection-card:not(:disabled)").first();
       await expect(page.locator(".selection-card:not(:disabled)")).toHaveCount(
-        screen === "mode" ? 2 : 1,
+        2,
       );
       if (screen === "mode")
         await expect(

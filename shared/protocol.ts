@@ -18,6 +18,7 @@ export type PublicPlayer = {
   answered: boolean;
 };
 export type RoomView = {
+  themeId?: import("./themes").ThemeId;
   difficulty?: import("./difficulty").DifficultyChoice;
   matchId?: string;
   mode: GameMode;

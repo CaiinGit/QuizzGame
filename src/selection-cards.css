@@ -80,6 +80,25 @@
   height: 64px;
   object-fit: contain;
 }
+.mcu-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ba202b;
+  color: #fff;
+  border: 3px solid #fff;
+  outline: 2px solid #222;
+  font-family: var(--font-arcade);
+  font-size: 30px;
+  line-height: 1;
+  text-shadow: 2px 2px #651218;
+}
+.favorite-slot > .mcu-logo {
+  align-self: center;
+  justify-self: center;
+  width: 64px;
+  height: 64px;
+}
 .selection-logo > img.theme-logo {
   image-rendering: auto;
 }

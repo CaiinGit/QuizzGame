@@ -23,7 +23,8 @@ import {
   accountApi,
 } from "./client";
 import { Explore, BottomNavigation } from "./Explore";
-import { useNavigation } from "./navigation";
+import { useNavigation, isThemeScreen, screenTheme } from "./navigation";
+import { themes, themeName, type ThemeId } from "../shared/themes";
 import { ThemeToggle } from "./ThemeToggle";
 import { SoundToggle } from "./SoundToggle";
 import { listenForSoundInteractions, playSound } from "./sound";
@@ -55,7 +56,11 @@ import { difficultyLabels, type DifficultyChoice } from "../shared/difficulty";
 type Intent =
   | {
       event: "room:create";
-      data: { mode?: "duel" | "solo"; difficulty?: DifficultyChoice };
+      data: {
+        mode?: "duel" | "solo";
+        difficulty?: DifficultyChoice;
+        themeId?: ThemeId;
+      };
     }
   | { event: "room:join"; data: { code: string } };
 import type { RoomView } from "../shared/protocol";
@@ -115,10 +120,13 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   const [profile, setProfile] = useState<Profile | null>(null),
     [room, setRoom] = useState<RoomView | null>(null);
   const [difficulty, setDifficulty] = useState<DifficultyChoice>("all");
+  const [friendTheme, setFriendTheme] = useState<ThemeId>("one-piece");
+  const themeId =
+    navigation.screen === "amis" ? friendTheme : screenTheme(navigation.screen);
   const availability = useDifficulties(
     profile,
-    !room &&
-      ["one-piece", "solo-one-piece", "amis"].includes(navigation.screen),
+    !room && (isThemeScreen(navigation.screen) || navigation.screen === "amis"),
+    themeId,
   );
   const canStart = !!availability.options?.find(
     (o) => o.difficulty === difficulty,
@@ -455,7 +463,8 @@ function App({ adminOnly }: { adminOnly: boolean }) {
     },
   };
   async function socialAction(event: string, data: unknown = {}) {
-    if (event === "friends:invite") data = { ...(data as object), difficulty };
+    if (event === "friends:invite")
+      data = { ...(data as object), difficulty, themeId };
     await run(async () => {
       await command(socket.current, event, data);
     });
@@ -627,6 +636,25 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               </div>
               {navigation.screen === "amis" ? (
                 <FriendsPanel
+                  themePicker={
+                    <label className="friend-theme-picker">
+                      Thème du duel
+                      <select
+                        value={friendTheme}
+                        disabled={busy}
+                        onChange={(event) => {
+                          setFriendTheme(event.target.value as ThemeId);
+                          setDifficulty("all");
+                        }}
+                      >
+                        {themes.map((theme) => (
+                          <option key={theme.id} value={theme.id}>
+                            {theme.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  }
                   difficultyPicker={
                     <DifficultyPicker
                       value={difficulty}
@@ -716,12 +744,15 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               code={code}
               setCode={setCode}
               create={() =>
-                requestAction({ event: "room:create", data: { difficulty } })
+                requestAction({
+                  event: "room:create",
+                  data: { difficulty, themeId },
+                })
               }
               solo={() =>
                 requestAction({
                   event: "room:create",
-                  data: { mode: "solo", difficulty },
+                  data: { mode: "solo", difficulty, themeId },
                 })
               }
               join={() => requestAction({ event: "room:join", data: { code } })}
@@ -744,7 +775,8 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                 {ended ? "Accueil" : "Quitter"}
               </button>
               <span>
-                ONE PIECE <i> / </i> {solo ? "CLASSIQUE SOLO" : "DUEL 1V1"}
+                {themeName(room.themeId).toUpperCase()} <i> / </i>{" "}
+                {solo ? "CLASSIQUE SOLO" : "DUEL 1V1"}
               </span>
             </div>
             {(room.phase === "lobby" || ended) && (
@@ -903,7 +935,11 @@ function App({ adminOnly }: { adminOnly: boolean }) {
               </section>
             )}
             {room.phase === "countdown" && (
-              <MatchCountdown seconds={seconds} solo={solo} />
+              <MatchCountdown
+                seconds={seconds}
+                solo={solo}
+                themeId={room.themeId}
+              />
             )}
             {isQuestion && room.question && (
               <section
@@ -1056,7 +1092,10 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                         </button>
                       )}
                       {!sentRematch && !incomingRematch && (
-                        <p>Rejouer contre {opponent?.name} · One Piece</p>
+                        <p>
+                          Rejouer contre {opponent?.name} ·{" "}
+                          {themeName(room.themeId)}
+                        </p>
                       )}
                     </div>
                   )}
