@@ -4,6 +4,8 @@ Un quiz **Classique en 1 contre 1 ou en Solo**, sur **One Piece** et **MCU**. Ch
 
 ## Version 0.7
 
+La page Amis affiche les photos de profil (ou les initiales sans photo), actualisées lors d’un changement. Elles sont réservées aux amis acceptés et chargées séparément des statuts de présence. Seul le thème se choisit sur cette page : les invitations utilisent toutes les difficultés disponibles, indépendamment du dernier niveau sélectionné en Solo ou en duel.
+
 Dans le salon et pendant un duel, les participants voient la photo enregistrée sur le compte de leur adversaire. Les changements et suppressions sont répercutés en direct et après reconnexion ; sans photo, l’initiale reste affichée. Les images sont chargées séparément des mises à jour du jeu, réservées aux participants du salon et ne sont pas dupliquées dans l’historique.
 
 Avant chaque question, en Solo comme en duel, une phase de lecture synchronisée affiche la question en grand sur un fond flouté pendant 3 secondes, puis la ramène à sa place en 0,4 seconde. Le serveur masque les choix et refuse les réponses pendant cette phase. Les 20 secondes de réponse et le calcul des points démarrent ensuite, sans pénalité pour le temps de lecture. Une reconnexion reprend la phase en cours ; la réduction des mouvements conserve la lecture mais supprime le déplacement.
@@ -40,7 +42,7 @@ APK 0.4.1 (code Android 5) : connexion par défaut à `https://akashaquiz.com`, 
 - Accueil : bouton **Défi du jour** et trois cases de thèmes favoris au-dessus du portail ; le défi du jour reste à venir.
 - Parcours de duel conservé : **Classique → One Piece → Créer un duel / Rejoindre un ami** ; pseudo demandé au premier besoin et mémorisé.
 - Parcours individuel : **JOUER → Solo → One Piece → Commencer en solo**. Même moteur et même barème que le duel, démarrage sans adversaire, résultat individuel, reconnexion et abandon pris en charge. Le Solo nécessite lui aussi le serveur.
-- Sur la page du thème, choisir **Toutes, Facile, Intermédiaire, Difficile, Très difficile ou Professionnel** avant de créer une partie. Les effectifs viennent des questions publiées de ce thème ; moins de dix rend le niveau indisponible. Le créateur fixe le thème et la difficulté du duel, conservés pour les invités, les reconnexions et les revanches. Les mêmes sélecteurs sont disponibles avant une invitation depuis les amis. MCU peut être ajouté aux favoris et apparaît dans l’historique ; son badge texte provisoire attend un logo définitif.
+- Sur la page du thème, choisir **Toutes, Facile, Intermédiaire, Difficile, Très difficile ou Professionnel** avant de créer une partie. Les effectifs viennent des questions publiées de ce thème ; moins de dix rend le niveau indisponible. Le créateur fixe le thème et la difficulté du duel, conservés pour les invités, les reconnexions et les revanches. Depuis la page Amis, seul le thème est sélectionné ; les invitations utilisent toutes les difficultés. MCU peut être ajouté aux favoris et apparaît dans l’historique ; son badge texte provisoire attend un logo définitif.
 - Retours Android et navigateur, petits écrans et dialogues accessibles pris en charge.
 - Illustrations et provenance : [direction artistique](docs/ART.md).
 

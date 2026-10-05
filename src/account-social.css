@@ -188,6 +188,17 @@
   background: var(--muted);
   margin-right: 7px;
 }
+.friend-initial img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.friend-card .friend-initial > span {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+}
 .friend-presence.is-online:before {
   background: var(--green);
 }

@@ -11,7 +11,12 @@ import { createApp } from "./app";
 import { connectDatabase, type Sql } from "./database";
 import { durations, newRoom } from "./engine";
 import { questions } from "./questions";
-import type { AuthResult, SocialState, HistoryPage } from "../shared/account";
+import type {
+  AuthResult,
+  SocialState,
+  HistoryPage,
+  FriendPhotos,
+} from "../shared/account";
 import type {
   Credentials,
   RoomView,
@@ -206,6 +211,11 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     );
     await command(pb.s, "friends:respond", { id: friendship, accept: true });
     await wait(() => pa.state.social!.friends.length === 1);
+    const friendPhotos = await command<FriendPhotos>(pb.s, "friends:photos");
+    assert.deepEqual(friendPhotos, { [a.credentials.id]: photo.photo });
+    assert.deepEqual(await command<FriendPhotos>(pc.s, "friends:photos"), {});
+    assert.ok(pb.state.social!.friends[0].photoVersion);
+    assert.equal(Object.hasOwn(pb.state.social!.friends[0], "photo"), false);
     assert.equal(pa.state.social!.friends[0].presence, "online");
     await command(pb.s, "room:create", { mode: "solo" });
     await wait(() => pa.state.social!.friends[0].presence === "playing");
@@ -277,12 +287,17 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     pa.s.on("room:photos-changed", () => photoChanges++);
     await request("account/profile", { photo: photo.photo }, b.credentials);
     await wait(() => photoChanges > 0);
+    await wait(() => !!pa.state.social!.friends[0].photoVersion);
+    assert.ok(
+      (await command<FriendPhotos>(pa.s, "friends:photos"))[b.credentials.id],
+    );
     assert.match(
       (await command<RoomPhotos>(pa.s, "room:photos", { code: firstCode }))
         .photos[b.credentials.id]!,
       /^data:image\/webp;base64,/,
     );
     await request("account/profile", { photo: null }, b.credentials);
+    await wait(() => pa.state.social!.friends[0].photoVersion === null);
     assert.equal(
       (await command<RoomPhotos>(pa.s, "room:photos", { code: firstCode }))
         .photos[b.credentials.id],
@@ -454,6 +469,10 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     await wait(() => restored.state.room === null);
     await command(restored.s, "friends:remove", { id: b.credentials.id });
     await wait(() => bobRestored.state.social!.friends.length === 0);
+    assert.deepEqual(
+      await command<FriendPhotos>(bobRestored.s, "friends:photos"),
+      {},
+    );
     await assert.rejects(
       command(restored.s, "friends:invite", { id: b.credentials.id }),
       /amis/,

@@ -525,6 +525,10 @@ export async function createApp(
           "Crée un compte pour retrouver tes amis et tes invitations.",
         );
     };
+    command("friends:photos", async () => {
+      accountOnly();
+      return social.photos(player.id);
+    });
     command("friends:request", async (data) => {
       accountOnly();
       if (!allow(`friend-request:${player.id}`, 10, 3600000))

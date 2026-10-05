@@ -36,6 +36,7 @@ import {
 } from "./PlayerHeader";
 import { useAvatar, preparePhoto } from "./avatar";
 import { useRoomPhotos } from "./useRoomPhotos";
+import { useFriendPhotos } from "./useFriendPhotos";
 import { AccountActions, AuthDialog, type AuthMode } from "./Account";
 import { FriendsPanel, HistoryPanel, InviteCard } from "./Social";
 import type {
@@ -466,7 +467,7 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   };
   async function socialAction(event: string, data: unknown = {}) {
     if (event === "friends:invite")
-      data = { ...(data as object), difficulty, themeId };
+      data = { ...(data as object), difficulty: "all", themeId };
     await run(async () => {
       await command(socket.current, event, data);
     });
@@ -537,6 +538,13 @@ function App({ adminOnly }: { adminOnly: boolean }) {
     reading || room?.phase === "question" || room?.phase === "reveal";
   const questionTitle = useRef<HTMLHeadingElement>(null);
   const roomPhotos = useRoomPhotos(socket, room, profile, online);
+  const friendPhotos = useFriendPhotos(
+    socket,
+    social?.friends ?? [],
+    profile,
+    navigation.screen === "amis" && !room,
+    online,
+  );
   const solo = room?.mode === "solo";
   const rematchAvailable =
     room?.phase === "finished" &&
@@ -661,15 +669,11 @@ function App({ adminOnly }: { adminOnly: boolean }) {
                       </select>
                     </label>
                   }
-                  difficultyPicker={
-                    <DifficultyPicker
-                      value={difficulty}
-                      onChange={setDifficulty}
-                      availability={availability}
-                      disabled={busy}
-                    />
+                  photos={friendPhotos}
+                  canInvite={
+                    !!availability.options?.find((o) => o.difficulty === "all")
+                      ?.available
                   }
-                  canInvite={canStart}
                   now={now}
                   state={social}
                   account={!!profile.credentials?.account}

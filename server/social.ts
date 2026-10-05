@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Sql } from "./database";
 import { UserError, usernameInput } from "./accounts";
-import type { Friend, SocialState } from "../shared/account";
+import type { Friend, FriendPhotos, SocialState } from "../shared/account";
 import type { ThemeId } from "../shared/themes";
 
 export type InviteRow = {
@@ -133,16 +133,27 @@ export class Social {
       [id, status, roomCode ?? null],
     );
   }
+  async photos(id: string): Promise<FriendPhotos> {
+    const { rows } = await this.db.query<{ id: string; photo: string | null }>(
+      `SELECT a.id,a.photo FROM akasha_friendships f JOIN akasha_accounts a
+       ON a.id=CASE WHEN f.sender=$1 THEN f.recipient ELSE f.sender END
+       WHERE f.status='accepted' AND (f.sender=$1 OR f.recipient=$1)`,
+      [id],
+    );
+    return Object.fromEntries(rows.map((r) => [r.id, r.photo]));
+  }
   async state(
     id: string,
     online: Set<string>,
     activities = new Map<string, Friend["presence"]>(),
   ): Promise<SocialState> {
     const friend = (r: {
+      photo_version?: string | null;
       player_id: string;
       username: string;
       name: string;
     }): Friend => ({
+      photoVersion: r.photo_version ?? null,
       id: r.player_id,
       username: r.username,
       name: r.name,
@@ -152,6 +163,7 @@ export class Social {
         (online.has(r.player_id) ? "online" : "offline"),
     });
     const { rows } = await this.db.query<{
+      photo_version: string | null;
       id: string;
       sender: string;
       status: string;
@@ -159,7 +171,7 @@ export class Social {
       username: string;
       name: string;
     }>(
-      `SELECT f.id,f.sender,f.status,a.id AS player_id,a.username,a.name FROM akasha_friendships f
+      `SELECT f.id,f.sender,f.status,a.id AS player_id,a.username,a.name,md5(a.photo) AS photo_version FROM akasha_friendships f
        JOIN akasha_accounts a ON a.id=CASE WHEN f.sender=$1 THEN f.recipient ELSE f.sender END WHERE f.sender=$1 OR f.recipient=$1 ORDER BY a.username`,
       [id],
     );

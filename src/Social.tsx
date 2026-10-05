@@ -6,6 +6,7 @@ import type {
   Invitation,
   HistoryPage,
   MatchSummary,
+  FriendPhotos,
 } from "../shared/account";
 import type { RoomView } from "../shared/protocol";
 import { accountApi, type Profile } from "./client";
@@ -61,7 +62,7 @@ export function InviteCard({
 }
 export function FriendsPanel({
   themePicker,
-  difficultyPicker,
+  photos,
   canInvite = true,
   state,
   account,
@@ -72,7 +73,7 @@ export function FriendsPanel({
   now,
 }: {
   themePicker?: ReactNode;
-  difficultyPicker?: ReactNode;
+  photos: FriendPhotos;
   canInvite?: boolean;
   state: SocialState | null;
   account: boolean;
@@ -218,11 +219,14 @@ export function FriendsPanel({
         ) : (
           <>
             {themePicker}
-            {difficultyPicker}
             {state.friends.map((f) => (
               <article key={f.id} className="social-card friend-card">
-                <div className="friend-initial" aria-hidden="true">
-                  {f.name[0].toUpperCase()}
+                <div className="friend-initial">
+                  {photos[f.id] ? (
+                    <img src={photos[f.id]!} alt={`Photo de ${f.name}`} />
+                  ) : (
+                    <span aria-hidden="true">{f.name[0].toUpperCase()}</span>
+                  )}
                 </div>
                 <div>
                   <strong>{f.name}</strong>

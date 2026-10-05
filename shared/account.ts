@@ -17,6 +17,7 @@ export type AuthResult = {
   recoveryCode?: string;
 };
 export type Friend = {
+  photoVersion?: string | null;
   id: string;
   username: string;
   name: string;
@@ -24,6 +25,7 @@ export type Friend = {
   presence: "offline" | "online" | "lobby" | "playing";
 };
 export type FriendRequest = { id: string; player: Friend };
+export type FriendPhotos = Record<string, string | null>;
 export type Invitation = {
   themeId?: import("./themes").ThemeId;
   id: string;
