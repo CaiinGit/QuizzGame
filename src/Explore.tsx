@@ -10,7 +10,7 @@ import {
 import { themes, themeName } from "../shared/themes";
 import type { ReactNode } from "react";
 import { PixelIcon } from "./PixelIcon";
-import { HomePortal } from "./HomePortal";
+import { HomePortal, usePortalEntry } from "./HomePortal";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import { SelectionCard, FutureSelectionCard, ThemeLogo } from "./SelectionCard";
 import type { Screen } from "./navigation";
@@ -87,12 +87,14 @@ export function BottomNavigation({
 }
 export function Explore(p: Props) {
   const { screen, navigate, profile, online, busy } = p;
+  const portal = usePortalEntry(screen, () => navigate("mode"));
   const themeId = screenTheme(screen);
   const isFavorite = screen.startsWith("favorite-");
   const isSolo = screen.startsWith("solo-");
   if (screen === "accueil")
     return (
       <section className="home-screen" aria-label="Accueil Akasha">
+        {portal.transition}
         <h1 className="sr-only">Accueil</h1>
         <div className="home-shortcuts">
           <button
@@ -165,12 +167,13 @@ export function Explore(p: Props) {
               ? `${p.friendCount} demande${p.friendCount > 1 ? "s" : ""} ou invitation${p.friendCount > 1 ? "s" : ""} en attente`
               : "Aucune demande ni invitation en attente"}
           </span>
-          <HomePortal onEnter={() => navigate("mode")} />
+          <HomePortal onEnter={portal.enter} entering={portal.entering} />
         </div>
       </section>
     );
   return (
     <section className={`explore-screen screen-${screen}`}>
+      {portal.transition}
       <button
         type="button"
         className="text-button screen-back"

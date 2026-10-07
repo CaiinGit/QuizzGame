@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useId,
   useRef,
   useState,
@@ -7,78 +8,176 @@ import {
   type Ref,
 } from "react";
 import { createPortal } from "react-dom";
+import type { Screen } from "./navigation";
 import "./home-portal.css";
 
-const ENTRY_MS = 850;
+const MOVING_PARTS =
+  ".portal-current, .portal-orbit, .portal-wave, .portal-heart, .portal-runes, .portal-mote, .portal-ember";
+type Entry = {
+  style: CSSProperties;
+  frames: { transform: string; opacity: string }[];
+  phase: "enter" | "reveal";
+};
 
-export function HomePortal({ onEnter }: { onEnter: () => void }) {
-  const art = useRef<SVGSVGElement>(null);
-  const dialog = useRef<HTMLDialogElement>(null);
+// Owned by Explore, so the light stays mounted when home becomes mode selection.
+export function usePortalEntry(screen: Screen, onEnter: () => void) {
   const started = useRef(false);
   const navigate = useRef(onEnter);
-  const [entry, setEntry] = useState<CSSProperties | null>(null);
+  const [entry, setEntry] = useState<Entry | null>(null);
   useEffect(() => {
     navigate.current = onEnter;
   }, [onEnter]);
   useEffect(() => {
-    if (!entry) return;
-    dialog.current?.showModal();
-    const timer = window.setTimeout(() => {
-      dialog.current?.close();
-      navigate.current();
-    }, ENTRY_MS);
-    return () => window.clearTimeout(timer);
-  }, [entry]);
+    if (!entry) started.current = false;
+    else if (
+      screen !== "accueil" &&
+      !(screen === "mode" && entry.phase === "reveal")
+    ) {
+      setEntry(null);
+    }
+  }, [entry, screen]);
 
-  function enter() {
-    if (started.current || !art.current) return;
+  function enter(art: SVGSVGElement) {
+    if (started.current) return;
     started.current = true;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       navigate.current();
       return;
     }
     // Match the SVG's contained 3:4 artwork, excluding its letterboxed margins.
-    const bounds = art.current.getBoundingClientRect();
+    const bounds = art.getBoundingClientRect();
     const scale = Math.min(bounds.width / 600, bounds.height / 800);
     const width = 600 * scale,
       height = 800 * scale;
     const left = bounds.left + (bounds.width - width) / 2;
     const top = bounds.top + (bounds.height - height) / 2;
     setEntry({
-      "--entry-duration": `${ENTRY_MS}ms`,
-      "--entry-x": `${innerWidth / 2 - left - width / 2}px`,
-      "--entry-y": `${innerHeight / 2 - top - 430 * scale}px`,
-      "--entry-left": `${left}px`,
-      "--entry-top": `${top}px`,
-      "--entry-width": `${width}px`,
-      "--entry-height": `${height}px`,
-    } as CSSProperties);
+      phase: "enter",
+      frames: Array.from(art.querySelectorAll(MOVING_PARTS), (node) => {
+        const style = getComputedStyle(node);
+        return { transform: style.transform, opacity: style.opacity };
+      }),
+      style: {
+        "--entry-x": `${innerWidth / 2 - left - width / 2}px`,
+        "--entry-y": `${innerHeight / 2 - top - 430 * scale}px`,
+        "--entry-left": `${left}px`,
+        "--entry-top": `${top}px`,
+        "--entry-width": `${width}px`,
+        "--entry-height": `${height}px`,
+      } as CSSProperties,
+    });
   }
 
+  return {
+    enter,
+    entering: !!entry,
+    transition:
+      entry &&
+      createPortal(
+        <PortalEntry
+          entry={entry}
+          onCovered={() => {
+            setEntry((current) => current && { ...current, phase: "reveal" });
+            navigate.current();
+          }}
+          onDone={() => setEntry(null)}
+        />,
+        document.body,
+      ),
+  };
+}
+
+function PortalEntry({
+  entry,
+  onCovered,
+  onDone,
+}: {
+  entry: Entry;
+  onCovered: () => void;
+  onDone: () => void;
+}) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const zoom = useRef<HTMLDivElement>(null);
+  const covered = useRef(false);
+  const done = useRef(false);
+  const actions = useRef({ onCovered, onDone });
+  useLayoutEffect(() => {
+    actions.current = { onCovered, onDone };
+  });
+  useLayoutEffect(() => {
+    // Freeze the exact visible frame; the camera only scales a static layer.
+    zoom.current
+      ?.querySelectorAll<SVGElement>(MOVING_PARTS)
+      .forEach((node, i) => {
+        Object.assign(node.style, entry.frames[i]);
+      });
+    dialog.current?.showModal();
+  }, [entry.frames]);
+  function cover() {
+    if (covered.current || done.current) return;
+    covered.current = true;
+    actions.current.onCovered();
+  }
+  function finish() {
+    if (done.current) return;
+    done.current = true;
+    dialog.current?.close();
+    actions.current.onDone();
+    if (covered.current) {
+      const heading = document.querySelector<HTMLElement>(".screen-mode h1");
+      heading?.setAttribute("tabindex", "-1");
+      heading?.focus({ preventScroll: true });
+    }
+  }
+  useEffect(() => {
+    // Safety net if a browser suppresses an animation event (e.g. background tab).
+    const timer = window.setTimeout(
+      entry.phase === "enter" ? cover : finish,
+      entry.phase === "enter" ? 1100 : 650,
+    );
+    return () => window.clearTimeout(timer);
+  }, [entry.phase]);
   return (
-    <>
-      <PortalArtwork artRef={art} onEnter={enter} entering={!!entry} />
-      {entry &&
-        createPortal(
-          <dialog
-            ref={dialog}
-            className="portal-entry"
-            style={entry}
-            aria-label="Entrée dans le portail"
-            onCancel={() => {
-              setEntry(null);
-              started.current = false;
-            }}
-          >
-            <div className="portal-entry-zoom" aria-hidden="true">
-              <PortalArtwork />
-            </div>
-            <div className="portal-entry-light" aria-hidden="true" />
-            <span className="sr-only">Ouverture du choix des modes…</span>
-          </dialog>,
-          document.body,
-        )}
-    </>
+    <dialog
+      ref={dialog}
+      className={`portal-entry ${entry.phase === "reveal" ? "is-revealing" : ""}`}
+      style={entry.style}
+      aria-label="Entrée dans le portail"
+      onCancel={finish}
+    >
+      <div ref={zoom} className="portal-entry-zoom" aria-hidden="true">
+        <PortalArtwork />
+      </div>
+      <div
+        className="portal-entry-light"
+        aria-hidden="true"
+        onAnimationEnd={(event) => {
+          if (event.target !== event.currentTarget) return;
+          if (event.animationName === "portal-entry-cover") cover();
+          if (event.animationName === "portal-entry-reveal") finish();
+        }}
+      />
+      <span className="sr-only">Ouverture du choix des modes…</span>
+    </dialog>
+  );
+}
+
+export function HomePortal({
+  onEnter,
+  entering,
+}: {
+  onEnter: (art: SVGSVGElement) => void;
+  entering: boolean;
+}) {
+  const art = useRef<SVGSVGElement>(null);
+  return (
+    <PortalArtwork
+      artRef={art}
+      onEnter={() => {
+        if (art.current) onEnter(art.current);
+      }}
+      entering={entering}
+    />
   );
 }
 
