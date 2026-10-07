@@ -7,11 +7,12 @@ import {
   type CSSProperties,
   type Ref,
 } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import type { Screen } from "./navigation";
 import "./home-portal.css";
 
 type Entry = {
+  snapshot: boolean;
   camera: {
     root: HTMLElement;
     originX: number;
@@ -23,7 +24,11 @@ type Entry = {
 };
 
 // Owned by Explore, so the light stays mounted when home becomes mode selection.
-export function usePortalEntry(screen: Screen, onEnter: () => void) {
+export function usePortalEntry(
+  screen: Screen,
+  onEnter: () => void,
+  onCancel: () => void,
+) {
   const started = useRef(false);
   const navigate = useRef(onEnter);
   const [entry, setEntry] = useState<Entry | null>(null);
@@ -63,6 +68,7 @@ export function usePortalEntry(screen: Screen, onEnter: () => void) {
     const centerX = left + width / 2;
     const centerY = top + 430 * scale;
     setEntry({
+      snapshot: typeof document.startViewTransition === "function",
       phase: "enter",
       camera: {
         root,
@@ -87,6 +93,10 @@ export function usePortalEntry(screen: Screen, onEnter: () => void) {
             navigate.current();
           }}
           onDone={() => setEntry(null)}
+          onCancel={() => {
+            setEntry(null);
+            onCancel();
+          }}
         />,
         document.body,
       ),
@@ -97,23 +107,81 @@ function PortalEntry({
   entry,
   onCovered,
   onDone,
+  onCancel,
 }: {
   entry: Entry;
   onCovered: () => void;
   onDone: () => void;
+  onCancel: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const covered = useRef(false);
   const done = useRef(false);
-  const actions = useRef({ onCovered, onDone });
+  const snapshot = useRef<ViewTransition | null>(null);
+  const actions = useRef({ onCovered, onDone, onCancel });
   useLayoutEffect(() => {
-    actions.current = { onCovered, onDone };
+    actions.current = { onCovered, onDone, onCancel };
   });
   useLayoutEffect(() => {
     dialog.current?.showModal();
   }, []);
   useLayoutEffect(() => {
-    if (entry.phase !== "enter") return;
+    if (!entry.snapshot) return;
+    const html = document.documentElement;
+    const { root, originX, originY, shiftX, shiftY } = entry.camera;
+    const bounds = root.getBoundingClientRect();
+    const properties = {
+      "--portal-camera-origin": `${bounds.left + originX}px ${bounds.top + originY}px`,
+      "--portal-camera-x": `${shiftX}px`,
+      "--portal-camera-y": `${shiftY}px`,
+    };
+    const previous = Object.keys(properties).map((name) => [
+      name,
+      html.style.getPropertyValue(name),
+    ]);
+    Object.entries(properties).forEach(([name, value]) =>
+      html.style.setProperty(name, value),
+    );
+    html.classList.add("portal-snapshot-active");
+    root.classList.add("portal-camera-frozen");
+    let active = true;
+    const start = requestAnimationFrame(() => {
+      try {
+        const transition = document.startViewTransition(() => {
+          if (!active || done.current) return;
+          // Capture the mode screen in the same render, beneath the native snapshot.
+          flushSync(cover);
+        });
+        snapshot.current = transition;
+        void transition.ready.catch(() => {});
+        void transition.finished.then(
+          () => {
+            if (active) finish();
+          },
+          () => {
+            if (active) finish();
+          },
+        );
+      } catch {
+        cover();
+        finish();
+      }
+    });
+    return () => {
+      active = false;
+      cancelAnimationFrame(start);
+      snapshot.current?.skipTransition();
+      snapshot.current = null;
+      root.classList.remove("portal-camera-frozen");
+      html.classList.remove("portal-snapshot-active");
+      previous.forEach(([name, value]) => {
+        if (value) html.style.setProperty(name, value);
+        else html.style.removeProperty(name);
+      });
+    };
+  }, [entry.camera, entry.snapshot]);
+  useLayoutEffect(() => {
+    if (entry.snapshot || entry.phase !== "enter") return;
     const { root, originX, originY, shiftX, shiftY } = entry.camera;
     const nav = root.querySelector<HTMLElement>(".bottom-nav");
     const rootBounds = root.getBoundingClientRect();
@@ -142,7 +210,7 @@ function PortalEntry({
     const animation = root.animate(
       [
         { transform: "translate(0, 0) scale(1)" },
-        { transform: `translate(${shiftX}px, ${shiftY}px) scale(4.5)` },
+        { transform: `translate(${shiftX}px, ${shiftY}px) scale(2)` },
       ],
       {
         duration: 650,
@@ -157,7 +225,7 @@ function PortalEntry({
       if (nav && navStyle !== undefined) nav.style.cssText = navStyle;
       document.documentElement.style.overflow = overflow;
     };
-  }, [entry.camera, entry.phase]);
+  }, [entry.camera, entry.phase, entry.snapshot]);
   function cover() {
     if (covered.current || done.current) return;
     covered.current = true;
@@ -175,19 +243,25 @@ function PortalEntry({
     }
   }
   useEffect(() => {
+    if (entry.snapshot) return;
     // Safety net if a browser suppresses an animation event (e.g. background tab).
     const timer = window.setTimeout(
       entry.phase === "enter" ? cover : finish,
       entry.phase === "enter" ? 1100 : 650,
     );
     return () => window.clearTimeout(timer);
-  }, [entry.phase]);
+  }, [entry.phase, entry.snapshot]);
   return (
     <dialog
       ref={dialog}
-      className={`portal-entry ${entry.phase === "reveal" ? "is-revealing" : ""}`}
+      className={`portal-entry ${entry.snapshot ? "uses-snapshot" : ""} ${entry.phase === "reveal" ? "is-revealing" : ""}`}
       aria-label="Entrée dans le portail"
-      onCancel={finish}
+      onCancel={() => {
+        done.current = true;
+        snapshot.current?.skipTransition();
+        dialog.current?.close();
+        actions.current.onCancel();
+      }}
     >
       <div
         className="portal-entry-light"
@@ -211,6 +285,11 @@ export function HomePortal({
   entering: boolean;
 }) {
   const art = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    const icon = new Image();
+    icon.src = "/art/classic-swords.png";
+    void icon.decode().catch(() => {});
+  }, []);
   return (
     <PortalArtwork
       artRef={art}

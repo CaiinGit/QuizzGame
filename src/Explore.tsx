@@ -87,7 +87,11 @@ export function BottomNavigation({
 }
 export function Explore(p: Props) {
   const { screen, navigate, profile, online, busy } = p;
-  const portal = usePortalEntry(screen, () => navigate("mode"));
+  const portal = usePortalEntry(
+    screen,
+    () => navigate("mode"),
+    () => navigate("accueil"),
+  );
   const themeId = screenTheme(screen);
   const isFavorite = screen.startsWith("favorite-");
   const isSolo = screen.startsWith("solo-");

@@ -104,6 +104,11 @@ test("home puts daily challenge and three empty favorites above the portal", asy
 test("only the portal opening starts entry; cancelling and returning allow another entry", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(document, "startViewTransition", {
+      value: undefined,
+    });
+  });
   await page.goto("/");
   const art = page.locator(".portal-stage .portal-art");
   const bounds = (await art.boundingBox())!;
@@ -166,6 +171,11 @@ for (const theme of ["light", "dark"]) {
   test(`portal light stays mounted across navigation and reveals modes gradually (${theme})`, async ({
     page,
   }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(document, "startViewTransition", {
+        value: undefined,
+      });
+    });
     await page.goto("/");
     if (theme === "dark") {
       await page.getByRole("button", { name: "Réglages", exact: true }).click();
@@ -224,6 +234,11 @@ for (const viewport of [
   test(`the whole home follows the portal camera without a navigation jump (${viewport.width})`, async ({
     page,
   }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(document, "startViewTransition", {
+        value: undefined,
+      });
+    });
     await page.setViewportSize(viewport);
     await page.goto("/");
     await page.clock.install();
@@ -260,7 +275,7 @@ for (const viewport of [
     const factor = await camera.evaluate(
       (el) => new DOMMatrix(getComputedStyle(el).transform).a,
     );
-    expect(factor).toBeGreaterThan(1.1);
+    expect(factor).toBeGreaterThan(1.05);
     for (let i = 0; i < selectors.length; i++) {
       const box = (await page.locator(selectors[i]).boundingBox())!;
       expect(box.width / before[i]!.width).toBeCloseTo(factor, 2);
@@ -278,3 +293,108 @@ for (const viewport of [
     ).toBeInViewport();
   });
 }
+
+for (const theme of ["light", "dark"]) {
+  test(`native snapshot moves the whole viewport while live UI stays still (${theme})`, async ({
+    page,
+  }) => {
+    await page.goto("/");
+    if (theme === "dark") {
+      await page.getByRole("button", { name: "Réglages", exact: true }).click();
+      await page
+        .getByRole("button", { name: "Mode sombre", exact: true })
+        .click();
+      await page.keyboard.press("Escape");
+    }
+    await page.getByRole("button", { name: "Jouer", exact: true }).click();
+    await page.waitForFunction(() => {
+      const animations = document
+        .getAnimations()
+        .filter((a) =>
+          (a as CSSAnimation).animationName?.startsWith("portal-snapshot-"),
+        );
+      if (animations.length < 3) return false;
+      animations.forEach((a) => {
+        a.pause();
+        a.currentTime = 250;
+      });
+      return true;
+    });
+    await expect(page.locator(".app-shell")).toHaveCSS("transform", "none");
+    await expect(page.locator(".bottom-nav")).toHaveCSS("position", "fixed");
+    const scale = await page.evaluate(
+      () =>
+        new DOMMatrix(
+          getComputedStyle(
+            document.documentElement,
+            "::view-transition-old(root)",
+          ).transform,
+        ).a,
+    );
+    expect(scale).toBeGreaterThan(1.1);
+    await page.screenshot({
+      path: `test-results/portal-snapshot-camera-${theme}.png`,
+    });
+    await page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((a) =>
+          (a as CSSAnimation).animationName?.startsWith("portal-snapshot-"),
+        )
+        .forEach((a) => {
+          a.currentTime = 825;
+        }),
+    );
+    const opacity = await page.evaluate(() =>
+      Number(
+        getComputedStyle(
+          document.documentElement,
+          "::view-transition-new(root)",
+        ).opacity,
+      ),
+    );
+    expect(opacity).toBeGreaterThan(0.2);
+    expect(opacity).toBeLessThan(0.8);
+    await page.screenshot({
+      path: `test-results/portal-snapshot-reveal-${theme}.png`,
+    });
+    await page.evaluate(() =>
+      document
+        .getAnimations()
+        .filter((a) =>
+          (a as CSSAnimation).animationName?.startsWith("portal-snapshot-"),
+        )
+        .forEach((a) => a.finish()),
+    );
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(
+      page.getByRole("heading", { name: "Choisis ton mode" }),
+    ).toBeFocused();
+    await expect(page.locator("html")).not.toHaveClass(
+      /portal-snapshot-active/,
+    );
+  });
+}
+
+test("native snapshot can be cancelled and entered again", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Jouer", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .some(
+        (a) => (a as CSSAnimation).animationName === "portal-snapshot-camera",
+      ),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
