@@ -11,11 +11,14 @@ import { createPortal } from "react-dom";
 import type { Screen } from "./navigation";
 import "./home-portal.css";
 
-const MOVING_PARTS =
-  ".portal-current, .portal-orbit, .portal-wave, .portal-heart, .portal-runes, .portal-mote, .portal-ember";
 type Entry = {
-  style: CSSProperties;
-  frames: { transform: string; opacity: string }[];
+  camera: {
+    root: HTMLElement;
+    originX: number;
+    originY: number;
+    shiftX: number;
+    shiftY: number;
+  };
   phase: "enter" | "reveal";
 };
 
@@ -39,6 +42,11 @@ export function usePortalEntry(screen: Screen, onEnter: () => void) {
 
   function enter(art: SVGSVGElement) {
     if (started.current) return;
+    const root = art.closest<HTMLElement>(".app-shell");
+    if (!root) {
+      navigate.current();
+      return;
+    }
     started.current = true;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       navigate.current();
@@ -51,20 +59,18 @@ export function usePortalEntry(screen: Screen, onEnter: () => void) {
       height = 800 * scale;
     const left = bounds.left + (bounds.width - width) / 2;
     const top = bounds.top + (bounds.height - height) / 2;
+    const rootBounds = root.getBoundingClientRect();
+    const centerX = left + width / 2;
+    const centerY = top + 430 * scale;
     setEntry({
       phase: "enter",
-      frames: Array.from(art.querySelectorAll(MOVING_PARTS), (node) => {
-        const style = getComputedStyle(node);
-        return { transform: style.transform, opacity: style.opacity };
-      }),
-      style: {
-        "--entry-x": `${innerWidth / 2 - left - width / 2}px`,
-        "--entry-y": `${innerHeight / 2 - top - 430 * scale}px`,
-        "--entry-left": `${left}px`,
-        "--entry-top": `${top}px`,
-        "--entry-width": `${width}px`,
-        "--entry-height": `${height}px`,
-      } as CSSProperties,
+      camera: {
+        root,
+        originX: centerX - rootBounds.left,
+        originY: centerY - rootBounds.top,
+        shiftX: innerWidth / 2 - centerX,
+        shiftY: innerHeight / 2 - centerY,
+      },
     });
   }
 
@@ -97,7 +103,6 @@ function PortalEntry({
   onDone: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
-  const zoom = useRef<HTMLDivElement>(null);
   const covered = useRef(false);
   const done = useRef(false);
   const actions = useRef({ onCovered, onDone });
@@ -105,14 +110,54 @@ function PortalEntry({
     actions.current = { onCovered, onDone };
   });
   useLayoutEffect(() => {
-    // Freeze the exact visible frame; the camera only scales a static layer.
-    zoom.current
-      ?.querySelectorAll<SVGElement>(MOVING_PARTS)
-      .forEach((node, i) => {
-        Object.assign(node.style, entry.frames[i]);
-      });
     dialog.current?.showModal();
-  }, [entry.frames]);
+  }, []);
+  useLayoutEffect(() => {
+    if (entry.phase !== "enter") return;
+    const { root, originX, originY, shiftX, shiftY } = entry.camera;
+    const nav = root.querySelector<HTMLElement>(".bottom-nav");
+    const rootBounds = root.getBoundingClientRect();
+    const navBounds = nav?.getBoundingClientRect();
+    const rootStyle = root.style.cssText;
+    const navStyle = nav?.style.cssText;
+    const overflow = document.documentElement.style.overflow;
+    // Pin the fixed navigation at its current position before its containing
+    // block becomes the transformed app. All home elements then share one camera.
+    root.style.position = "relative";
+    if (nav && navBounds)
+      Object.assign(nav.style, {
+        position: "absolute",
+        left: `${navBounds.left - rootBounds.left - root.clientLeft}px`,
+        top: `${navBounds.top - rootBounds.top - root.clientTop}px`,
+        right: "auto",
+        bottom: "auto",
+        width: `${navBounds.width}px`,
+        height: `${navBounds.height}px`,
+        transform: "none",
+      });
+    document.documentElement.style.overflow = "clip";
+    root.classList.add("portal-camera");
+    root.style.transformOrigin = `${originX}px ${originY}px`;
+    root.style.willChange = "transform";
+    const animation = root.animate(
+      [
+        { transform: "translate(0, 0) scale(1)" },
+        { transform: `translate(${shiftX}px, ${shiftY}px) scale(4.5)` },
+      ],
+      {
+        duration: 650,
+        easing: "cubic-bezier(0.3, 0, 0.2, 1)",
+        fill: "forwards",
+      },
+    );
+    return () => {
+      animation.cancel();
+      root.classList.remove("portal-camera");
+      root.style.cssText = rootStyle;
+      if (nav && navStyle !== undefined) nav.style.cssText = navStyle;
+      document.documentElement.style.overflow = overflow;
+    };
+  }, [entry.camera, entry.phase]);
   function cover() {
     if (covered.current || done.current) return;
     covered.current = true;
@@ -141,13 +186,9 @@ function PortalEntry({
     <dialog
       ref={dialog}
       className={`portal-entry ${entry.phase === "reveal" ? "is-revealing" : ""}`}
-      style={entry.style}
       aria-label="Entrée dans le portail"
       onCancel={finish}
     >
-      <div ref={zoom} className="portal-entry-zoom" aria-hidden="true">
-        <PortalArtwork />
-      </div>
       <div
         className="portal-entry-light"
         aria-hidden="true"

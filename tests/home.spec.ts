@@ -120,7 +120,7 @@ test("only the portal opening starts entry; cancelling and returning allow anoth
   await expect(
     page.getByRole("heading", { name: "Choisis ton mode" }),
   ).toHaveCount(0);
-  const zoom = page.locator(".portal-entry-zoom");
+  const zoom = page.locator(".portal-camera");
   const before = await zoom.evaluate((el) => getComputedStyle(el).transform);
   await expect
     .poll(() => zoom.evaluate((el) => getComputedStyle(el).transform))
@@ -177,10 +177,7 @@ for (const theme of ["light", "dark"]) {
     await page.getByRole("button", { name: "Jouer", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "Entrée dans le portail" });
     const original = await dialog.elementHandle();
-    await expect(page.locator(".portal-entry-zoom .portal-current")).toHaveCSS(
-      "animation-name",
-      "none",
-    );
+    await expect(page.locator(".portal-camera")).toHaveCount(1);
     await expect(page.locator(".portal-stage .portal-current")).toHaveCSS(
       "animation-play-state",
       "paused",
@@ -190,6 +187,10 @@ for (const theme of ["light", "dark"]) {
       .locator(".portal-entry-light")
       .evaluate((el) => el.getAnimations()[0].finish());
     await expect(page.locator(".screen-mode")).toHaveCount(1);
+    await expect(page.locator(".portal-camera")).toHaveCount(0);
+    await expect(
+      page.getByRole("navigation", { includeHidden: true }),
+    ).toHaveCSS("position", "fixed");
     expect(
       await original!.evaluate(
         (el) => el === document.querySelector(".portal-entry"),
@@ -212,5 +213,68 @@ for (const theme of ["light", "dark"]) {
     await expect(
       page.getByRole("heading", { name: "Choisis ton mode" }),
     ).toBeFocused();
+  });
+}
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`the whole home follows the portal camera without a navigation jump (${viewport.width})`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.clock.install();
+    await page.clock.pauseAt(new Date(Date.now() + 1000));
+    const selectors = [
+      ".player-header",
+      ".home-shortcuts",
+      ".portal-stage .portal-art",
+      ".bottom-nav",
+    ];
+    const before = await Promise.all(
+      selectors.map((selector) => page.locator(selector).boundingBox()),
+    );
+    await page.getByRole("button", { name: "Jouer", exact: true }).click();
+    const camera = page.locator(".portal-camera");
+    await page.locator(".portal-entry-light").evaluate((el) => {
+      const animation = el.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 100;
+    });
+    await camera.evaluate((el) => {
+      const animation = el.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 0;
+    });
+    for (let i = 0; i < selectors.length; i++) {
+      const box = (await page.locator(selectors[i]).boundingBox())!;
+      expect(box.x).toBeCloseTo(before[i]!.x, 0);
+      expect(box.y).toBeCloseTo(before[i]!.y, 0);
+    }
+    await camera.evaluate((el) => {
+      el.getAnimations()[0].currentTime = 100;
+    });
+    const factor = await camera.evaluate(
+      (el) => new DOMMatrix(getComputedStyle(el).transform).a,
+    );
+    expect(factor).toBeGreaterThan(1.1);
+    for (let i = 0; i < selectors.length; i++) {
+      const box = (await page.locator(selectors[i]).boundingBox())!;
+      expect(box.width / before[i]!.width).toBeCloseTo(factor, 2);
+      expect(Math.abs(box.y - before[i]!.y)).toBeGreaterThan(1);
+    }
+    await page.screenshot({
+      path: `test-results/portal-camera-${viewport.width}.png`,
+    });
+    await page.keyboard.press("Escape");
+    await expect(camera).toHaveCount(0);
+    await expect(page.locator(".app-shell")).toHaveCSS("transform", "none");
+    await expect(page.getByRole("navigation")).toHaveCSS("position", "fixed");
+    await expect(
+      page.getByRole("button", { name: "Jouer", exact: true }),
+    ).toBeInViewport();
   });
 }
