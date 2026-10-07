@@ -8,7 +8,11 @@ test("home puts daily challenge and three empty favorites above the portal", asy
   const favorites = page.getByRole("group", { name: "Thèmes favoris" });
   const play = page.getByRole("button", { name: "Jouer", exact: true });
   await expect(play).toBeVisible();
-  await expect(play).toHaveCSS("--tile-face", "#234836");
+  await expect(page.locator(".home-play")).toHaveCount(0);
+  await expect(page.locator(".akasha-portal")).toHaveCSS(
+    "--portal-energy",
+    "#5fac7c",
+  );
   await expect(daily).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Choisir un mode" }),
@@ -80,7 +84,10 @@ test("home puts daily challenge and three empty favorites above the portal", asy
     "--tile-face",
     "#ffa800",
   );
-  await expect(play).toHaveCSS("--tile-face", "#ffa800");
+  await expect(page.locator(".akasha-portal")).toHaveCSS(
+    "--portal-energy",
+    "#ffa800",
+  );
   await page.mouse.move(0, 0);
   await page.screenshot({
     path: "test-results/akasha-home-shortcuts-dark.png",
@@ -92,4 +99,65 @@ test("home puts daily challenge and three empty favorites above the portal", asy
   ).toBeVisible();
   await page.getByRole("button", { name: "Retour", exact: true }).click();
   await expect(play).toBeVisible();
+});
+
+test("only the portal opening starts entry; cancelling and returning allow another entry", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const art = page.locator(".portal-stage .portal-art");
+  const bounds = (await art.boundingBox())!;
+  const scale = Math.min(bounds.width / 600, bounds.height / 800);
+  const left = bounds.x + (bounds.width - 600 * scale) / 2;
+  const top = bounds.y + (bounds.height - 800 * scale) / 2;
+  await page.mouse.click(left + 80 * scale, top + 480 * scale);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  const play = page.getByRole("button", { name: "Jouer", exact: true });
+  await play.click();
+  await expect(
+    page.getByRole("dialog", { name: "Entrée dans le portail" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toHaveCount(0);
+  const zoom = page.locator(".portal-entry-zoom");
+  const before = await zoom.evaluate((el) => getComputedStyle(el).transform);
+  await expect
+    .poll(() => zoom.evaluate((el) => getComputedStyle(el).transform))
+    .not.toBe(before);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await play.focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Retour", exact: true }).click();
+  await play.focus();
+  await page.keyboard.press("Space");
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toBeVisible();
+});
+
+test("reduced motion skips the zoom, and leaving home cancels pending entry", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Choisis ton mode" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Retour", exact: true }).click();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.getByRole("button", { name: "Jouer", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.evaluate(() => {
+    location.hash = "amis";
+  });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.waitForTimeout(1000);
+  expect(new URL(page.url()).hash).toBe("#amis");
 });

@@ -165,28 +165,7 @@ export function Explore(p: Props) {
               ? `${p.friendCount} demande${p.friendCount > 1 ? "s" : ""} ou invitation${p.friendCount > 1 ? "s" : ""} en attente`
               : "Aucune demande ni invitation en attente"}
           </span>
-          <HomePortal />
-          <button
-            type="button"
-            className="home-tile home-play"
-            aria-label="Jouer"
-            onClick={() => navigate("mode")}
-          >
-            <span className="play-symbol" aria-hidden="true">
-              <svg
-                className="play-symbol-image"
-                viewBox="24 18 28 28"
-                width="56"
-                height="56"
-              >
-                <image href="/art/play-light.png" width="64" height="64" />
-              </svg>
-            </span>
-            <span className="play-label">JOUER</span>
-            <span className="play-arrow" aria-hidden="true">
-              ›
-            </span>
-          </button>
+          <HomePortal onEnter={() => navigate("mode")} />
         </div>
       </section>
     );

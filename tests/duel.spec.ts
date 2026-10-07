@@ -216,13 +216,10 @@ test("home fits small phones and navigation follows mode then theme", async ({
   await expect(page.getByRole("heading", { name: "One Piece" })).toHaveCount(0);
   const art = page.locator(".portal-art");
   await expect(art).toBeVisible();
-  await expect
-    .poll(() =>
-      art.evaluate(
-        (img: HTMLImageElement) => img.complete && img.naturalWidth > 0,
-      ),
-    )
-    .toBe(true);
+  await expect(art.locator(".portal-stone")).toHaveAttribute(
+    "href",
+    "/art/portal-frame-v2.webp",
+  );
   await page.screenshot({
     path: "test-results/akasha-03-accueil.png",
     fullPage: true,

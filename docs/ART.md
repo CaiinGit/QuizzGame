@@ -20,6 +20,8 @@ Le portail d’accueil a été remplacé le 7 octobre 2026 par `public/art/porta
 
 `HomePortal.tsx` et `home-portal.css` composent l’arche avec une ouverture animée en SVG : courants en rotation, ondes, lumière pulsée et particules. L’énergie est verte en mode clair et orange en mode sombre. Les mouvements utilisent transform/opacity et sont désactivés si le système demande une réduction des animations.
 
+L’ouverture remplace désormais le bouton Jouer : un bouton HTML accessible au clavier est intégré au centre coloré, sans rendre la pierre cliquable. Une traversée de 850 ms agrandit l’arche jusqu’à remplir l’écran avant le choix des modes. La transition est modale, annulable avec Échap, nettoyée en quittant l’accueil et ignorée quand les animations sont réduites.
+
 Assets générés avec l’outil imagegen intégré le 25 septembre 2026, à partir des maquettes validées dans la conversation. Mode : édition des images de référence. Aucun personnage.
 
 - `public/art/portal.webp` : portail frontal isolé, canal alpha transparent à l’extérieur de la silhouette.

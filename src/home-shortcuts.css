@@ -142,59 +142,6 @@
 .favorite-slot {
   aspect-ratio: 1;
 }
-.home-play {
-  --tile-face: var(--green);
-  --tile-light: #659579;
-  --tile-edge: #183c2b;
-  --tile-shadow: #10291f;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  min-height: 96px;
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 56px;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 24px;
-  color: var(--cream);
-  font-family: var(--font-arcade);
-  font-size: clamp(48px, 14vw, 64px);
-  line-height: 1;
-  text-align: center;
-  text-shadow: 0 2px 0 #10142640;
-}
-.play-symbol,
-.play-symbol > svg {
-  width: 56px;
-  height: 56px;
-}
-.play-symbol {
-  display: grid;
-  place-items: center;
-}
-/* Display the supplied PNG unchanged, framing only its transparent margins. */
-.play-symbol-image {
-  image-rendering: pixelated;
-}
-[data-theme="dark"] .play-symbol-image {
-  filter: none;
-}
-[data-theme="dark"] .play-label {
-  color: #fff;
-  -webkit-text-stroke: 2px #000;
-  paint-order: stroke fill;
-  text-shadow: 0 2px 0 #000;
-}
-.play-arrow {
-  font-family: ui-monospace, monospace;
-  font-size: 42px;
-}
-[data-theme="dark"] .home-play {
-  --tile-light: #ffe2a3;
-  --tile-edge: #c78000;
-  --tile-shadow: #805200;
-}
 [data-theme="dark"] .favorite-slot {
   --tile-face: #ffa800;
   --tile-light: #ffe2a3;
@@ -202,17 +149,6 @@
   --tile-shadow: #805200;
 }
 @media (max-width: 350px) {
-  .home-play {
-    grid-template-columns: 44px minmax(0, 1fr) 44px;
-    min-height: 80px;
-    gap: 8px;
-    padding: 12px 18px;
-  }
-  .play-symbol,
-  .play-symbol > svg {
-    width: 44px;
-    height: 44px;
-  }
   .daily-challenge {
     gap: 8px;
     padding: 14px;

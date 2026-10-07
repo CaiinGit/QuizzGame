@@ -50,9 +50,119 @@
 [data-theme="dark"] .portal-stone {
   filter: brightness(0.72) drop-shadow(0 5px 4px #0006);
 }
-.portal-stage:has(.home-play:hover) .portal-runes,
-.portal-stage:has(.home-play:focus-visible) .portal-runes {
+.akasha-portal:has(.portal-enter:hover) .portal-runes,
+.akasha-portal:has(.portal-enter:focus-visible) .portal-runes {
   filter: drop-shadow(0 0 5px var(--portal-energy));
+}
+.portal-target {
+  pointer-events: auto;
+}
+.portal-enter {
+  pointer-events: auto;
+  clip-path: ellipse(50% 68% at 50% 68%);
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 50% 50% 8px 8px / 32% 32% 8px 8px;
+  background: transparent;
+  color: #fff9df;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: grid;
+  place-items: center;
+  outline: none;
+}
+.portal-enter span {
+  margin-top: 150px;
+  font: 52px/1 var(--font-arcade);
+  letter-spacing: 3px;
+  text-shadow:
+    0 3px 0 #102b25,
+    0 0 12px #102b25;
+  transition:
+    transform 0.2s,
+    text-shadow 0.2s;
+}
+.portal-enter:hover span {
+  transform: scale(1.06);
+}
+.portal-enter:focus-visible {
+  box-shadow: inset 0 0 0 7px var(--portal-bright);
+}
+.portal-enter:active span {
+  transform: scale(0.96);
+}
+.portal-entry {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  background: transparent;
+}
+.portal-entry::backdrop {
+  background: #10251be6;
+  animation: portal-entry-backdrop var(--entry-duration) ease-in both;
+}
+.portal-entry-zoom {
+  position: absolute;
+  left: var(--entry-left);
+  top: var(--entry-top);
+  width: var(--entry-width);
+  height: var(--entry-height);
+  transform-origin: 50% 53.75%;
+  animation: portal-entry-zoom var(--entry-duration)
+    cubic-bezier(0.6, 0, 0.8, 0.6) both;
+  will-change: transform;
+}
+.portal-entry-zoom .portal-art {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+}
+.portal-entry-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse, #e3f5b5, #5fac7c);
+  opacity: 0;
+  animation: portal-entry-light var(--entry-duration) ease-in both;
+}
+[data-theme="dark"] .portal-entry::backdrop {
+  background: #21150fe6;
+}
+[data-theme="dark"] .portal-entry-light {
+  background: radial-gradient(ellipse, #fff0b3, #ffa800);
+}
+@keyframes portal-entry-zoom {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    transform: translate(var(--entry-x), var(--entry-y)) scale(16);
+  }
+}
+@keyframes portal-entry-backdrop {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes portal-entry-light {
+  0%,
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 @keyframes portal-current-turn {
   to {
@@ -121,6 +231,14 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .portal-entry-zoom,
+  .portal-entry-light,
+  .portal-entry::backdrop {
+    animation: none;
+  }
+  .portal-enter span {
+    transition: none;
+  }
   .akasha-portal * {
     animation: none !important;
   }

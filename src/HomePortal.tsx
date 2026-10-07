@@ -1,16 +1,106 @@
-import { useId, type CSSProperties } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type Ref,
+} from "react";
+import { createPortal } from "react-dom";
 import "./home-portal.css";
 
-export function HomePortal() {
+const ENTRY_MS = 850;
+
+export function HomePortal({ onEnter }: { onEnter: () => void }) {
+  const art = useRef<SVGSVGElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const started = useRef(false);
+  const navigate = useRef(onEnter);
+  const [entry, setEntry] = useState<CSSProperties | null>(null);
+  useEffect(() => {
+    navigate.current = onEnter;
+  }, [onEnter]);
+  useEffect(() => {
+    if (!entry) return;
+    dialog.current?.showModal();
+    const timer = window.setTimeout(() => {
+      dialog.current?.close();
+      navigate.current();
+    }, ENTRY_MS);
+    return () => window.clearTimeout(timer);
+  }, [entry]);
+
+  function enter() {
+    if (started.current || !art.current) return;
+    started.current = true;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      navigate.current();
+      return;
+    }
+    // Match the SVG's contained 3:4 artwork, excluding its letterboxed margins.
+    const bounds = art.current.getBoundingClientRect();
+    const scale = Math.min(bounds.width / 600, bounds.height / 800);
+    const width = 600 * scale,
+      height = 800 * scale;
+    const left = bounds.left + (bounds.width - width) / 2;
+    const top = bounds.top + (bounds.height - height) / 2;
+    setEntry({
+      "--entry-duration": `${ENTRY_MS}ms`,
+      "--entry-x": `${innerWidth / 2 - left - width / 2}px`,
+      "--entry-y": `${innerHeight / 2 - top - 430 * scale}px`,
+      "--entry-left": `${left}px`,
+      "--entry-top": `${top}px`,
+      "--entry-width": `${width}px`,
+      "--entry-height": `${height}px`,
+    } as CSSProperties);
+  }
+
+  return (
+    <>
+      <PortalArtwork artRef={art} onEnter={enter} entering={!!entry} />
+      {entry &&
+        createPortal(
+          <dialog
+            ref={dialog}
+            className="portal-entry"
+            style={entry}
+            aria-label="Entrée dans le portail"
+            onCancel={() => {
+              setEntry(null);
+              started.current = false;
+            }}
+          >
+            <div className="portal-entry-zoom" aria-hidden="true">
+              <PortalArtwork />
+            </div>
+            <div className="portal-entry-light" aria-hidden="true" />
+            <span className="sr-only">Ouverture du choix des modes…</span>
+          </dialog>,
+          document.body,
+        )}
+    </>
+  );
+}
+
+function PortalArtwork({
+  artRef,
+  onEnter,
+  entering = false,
+}: {
+  artRef?: Ref<SVGSVGElement>;
+  onEnter?: () => void;
+  entering?: boolean;
+}) {
   const id = useId().replaceAll(":", "");
   const clip = `${id}-opening`;
   const depth = `${id}-depth`;
   const wave = `${id}-wave`;
   return (
     <svg
+      ref={artRef}
       className="portal-art akasha-portal"
       viewBox="0 0 600 800"
-      role="img"
+      role="group"
       aria-label="Portail magique d’Akasha"
       focusable="false"
     >
@@ -113,6 +203,25 @@ export function HomePortal() {
           style={{ animationDelay: `${i * -0.8}s` }}
         />
       ))}
+      {onEnter && (
+        <foreignObject
+          x="150"
+          y="175"
+          width="300"
+          height="515"
+          className="portal-target"
+        >
+          <button
+            type="button"
+            className="portal-enter"
+            aria-label="Jouer"
+            disabled={entering}
+            onClick={onEnter}
+          >
+            <span>JOUER</span>
+          </button>
+        </foreignObject>
+      )}
     </svg>
   );
 }
