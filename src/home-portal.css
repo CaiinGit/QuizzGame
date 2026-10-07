@@ -1,0 +1,138 @@
+.akasha-portal {
+  --portal-ink: #102b25;
+  --portal-deep: #205844;
+  --portal-energy: #5fac7c;
+  --portal-bright: #e3f5b5;
+  pointer-events: none;
+}
+.portal-stone {
+  filter: drop-shadow(0 5px 3px #13291c30);
+}
+.portal-current,
+.portal-orbit,
+.portal-wave,
+.portal-heart {
+  transform-origin: 300px 430px;
+}
+.portal-current {
+  animation: portal-current-turn 24s linear infinite;
+}
+.portal-orbit {
+  animation: portal-current-turn 36s linear infinite reverse;
+}
+.portal-wave {
+  fill: none;
+  stroke: var(--portal-bright);
+  stroke-width: 2;
+  animation: portal-depth-wave 6s ease-out infinite;
+}
+.portal-heart {
+  fill: var(--portal-bright);
+  animation: portal-heartbeat 4s ease-in-out infinite;
+}
+.portal-runes {
+  animation: portal-rune-light 4s ease-in-out infinite;
+}
+.portal-mote {
+  fill: var(--portal-bright);
+  animation: portal-mote-rise 6s linear infinite;
+}
+.portal-ember {
+  fill: var(--portal-energy);
+  animation: portal-ember-rise 5s ease-in-out infinite;
+}
+[data-theme="dark"] .akasha-portal {
+  --portal-ink: #301b14;
+  --portal-deep: #96500c;
+  --portal-energy: #ffa800;
+  --portal-bright: #fff0b3;
+}
+[data-theme="dark"] .portal-stone {
+  filter: brightness(0.72) drop-shadow(0 5px 4px #0006);
+}
+.portal-stage:has(.home-play:hover) .portal-runes,
+.portal-stage:has(.home-play:focus-visible) .portal-runes {
+  filter: drop-shadow(0 0 5px var(--portal-energy));
+}
+@keyframes portal-current-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes portal-depth-wave {
+  0% {
+    transform: scale(0.24);
+    opacity: 0;
+  }
+  22% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+@keyframes portal-heartbeat {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+}
+@keyframes portal-rune-light {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+@keyframes portal-mote-rise {
+  0% {
+    transform: translate(0, 75px);
+    opacity: 0;
+  }
+  20%,
+  70% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(var(--drift), -180px);
+    opacity: 0;
+  }
+}
+@keyframes portal-ember-rise {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  35% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0;
+    transform: translateY(-32px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .akasha-portal * {
+    animation: none !important;
+  }
+  .portal-wave {
+    opacity: 0.18;
+  }
+  .portal-mote,
+  .portal-ember {
+    opacity: 0.5;
+  }
+  .portal-heart,
+  .portal-runes {
+    opacity: 0.7;
+  }
+}

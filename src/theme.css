@@ -129,10 +129,6 @@
 [data-theme="dark"] .mode-mark {
   color: var(--cream);
 }
-[data-theme="dark"] .portal-sparks i {
-  background: var(--green);
-  box-shadow: 0 0 8px #ffa800b3;
-}
 [data-theme="dark"] .portal-art {
   filter: drop-shadow(0 5px 6px #0003);
 }

@@ -91,64 +91,6 @@
   object-fit: contain;
   filter: drop-shadow(0 5px 4px #34493308);
 }
-.portal-sparks {
-  position: absolute;
-  inset: 10% 14%;
-  pointer-events: none;
-}
-.portal-sparks i {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  background: #d9f7b7;
-  box-shadow: 0 0 8px #94c979b3;
-  opacity: 0;
-  animation: portal-spark 5s ease-in-out infinite;
-}
-.portal-sparks i:nth-child(1) {
-  left: 7%;
-  top: 26%;
-  animation-delay: -1s;
-}
-.portal-sparks i:nth-child(2) {
-  right: 9%;
-  top: 56%;
-  animation-delay: -3s;
-}
-.portal-sparks i:nth-child(3) {
-  left: 19%;
-  bottom: 14%;
-  animation-delay: -4s;
-}
-.portal-sparks i:nth-child(4) {
-  right: 16%;
-  top: 13%;
-  animation-delay: -2s;
-}
-.portal-sparks i:nth-child(5) {
-  left: 46%;
-  top: 54%;
-  animation-delay: -3.5s;
-}
-.portal-sparks i:nth-child(6) {
-  right: 44%;
-  bottom: 19%;
-  animation-delay: -0.5s;
-}
-@keyframes portal-spark {
-  0%,
-  100% {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  45% {
-    opacity: 0.85;
-  }
-  80% {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
-}
 .home-actions,
 .theme-actions {
   display: grid;
@@ -630,9 +572,6 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .portal-sparks {
-    display: none;
-  }
   .arcade-button {
     transition: none;
   }

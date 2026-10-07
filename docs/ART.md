@@ -16,6 +16,10 @@ Les pictogrammes de `src/ArcadeArt.tsx` sont redessinés en SVG sur une grille p
 
 ## Illustrations de décor
 
+Le portail d’accueil a été remplacé le 7 octobre 2026 par `public/art/portal-frame-v2.webp`, une arche frontale générée avec imagegen : blocs de pierre beige aux contours pixel, cristal central et runes, sans personnage ni paysage. L’extérieur et l’ouverture ont un canal alpha transparent. Le PNG généré a uniquement été redimensionné (640 px de large) et compressé avec Sharp. L’ancien `portal.webp` reste archivé.
+
+`HomePortal.tsx` et `home-portal.css` composent l’arche avec une ouverture animée en SVG : courants en rotation, ondes, lumière pulsée et particules. L’énergie est verte en mode clair et orange en mode sombre. Les mouvements utilisent transform/opacity et sont désactivés si le système demande une réduction des animations.
+
 Assets générés avec l’outil imagegen intégré le 25 septembre 2026, à partir des maquettes validées dans la conversation. Mode : édition des images de référence. Aucun personnage.
 
 - `public/art/portal.webp` : portail frontal isolé, canal alpha transparent à l’extérieur de la silhouette.

@@ -10,6 +10,7 @@ import {
 import { themes, themeName } from "../shared/themes";
 import type { ReactNode } from "react";
 import { PixelIcon } from "./PixelIcon";
+import { HomePortal } from "./HomePortal";
 import { ArcadeIcon, PortraitFrame } from "./ArcadeArt";
 import { SelectionCard, FutureSelectionCard, ThemeLogo } from "./SelectionCard";
 import type { Screen } from "./navigation";
@@ -164,19 +165,7 @@ export function Explore(p: Props) {
               ? `${p.friendCount} demande${p.friendCount > 1 ? "s" : ""} ou invitation${p.friendCount > 1 ? "s" : ""} en attente`
               : "Aucune demande ni invitation en attente"}
           </span>
-          <img
-            className="portal-art"
-            src="/art/portal.webp"
-            width="600"
-            height="800"
-            alt="Portail ancien de face, illuminé de vert et couvert de lierre"
-            fetchPriority="high"
-          />
-          <div className="portal-sparks" aria-hidden="true">
-            {Array.from({ length: 6 }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
+          <HomePortal />
           <button
             type="button"
             className="home-tile home-play"
