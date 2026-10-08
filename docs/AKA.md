@@ -6,11 +6,17 @@ Six étapes présentent le portail, les thèmes favoris, les amis, le profil et 
 
 La colonne PostgreSQL `akasha_accounts.onboarding_completed` est ajoutée sans modifier les autres données. L’API authentifiée `POST /api/account/onboarding/complete` ne modifie que le compte connecté, de manière idempotente. Un marqueur local par serveur et par compte évite de réafficher la visite si la sauvegarde distante échoue ; elle est retentée à la prochaine connexion. Une visite interrompue sans validation peut reprendre depuis le début.
 
-Le personnage sort du cœur du portail vers sa bulle avec une animation de position, d’échelle et d’opacité. Le chargement de l’image précède l’animation. L’option système de réduction des animations est respectée. Le dialogue natif retient le focus et bloque les interactions involontaires avec l’application pendant la visite.
+Le personnage sort du cœur du portail en 1,35 seconde avec une lueur et huit particules, puis rejoint sa bulle. Le chargement des poses précède l’animation. Il flotte légèrement, cligne des yeux, relève les ailes et fait un geste de guide. Les bulles courtes et Aka se déplacent près de chaque cible, au-dessus ou en dessous selon l’espace disponible. Les déplacements utilisent des transformations et l’opacité ; le changement de pose ne repeint qu’une petite image à intervalles espacés.
+
+L’option système de réduction des animations est respectée, y compris lorsqu’elle change pendant l’arrivée. Si la planche de poses ne se charge pas, l’illustration originale sert de repli. Le dialogue natif retient le focus et bloque les interactions involontaires avec l’application pendant la visite. La nouvelle animation ne réinitialise pas la visite des comptes l’ayant déjà terminée : utiliser les réglages pour la revoir.
 
 ## Illustration
 
-Fichier utilisé : `public/art/aka-v1.webp` (512 × 512, transparence conservée). Créé avec l’outil intégré ImageGen à partir du dessin de référence fourni par l’utilisateur, puis redimensionné et encodé en WebP avec Sharp. Aucun service de génération n’est appelé par l’application.
+Fichiers : `public/art/aka-poses-v2.webp` (planche de quatre poses, 768 × 768) et `public/art/aka-v1.webp` (illustration originale et repli, 512 × 512). Créés avec l’outil intégré ImageGen à partir du dessin de référence fourni par l’utilisateur, puis redimensionnés et encodés en WebP avec Sharp, transparence conservée. Aucun service de génération n’est appelé par l’application.
+
+Prompt final de la planche animée, avec `aka-v1.webp` en référence :
+
+> Edit the supplied AKA mascot into a production 2 by 2 animation sprite atlas on a square transparent canvas. Exactly FOUR equal square cells, no gutters, no labels, no visible cell borders. Each cell contains the SAME full-body character at the SAME scale and center anchor with generous 10 percent transparent safe margin inside each cell. Keep crown, ears, head, body, cloak, feet, tail pixel-aligned across all four cells. Preserve this exact cute mint green spirit cat identity, emerald eyes, floating golden crown, golden wings, purple cloak with dark fluffy trim, curled mint tail, crisp chunky pixel outlines and 16-bit pixel art shading. Top left: original welcoming neutral pose, both eyes open, wings at rest. Top right: EXACT same pose and wing position, only both eyelids closed in a friendly blink, retain everything else. Bottom left: EXACT same face/body/crown/cloak/tail placement as top left, eyes open, only wings lifted slightly for a subtle wingbeat. Bottom right: same centered character facing forward with a small friendly smile, one paw extends toward viewer's right as a guiding pointing gesture; wings at rest. Absolute priority: stable registration and identical proportions of the four frames, so swapping poses causes no jump. Each full character including wings crown and tail fits completely inside its own quarter. No background, no scenery, no text, no shadow behind character, no watermark. Genuinely transparent alpha outside each sprite. Reusable sprite atlas only.
 
 Prompt final :
 
@@ -18,4 +24,4 @@ Prompt final :
 
 ## Vérification
 
-`npm run check` vérifie le serveur et la compilation. `tests/aka.spec.ts` couvre les six étapes sur petit écran, les cibles dégagées, la sauvegarde entre appareils, les boutons précédent/passer/revoir, Échap, le thème sombre et les animations réduites, ainsi que la reprise de sauvegarde après une erreur réseau. `tests/home.spec.ts` couvre toujours l’entrée dans le portail.
+`npm run check` vérifie le serveur et la compilation. `tests/aka.spec.ts` couvre les six étapes sur téléphone et PC (320, 390 et 1440 pixels), les cibles dégagées, le départ depuis le centre du portail, la sauvegarde entre appareils, les boutons précédent/passer/revoir, Échap, le thème sombre, les animations réduites, le repli en cas d’image indisponible et la reprise de sauvegarde après une erreur réseau. `tests/home.spec.ts` couvre toujours l’entrée dans le portail.

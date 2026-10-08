@@ -25,14 +25,44 @@ test("Aka guides a new account, highlights visible targets, and remembers comple
   const tour = page.getByRole("dialog", { name: "Visite guidée avec Aka" });
   await expect(tour).toBeVisible();
   await expect(tour.getByRole("heading")).toHaveText("Salut, moi c’est Aka !");
-  await expect(tour.locator("img")).toHaveCSS("visibility", "visible");
+  await expect(tour.locator(".aka-actor")).toHaveCSS("visibility", "visible");
   await expect
-    .poll(() => tour.locator("img").evaluate((el) => el.getAnimations().length))
+    .poll(() =>
+      tour.locator(".aka-flight").evaluate((el) => el.getAnimations().length),
+    )
     .toBe(1);
-  await page.waitForTimeout(850);
+  await expect(tour.locator(".aka-portal-burst")).toBeVisible();
+  const emergence = await tour.locator(".aka-flight").evaluate((el) => {
+    const animation = el.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 0;
+    const character = el.getBoundingClientRect();
+    const portal = document
+      .querySelector(".portal-target")!
+      .getBoundingClientRect();
+    const distance = Math.hypot(
+      character.x + character.width / 2 - portal.x - portal.width / 2,
+      character.y + character.height / 2 - portal.y - portal.height / 2,
+    );
+    animation.play();
+    return distance;
+  });
+  expect(emergence).toBeLessThan(2);
+  await expect(tour).not.toHaveClass(/aka-entering/);
   await page.screenshot({ path: "test-results/aka-welcome-light.png" });
   await page.setViewportSize({ width: 320, height: 568 });
   for (let step = 0; step < 6; step++) {
+    await expect
+      .poll(() =>
+        tour
+          .locator(".aka-guide")
+          .evaluate(
+            (el) =>
+              el.getAnimations().filter((a) => a.playState === "running")
+                .length,
+          ),
+      )
+      .toBe(0);
     await expect(tour.locator(".aka-caption span")).toHaveText(
       `${step + 1} / 6`,
     );
@@ -96,7 +126,9 @@ test("Aka guides a new account, highlights visible targets, and remembers comple
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();
   await expect(tour).toBeVisible();
-  await expect(tour.locator("img")).toHaveCSS("animation-name", "none");
+  await expect(tour.locator(".aka-sprite")).toHaveCSS("animation-name", "none");
+  await expect(tour.locator(".aka-float")).toHaveCSS("animation-name", "none");
+  await expect(tour.locator(".aka-portal-burst")).toHaveCount(0);
   await page.screenshot({ path: "test-results/aka-welcome-dark.png" });
   await page.keyboard.press("Escape");
   await expect(tour).toHaveCount(0);
@@ -104,6 +136,81 @@ test("Aka guides a new account, highlights visible targets, and remembers comple
   await expect(
     page.getByRole("heading", { name: "Choisis ton mode" }),
   ).toBeVisible();
+});
+
+for (const viewport of [
+  { width: 320, height: 568 },
+  { width: 390, height: 844 },
+  { width: 1440, height: 900 },
+]) {
+  test(`Aka stays beside each target with readable dialogue at ${viewport.width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.getByRole("button", { name: "Réglages", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Revoir la visite avec Aka" })
+      .click();
+    const tour = page.locator(".aka-tour");
+    await expect(tour).not.toHaveClass(/aka-preparing/);
+    for (let i = 0; i < 6; i++) {
+      await expect
+        .poll(() =>
+          tour
+            .locator(".aka-guide,.aka-actor")
+            .evaluateAll(
+              (nodes) =>
+                nodes
+                  .flatMap((n) => n.getAnimations())
+                  .filter((a) => a.playState === "running").length,
+            ),
+        )
+        .toBe(0);
+      const target = (await tour
+        .locator(".aka-spotlight > rect[fill='none']")
+        .boundingBox())!;
+      for (const selector of [".aka-bubble", ".aka-actor"]) {
+        const b = (await tour.locator(selector).boundingBox())!;
+        expect(b.x).toBeGreaterThanOrEqual(0);
+        expect(b.y).toBeGreaterThanOrEqual(0);
+        expect(b.x + b.width).toBeLessThanOrEqual(viewport.width);
+        expect(b.y + b.height).toBeLessThanOrEqual(viewport.height);
+        expect(
+          b.y + b.height <= target.y ||
+            b.y >= target.y + target.height ||
+            b.x + b.width <= target.x ||
+            b.x >= target.x + target.width,
+        ).toBeTruthy();
+      }
+      if (i === 2 || i === 5)
+        await page.screenshot({
+          path: `test-results/aka-near-${viewport.width}-step-${i + 1}.png`,
+        });
+      await tour.locator(".aka-next").click();
+    }
+    await expect(tour).toHaveCount(0);
+  });
+}
+
+test("Aka tolerates missing pose artwork and immediately respects reduced motion", async ({
+  page,
+}) => {
+  await page.route("**/art/aka-poses-v2.webp", (route) => route.abort());
+  await page.goto("/");
+  await page.getByRole("button", { name: "Réglages", exact: true }).click();
+  await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();
+  await expect(page.locator(".aka-sprite-fallback")).toBeVisible();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect(page.locator(".aka-tour")).not.toHaveClass(/aka-preparing/);
+  await expect(page.locator(".aka-portal-burst")).toHaveCount(0);
+  expect(
+    await page
+      .locator(".aka-flight")
+      .evaluate((el) => el.getAnimations().length),
+  ).toBe(0);
+  await page.getByRole("button", { name: "Passer la visite" }).click();
+  await expect(page.locator(".aka-tour")).toHaveCount(0);
 });
 
 test("skipping is saved even if completion cannot reach the server, then retried", async ({
