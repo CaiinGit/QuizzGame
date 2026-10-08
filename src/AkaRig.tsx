@@ -5,16 +5,18 @@ export const AKA_PARTS = [
   "tail",
   "wingLeft",
   "wingRight",
-  "cape",
-  "armLeft",
-  "armRight",
-  "body",
+  "torso",
+  "arm",
+  "capeLeft",
+  "capeRight",
+  "head",
   "eyes",
   "crown",
 ] as const;
-export const akaPartUrl = (name: string) => `/art/aka-rig-v3/${name}.webp`;
+export const akaPartUrl = (name: string) =>
+  `/art/aka-rig-${["tail", "wingLeft", "wingRight", "crown"].includes(name) ? "v3" : "v4"}/${name}.webp`;
 
-/** Back-to-front order is anatomical: cape, arms, then torso hiding shoulder seams. */
+/** Arms stay behind the front cape. Only the selected panel opens for a gesture. */
 export function AkaRig({
   step,
   reduced,
@@ -70,25 +72,44 @@ export function AkaRig({
     const arm = root.current?.querySelector(
       direction === "left" ? ".aka-arm-left-gesture" : ".aka-arm-right-gesture",
     );
-    const cape = root.current?.querySelector(".aka-cape-gesture");
+    const cape = root.current?.querySelector(
+      direction === "left"
+        ? ".aka-cape-left-gesture"
+        : ".aka-cape-right-gesture",
+    );
     const sign = direction === "left" ? 1 : -1;
-    // Cape opens first; the arm then rises from the uncovered shoulder in front.
+    // The selected cloth panel folds away before the oval arm emerges beneath its edge.
     const fabric = cape?.animate(
       [
         { transform: "scaleX(1) rotate(0deg)" },
-        { offset: 0.16, transform: `scaleX(.92) rotate(${sign * 3}deg)` },
-        { offset: 0.75, transform: `scaleX(.92) rotate(${sign * 3}deg)` },
+        { offset: 0.16, transform: `scaleX(.62) rotate(${-sign * 10}deg)` },
+        { offset: 0.75, transform: `scaleX(.62) rotate(${-sign * 10}deg)` },
         { transform: "scaleX(1) rotate(0deg)" },
       ],
       { duration: 1800, easing: "ease-in-out" },
     );
     const gesture = arm?.animate(
       [
-        { transform: "rotate(0deg)" },
-        { offset: 0.16, transform: "rotate(0deg)" },
-        { offset: 0.42, transform: `rotate(${sign * 65}deg)` },
-        { offset: 0.68, transform: `rotate(${sign * 62}deg)` },
-        { transform: "rotate(0deg)" },
+        { transform: "translateX(0) rotate(0deg)", opacity: 0 },
+        { offset: 0.16, transform: "translateX(0) rotate(0deg)", opacity: 0 },
+        {
+          offset: 0.25,
+          transform: `translateX(0) rotate(${sign * 25}deg)`,
+          opacity: 1,
+        },
+        {
+          offset: 0.45,
+          transform: `translateX(0) rotate(${sign * 70}deg)`,
+          opacity: 1,
+        },
+        {
+          offset: 0.65,
+          transform: `translateX(0) rotate(${sign * 65}deg)`,
+          opacity: 1,
+        },
+        { offset: 0.83, transform: "translateX(0) rotate(0deg)", opacity: 1 },
+        { offset: 0.87, transform: "translateX(0) rotate(0deg)", opacity: 0 },
+        { transform: "translateX(0) rotate(0deg)", opacity: 0 },
       ],
       { duration: 1800, easing: "ease-in-out" },
     );
@@ -113,23 +134,31 @@ export function AkaRig({
       <div className="aka-part aka-wing-right">
         <img src={akaPartUrl("wingRight")} alt="" draggable={false} />
       </div>
-      <div className="aka-part aka-cape">
-        <div className="aka-cape-gesture">
-          <img src={akaPartUrl("cape")} alt="" draggable={false} />
-        </div>
+      <div className="aka-part aka-torso">
+        <img src={akaPartUrl("torso")} alt="" draggable={false} />
       </div>
       <div className="aka-part aka-arm-left">
         <div className="aka-arm-left-gesture">
-          <img src={akaPartUrl("armLeft")} alt="" draggable={false} />
+          <img src={akaPartUrl("arm")} alt="" draggable={false} />
         </div>
       </div>
       <div className="aka-part aka-arm-right">
         <div className="aka-arm-right-gesture">
-          <img src={akaPartUrl("armRight")} alt="" draggable={false} />
+          <img src={akaPartUrl("arm")} alt="" draggable={false} />
         </div>
       </div>
-      <div className="aka-part aka-body">
-        <img src={akaPartUrl("body")} alt="" draggable={false} />
+      <div className="aka-part aka-cape-left">
+        <div className="aka-cape-left-gesture">
+          <img src={akaPartUrl("capeLeft")} alt="" draggable={false} />
+        </div>
+      </div>
+      <div className="aka-part aka-cape-right">
+        <div className="aka-cape-right-gesture">
+          <img src={akaPartUrl("capeRight")} alt="" draggable={false} />
+        </div>
+      </div>
+      <div className="aka-part aka-head">
+        <img src={akaPartUrl("head")} alt="" draggable={false} />
       </div>
       <div className="aka-part aka-eyes">
         <div className="aka-eyelids">

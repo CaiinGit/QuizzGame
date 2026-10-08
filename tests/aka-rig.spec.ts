@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("rig keeps the cape behind connected arms and animates without replacing frames", async ({
+test("cape hides both oval arms at rest and opens only on the gesturing side", async ({
   page,
 }) => {
   await page.goto("/");
@@ -8,7 +8,7 @@ test("rig keeps the cape behind connected arms and animates without replacing fr
   await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();
   await expect(page.locator(".aka-tour")).not.toHaveClass(/aka-preparing/);
   const rig = page.locator(".aka-rig");
-  await expect(rig.locator("img")).toHaveCount(9);
+  await expect(rig.locator("img")).toHaveCount(11);
   expect(
     await rig
       .locator("img")
@@ -23,11 +23,21 @@ test("rig keeps the cape behind connected arms and animates without replacing fr
   const order = await rig
     .locator(":scope > div")
     .evaluateAll((parts) => parts.map((p) => p.className));
-  expect(order.findIndex((c) => c.includes("aka-cape"))).toBeLessThan(
+  expect(order.findIndex((c) => c.includes("aka-cape-left"))).toBeGreaterThan(
     order.findIndex((c) => c.includes("aka-arm-left")),
   );
   expect(order.findIndex((c) => c.includes("aka-arm-right"))).toBeLessThan(
-    order.findIndex((c) => c.includes("aka-body")),
+    order.findIndex((c) => c.includes("aka-cape-right")),
+  );
+  await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS("opacity", "0");
+  await expect(rig.locator(".aka-arm-right-gesture")).toHaveCSS("opacity", "0");
+  await expect(rig.locator(".aka-crown img")).toHaveAttribute(
+    "src",
+    "/art/aka-rig-v3/crown.webp",
+  );
+  await expect(rig.locator(".aka-wing-left img")).toHaveAttribute(
+    "src",
+    "/art/aka-rig-v3/wingLeft.webp",
   );
   const art = await rig
     .locator("img")
@@ -53,6 +63,9 @@ test("rig keeps the cape behind connected arms and animates without replacing fr
     style.transform = "translate(20px,130px)";
     style.transition = "none";
   });
+  await rig.evaluate(
+    (el) => ((el as HTMLElement).style.background = "#faf4df"),
+  );
   for (const time of [0, 300, 800, 1300, 1800]) {
     await rig.evaluate((el, time) => {
       for (const part of el.querySelectorAll("*"))
@@ -68,12 +81,23 @@ test("rig keeps the cape behind connected arms and animates without replacing fr
             .transform,
         ).b,
         cape: new DOMMatrix(
-          getComputedStyle(el.querySelector(".aka-cape-gesture")!).transform,
+          getComputedStyle(el.querySelector(".aka-cape-right-gesture")!)
+            .transform,
         ).a,
       }));
       expect(Math.abs(lead.arm)).toBeLessThan(0.001);
       expect(lead.cape).toBeLessThan(1);
     }
+    await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS(
+      "opacity",
+      "0",
+    );
+    const opacity = await rig
+      .locator(".aka-arm-right-gesture")
+      .evaluate((el) => Number(getComputedStyle(el).opacity));
+    if (time === 0 || time === 300 || time === 1800) expect(opacity).toBe(0);
+    else if (time === 800) expect(opacity).toBe(1);
+    else expect(opacity).toBeGreaterThan(0);
     await rig.screenshot({ path: `test-results/aka-rig-gesture-${time}.png` });
   }
   expect(
@@ -97,7 +121,26 @@ test("rig keeps the cape behind connected arms and animates without replacing fr
         animation.currentTime = part.className.includes("gesture") ? 800 : 0;
       }
   });
+  await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS("opacity", "1");
+  await expect(rig.locator(".aka-arm-right-gesture")).toHaveCSS("opacity", "0");
   await rig.screenshot({ path: "test-results/aka-rig-left-gesture.png" });
+  for (const time of [0, 600, 1200, 1800, 2400]) {
+    await rig.locator(".aka-wing-left,.aka-wing-right").evaluateAll(
+      (nodes, time) =>
+        nodes.forEach((node) =>
+          node.getAnimations().forEach((a) => {
+            a.pause();
+            a.currentTime = time;
+          }),
+        ),
+      time,
+    );
+    const head = (await rig.locator(".aka-head").boundingBox())!;
+    const left = (await rig.locator(".aka-wing-left").boundingBox())!;
+    const right = (await rig.locator(".aka-wing-right").boundingBox())!;
+    expect(head.x - left.x - left.width).toBeGreaterThan(3);
+    expect(right.x - head.x - head.width).toBeGreaterThan(3);
+  }
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect
     .poll(() =>
