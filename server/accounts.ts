@@ -47,7 +47,7 @@ export const passwordInput = z
 export const hashToken = (token: string) =>
   createHash("sha256").update(token).digest("hex");
 const fields =
-  'id,username,name,photo,is_admin AS "isAdmin",must_change_password AS "mustChangePassword",total_xp AS "totalXp",favorites';
+  'id,username,name,photo,is_admin AS "isAdmin",must_change_password AS "mustChangePassword",total_xp AS "totalXp",favorites,onboarding_completed AS "onboardingCompleted"';
 let hashing = 0;
 async function derive(password: string, salt: string) {
   if (hashing >= 2)
@@ -108,6 +108,9 @@ export class Accounts {
       ADD COLUMN IF NOT EXISTS total_xp INTEGER NOT NULL DEFAULT 0 CHECK(total_xp >= 0)`);
     await this.db.query(
       `ALTER TABLE akasha_accounts ADD COLUMN IF NOT EXISTS favorites TEXT[] NOT NULL DEFAULT '{}' CHECK(cardinality(favorites)<=3)`,
+    );
+    await this.db.query(
+      `ALTER TABLE akasha_accounts ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN NOT NULL DEFAULT false`,
     );
     await this.db.query(`CREATE TABLE IF NOT EXISTS akasha_account_sessions (
       token_hash TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES akasha_accounts(id) ON DELETE CASCADE,
@@ -328,6 +331,13 @@ export class Accounts {
       "DELETE FROM akasha_account_sessions WHERE token_hash=$1",
       [hashToken(token)],
     );
+  }
+  async completeOnboarding(id: string) {
+    await this.db.query(
+      "UPDATE akasha_accounts SET onboarding_completed=true WHERE id=$1",
+      [id],
+    );
+    return { onboardingCompleted: true };
   }
   async favorite(id: string, input: unknown) {
     const { themeId, favorite } = z

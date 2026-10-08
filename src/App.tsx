@@ -27,6 +27,7 @@ import { useNavigation, isThemeScreen, screenTheme } from "./navigation";
 import { themes, themeName, type ThemeId } from "../shared/themes";
 import { ThemeToggle } from "./ThemeToggle";
 import { SoundToggle } from "./SoundToggle";
+import { AkaOnboarding } from "./AkaOnboarding";
 import { listenForSoundInteractions, playSound } from "./sound";
 import {
   PlayerHeader,
@@ -83,11 +84,16 @@ function App({ adminOnly }: { adminOnly: boolean }) {
   const [photoBusy, setPhotoBusy] = useState(false),
     [photoError, setPhotoError] = useState("");
   const [headerPanel, setHeaderPanel] = useState<HeaderPanel | null>(null);
+  const [akaReplay, setAkaReplay] = useState(0);
   const [identity, setIdentity] = useState(false),
     [intent, setIntent] = useState<Intent | null>(null),
     [synced, setSynced] = useState(false);
   const backRef = useRef(() => {});
   backRef.current = () => {
+    if (document.querySelector(".aka-tour[open]")) {
+      window.dispatchEvent(new Event("akasha:skip-tour"));
+      return;
+    }
     if (auth) {
       if (
         !document.querySelector(
@@ -1258,6 +1264,17 @@ function App({ adminOnly }: { adminOnly: boolean }) {
             <h2 id="settings-title">Réglages</h2>
             <ThemeToggle />
             <SoundToggle />
+            <button
+              className="button secondary aka-tour-replay"
+              disabled={!!room}
+              onClick={() => {
+                setSettings(false);
+                navigate("accueil");
+                setAkaReplay((value) => value + 1);
+              }}
+            >
+              Revoir la visite avec Aka
+            </button>
             <details className="connection-settings">
               <summary>Connexion au serveur</summary>
               <p>Les deux joueurs doivent utiliser la même adresse.</p>
@@ -1393,6 +1410,31 @@ function App({ adminOnly }: { adminOnly: boolean }) {
             </button>
           </section>
         </div>
+      )}
+      {profile && (
+        <AkaOnboarding
+          profile={profile}
+          account={account}
+          online={online}
+          replay={akaReplay}
+          enabled={
+            navigation.screen === "accueil" &&
+            !room &&
+            !auth &&
+            !identity &&
+            !settings &&
+            !headerPanel &&
+            !quitting &&
+            !account?.mustChangePassword
+          }
+          onCompleted={(id) =>
+            setAccount((current) =>
+              current?.id === id
+                ? { ...current, onboardingCompleted: true }
+                : current,
+            )
+          }
+        />
       )}
     </div>
   );

@@ -1,0 +1,164 @@
+.aka-tour {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--green);
+  overflow: hidden;
+}
+.aka-tour::backdrop {
+  background: transparent;
+}
+.aka-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.aka-guide {
+  position: absolute;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  width: min(420px, calc(100% - 28px));
+  transform: translateX(-50%);
+}
+.aka-guide-above {
+  bottom: auto;
+  top: calc(140px + env(safe-area-inset-top));
+}
+.aka-mascot {
+  position: absolute;
+  left: 12px;
+  top: -126px;
+  width: 132px;
+  height: 132px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+  transform-origin: 50% 65%;
+}
+.aka-arriving {
+  animation: aka-arrive 750ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+}
+.aka-bubble {
+  position: relative;
+  background: var(--cream);
+  border: 3px solid #141a24;
+  box-shadow: 4px 4px 0 #141a24;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.aka-bubble::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 62px;
+  width: 19px;
+  height: 19px;
+  background: var(--cream);
+  border-top: 3px solid #141a24;
+  border-left: 3px solid #141a24;
+  transform: rotate(45deg);
+}
+.aka-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.aka-caption strong {
+  font: 28px/1 var(--font-arcade);
+}
+.aka-caption span {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.aka-bubble h2 {
+  font: 27px/1.1 var(--font-arcade);
+  letter-spacing: 0;
+  margin-bottom: 7px;
+}
+.aka-bubble p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.aka-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.aka-controls button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+}
+.aka-skip {
+  font-size: 12px;
+  background: transparent;
+  color: var(--green);
+  margin-right: auto;
+  padding-left: 0 !important;
+}
+.aka-back {
+  background: transparent;
+  color: var(--green);
+  font-size: 25px;
+}
+.aka-next {
+  background: var(--green);
+  color: var(--cream);
+  font-weight: 750;
+  font-size: 14px;
+}
+.aka-tour-replay {
+  margin-top: 14px;
+  width: 100%;
+}
+@keyframes aka-arrive {
+  0% {
+    transform: translate(var(--aka-from-x), var(--aka-from-y)) scale(0.06);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+@media (max-height: 650px) {
+  .aka-guide-above {
+    top: 116px;
+  }
+  .aka-mascot {
+    width: 104px;
+    height: 104px;
+    top: -98px;
+  }
+  .aka-bubble {
+    padding: 10px 12px;
+  }
+  .aka-bubble h2 {
+    font-size: 24px;
+  }
+  .aka-bubble p {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .aka-controls {
+    margin-top: 9px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aka-arriving {
+    animation: none;
+  }
+}

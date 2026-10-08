@@ -10,6 +10,7 @@ export type AccountProfile = {
   mustChangePassword: boolean;
   totalXp: number;
   favorites: string[];
+  onboardingCompleted?: boolean;
 };
 export type AuthResult = {
   credentials: Credentials;

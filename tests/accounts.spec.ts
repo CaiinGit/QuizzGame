@@ -27,6 +27,16 @@ async function register(page: Page, username: string) {
     .getByRole("button", { name: "J’ai conservé mon code", exact: true })
     .click();
   await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+  // These scenarios exercise accounts and friends; Aka has its own first-visit tests.
+  await page
+    .getByRole("navigation")
+    .getByRole("button", { name: "Accueil", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Passer la visite" }).click();
+  await page
+    .getByRole("button", { name: "Ouvrir mon profil", exact: true })
+    .click();
+  await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
   return code!;
 }
 async function login(page: Page, username: string, pass = password) {

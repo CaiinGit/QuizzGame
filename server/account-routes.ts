@@ -129,6 +129,9 @@ export function accountRoutes(
     await hooks.updated(player.id);
     return result;
   });
+  route("post", "/api/account/onboarding/complete", async (req) =>
+    repository.accounts.completeOnboarding((await auth(req)).id),
+  );
   route("post", "/api/account/security", async (req) => {
     authLimit(req, "security");
     const player = await auth(req);

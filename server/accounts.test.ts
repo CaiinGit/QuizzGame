@@ -157,6 +157,25 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
     });
     assert.equal(a.credentials.id, guest.id);
     assert.ok(a.recoveryCode);
+    assert.equal(a.profile.onboardingCompleted, false);
+    await request("account/onboarding/complete", {}, undefined, 401);
+    await request("account/onboarding/complete", {}, guest, 401);
+    await request(
+      "account/onboarding/complete",
+      { id: b.credentials.id },
+      a.credentials,
+    );
+    await request("account/onboarding/complete", {}, a.credentials);
+    assert.equal(
+      (await request("account/me", undefined, a.credentials))
+        .onboardingCompleted,
+      true,
+    );
+    assert.equal(
+      (await request("account/me", undefined, b.credentials))
+        .onboardingCompleted,
+      false,
+    );
     assert.equal(await server!.repository.authenticate(guest.token), null);
     await request(
       "account/register",
@@ -428,6 +447,11 @@ test("accounts, private history, friends, invitations, rematch, recovery and per
       "Alice",
     );
     const restored = await client(updated.credentials);
+    assert.equal(
+      (await request("account/me", undefined, updated.credentials))
+        .onboardingCompleted,
+      true,
+    );
     assert.equal(
       restored.state.room,
       null,
