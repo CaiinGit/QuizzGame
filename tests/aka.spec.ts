@@ -126,7 +126,10 @@ test("Aka guides a new account, highlights visible targets, and remembers comple
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();
   await expect(tour).toBeVisible();
-  await expect(tour.locator(".aka-sprite")).toHaveCSS("animation-name", "none");
+  await expect(tour.locator(".aka-wing-left")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
   await expect(tour.locator(".aka-float")).toHaveCSS("animation-name", "none");
   await expect(tour.locator(".aka-portal-burst")).toHaveCount(0);
   await page.screenshot({ path: "test-results/aka-welcome-dark.png" });
@@ -196,7 +199,7 @@ for (const viewport of [
 test("Aka tolerates missing pose artwork and immediately respects reduced motion", async ({
   page,
 }) => {
-  await page.route("**/art/aka-poses-v2.webp", (route) => route.abort());
+  await page.route("**/art/aka-rig-v3/*.webp", (route) => route.abort());
   await page.goto("/");
   await page.getByRole("button", { name: "Réglages", exact: true }).click();
   await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();

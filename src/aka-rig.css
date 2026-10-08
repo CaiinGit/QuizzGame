@@ -1,0 +1,175 @@
+.aka-rig {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  isolation: isolate;
+}
+.aka-part {
+  position: absolute;
+  pointer-events: none;
+}
+.aka-part img,
+.aka-part > div {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.aka-part img {
+  image-rendering: pixelated;
+}
+/* Coordinates on a stable 320 × 320 stage. Shoulder pivots never move through fabric. */
+.aka-tail {
+  left: 46%;
+  top: 55%;
+  width: 39%;
+  height: 40%;
+  transform-origin: 5% 70%;
+  animation: aka-tail-follow 3.6s steps(44, end) -0.35s infinite;
+}
+.aka-wing-left {
+  left: 7%;
+  top: 35%;
+  width: 33%;
+  height: 33%;
+  transform-origin: 90% 90%;
+  animation: aka-wing-left 2.4s steps(29, end) infinite;
+}
+.aka-wing-right {
+  left: 59%;
+  top: 35%;
+  width: 33%;
+  height: 33%;
+  transform-origin: 10% 90%;
+  animation: aka-wing-right 2.4s steps(29, end) infinite;
+}
+.aka-cape {
+  left: 19%;
+  top: 56%;
+  width: 62%;
+  height: 33%;
+  transform-origin: 50% 5%;
+  animation: aka-cape-follow 3.6s steps(44, end) -0.18s infinite;
+}
+.aka-cape-gesture {
+  transform-origin: 50% 5%;
+}
+.aka-arm-left {
+  left: 28%;
+  top: 60%;
+  width: 17%;
+  height: 18%;
+  transform-origin: 80% 12%;
+  animation: aka-arm-rest 3.6s ease-in-out -0.2s infinite;
+}
+.aka-arm-right {
+  left: 56%;
+  top: 60%;
+  width: 17%;
+  height: 18%;
+  transform-origin: 20% 12%;
+  animation: aka-arm-rest 3.6s ease-in-out -0.4s infinite reverse;
+}
+.aka-arm-left-gesture {
+  transform-origin: 80% 12%;
+}
+.aka-arm-right-gesture {
+  transform-origin: 20% 12%;
+}
+.aka-body {
+  left: 25%;
+  top: 16%;
+  width: 50%;
+  height: 68%;
+}
+.aka-eyes {
+  left: 34%;
+  top: 39%;
+  width: 33%;
+  height: 14%;
+}
+.aka-eyelids {
+  transform-origin: 50% 65%;
+}
+.aka-crown {
+  left: 38%;
+  top: 2%;
+  width: 25%;
+  height: 17%;
+  animation: aka-crown-follow 3.6s ease-in-out -0.4s infinite;
+}
+.aka-rig-arriving .aka-wing-left,
+.aka-rig-arriving .aka-wing-right {
+  animation-duration: 0.65s;
+  animation-timing-function: steps(8, end);
+}
+.aka-rig-paused * {
+  animation: none !important;
+}
+@keyframes aka-tail-follow {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  45% {
+    transform: rotate(6deg);
+  }
+  75% {
+    transform: rotate(1deg);
+  }
+}
+@keyframes aka-cape-follow {
+  0%,
+  100% {
+    transform: rotate(-2deg) scaleY(1);
+  }
+  55% {
+    transform: rotate(2deg) scaleY(0.98);
+  }
+}
+@keyframes aka-wing-left {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleX(1);
+  }
+  25% {
+    transform: rotate(13deg) scaleX(0.92);
+  }
+  70% {
+    transform: rotate(-9deg) scaleX(1);
+  }
+}
+@keyframes aka-wing-right {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleX(1);
+  }
+  25% {
+    transform: rotate(-13deg) scaleX(0.92);
+  }
+  70% {
+    transform: rotate(9deg) scaleX(1);
+  }
+}
+@keyframes aka-arm-rest {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes aka-crown-follow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-4%) rotate(2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aka-rig * {
+    animation: none !important;
+  }
+}

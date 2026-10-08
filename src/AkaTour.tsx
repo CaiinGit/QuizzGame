@@ -6,6 +6,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { AkaRig, AKA_PARTS, akaPartUrl } from "./AkaRig";
 export const akaSteps = [
   {
     title: "Salut, moi c’est Aka !",
@@ -92,17 +93,36 @@ export function AkaTour({
     const preference = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(preference.matches);
     preference.addEventListener("change", update);
-    const image = new Image();
-    image.onload = () => setImageReady(true);
-    image.onerror = () => {
-      setFallback(true);
-      setImageReady(true);
-    };
-    image.src = "/art/aka-poses-v2.webp";
+    let alive = true;
+    const images: HTMLImageElement[] = [];
+    void Promise.all(
+      AKA_PARTS.map(
+        (name) =>
+          new Promise<void>((resolve, reject) => {
+            const image = new Image();
+            images.push(image);
+            image.onload = () => resolve();
+            image.onerror = () => reject(Error("Aka artwork unavailable"));
+            image.src = akaPartUrl(name);
+          }),
+      ),
+    )
+      .then(() => {
+        if (alive) setImageReady(true);
+      })
+      .catch(() => {
+        if (alive) {
+          setFallback(true);
+          setImageReady(true);
+        }
+      });
     return () => {
       preference.removeEventListener("change", update);
-      image.onload = null;
-      image.onerror = null;
+      alive = false;
+      images.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+      });
     };
   }, []);
   useLayoutEffect(() => {
@@ -184,10 +204,11 @@ export function AkaTour({
           opacity: 1,
         },
         {
-          offset: 0.65,
-          transform: `translate(${x * 0.32}px,${y * 0.32}px) scale(1.08)`,
+          offset: 0.7,
+          transform: "translate(0,-8px) scale(1.06)",
           opacity: 1,
         },
+        { offset: 0.87, transform: "translate(0,3px) scale(.99)", opacity: 1 },
         { transform: "translate(0,0) scale(1)", opacity: 1 },
       ],
       { duration: 1350, easing: "cubic-bezier(.22,.65,.3,1)", fill: "both" },
@@ -327,12 +348,26 @@ export function AkaTour({
       >
         <div ref={flight} className="aka-flight">
           <div className={`aka-float ${arriving ? "aka-wait" : ""}`}>
-            <div
-              key={step}
-              className={`aka-sprite ${step > 0 ? "aka-pointing" : ""} ${fallback ? "aka-sprite-fallback" : ""}`}
-              role="img"
-              aria-label="Aka, le petit esprit ailé qui te guide"
-            />
+            {fallback ? (
+              <div
+                className="aka-sprite aka-sprite-fallback"
+                role="img"
+                aria-label="Aka, le petit esprit ailé qui te guide"
+              />
+            ) : (
+              <AkaRig
+                step={step}
+                reduced={reduced}
+                arriving={!arrived}
+                direction={
+                  placement &&
+                  placement.target.x + placement.target.width / 2 <
+                    innerWidth / 2
+                    ? "left"
+                    : "right"
+                }
+              />
+            )}
           </div>
         </div>
       </div>

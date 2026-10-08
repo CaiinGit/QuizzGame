@@ -1,5 +1,7 @@
 # Aka — guide de bienvenue
 
+L’animation actuelle utilise les éléments articulés de la [version 3](AKA_RIG.md), qui documente aussi les sauvegardes et le traitement de la cape. Les prompts des premières illustrations sont conservés ci-dessous.
+
 Aka apparaît sur l’accueil à la première visite d’un compte qui n’a pas encore terminé ou passé le tutoriel. Les comptes existants découvrent également la mascotte une fois à l’introduction de cette fonctionnalité. Les invités peuvent lancer la visite manuellement.
 
 Six étapes présentent le portail, les thèmes favoris, les amis, le profil et les réglages. La visite reste facultative : « Passer la visite », Échap ou retour Android la ferment. Les réglages permettent de la revoir. Elle attend la fermeture des autres fenêtres et n’interrompt pas une partie.
