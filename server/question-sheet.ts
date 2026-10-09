@@ -4,6 +4,13 @@ import type { Sql } from "./database";
 import { questionInput } from "./question-bank";
 import { themeIds, type ThemeId } from "../shared/themes";
 
+export type SheetLayout = "levels" | "catalog";
+export function questionSheetLayout(value?: string): SheetLayout {
+  if (!value || value === "levels") return "levels";
+  if (value === "catalog") return value;
+  throw new Error("Format Google Sheets attendu : levels ou catalog.");
+}
+
 export function questionSources(env: Record<string, string | undefined>) {
   const config: unknown = env.AKASHA_QUESTION_SHEETS
     ? JSON.parse(env.AKASHA_QUESTION_SHEETS)
@@ -140,13 +147,16 @@ export function previewSheets(
   sheetId: string,
   tabs: { name: string; csv: string }[],
   themeId: ThemeId = "one-piece",
+  layout: SheetLayout = "levels",
 ): SheetPreview {
   const records: SheetRecord[] = [],
     issues: SheetIssue[] = [];
   const seen = new Set<string>();
   let fatal = false,
     total = 0;
-  for (const name of questionTabs) {
+  const catalog = layout === "catalog";
+  const headerRow = catalog ? 2 : 0;
+  for (const name of catalog ? ["QUESTIONS"] : questionTabs) {
     const tab = tabs.find((t) => t.name === name);
     if (!tab) {
       fatal = true;
@@ -161,7 +171,7 @@ export function previewSheets(
       issues.push({ tab: name, message: "Lecture CSV impossible." });
       continue;
     }
-    if (rows.length > 10001) {
+    if (rows.length > 10000 + headerRow + 1) {
       fatal = true;
       issues.push({
         tab: name,
@@ -169,9 +179,23 @@ export function previewSheets(
       });
       continue;
     }
-    total += rows.slice(1).filter((r) => r.some((c) => c.trim())).length;
-    const names = (rows[0] ?? []).map(normalize);
-    const missing = headers.filter((h) => !names.includes(normalize(h)));
+    total += rows
+      .slice(headerRow + 1)
+      .filter((r) => r.some((c) => c.trim())).length;
+    const names = (rows[headerRow] ?? []).map((value) => {
+      const name = normalize(value);
+      if (!catalog) return name;
+      const alternative = [
+        "proposition 2",
+        "proposition 3",
+        "proposition 4",
+      ].indexOf(name);
+      return alternative < 0 ? name : `mauvaise reponse ${alternative + 1}`;
+    });
+    const missing = headers.filter(
+      (h) =>
+        !(catalog && h === "Spoiler jusqu’à") && !names.includes(normalize(h)),
+    );
     if (
       missing.length ||
       new Set(names.filter(Boolean)).size !== names.filter(Boolean).length
@@ -185,7 +209,7 @@ export function previewSheets(
       });
       continue;
     }
-    for (let i = 1; i < rows.length; i++) {
+    for (let i = headerRow + 1; i < rows.length; i++) {
       if (!rows[i].some((c) => c.trim())) continue;
       const get = (h: string) =>
         (rows[i][names.indexOf(normalize(h))] ?? "").trim();
@@ -210,8 +234,15 @@ export function previewSheets(
         continue;
       }
       const difficulty = levels.get(normalize(get("Difficulté")));
-      if (!difficulty || difficulty !== levels.get(normalize(name))) {
-        issue("La difficulté doit correspondre à celle de l’onglet.");
+      if (
+        !difficulty ||
+        (!catalog && difficulty !== levels.get(normalize(name)))
+      ) {
+        issue(
+          catalog
+            ? "Difficulté attendue : Facile, Intermédiaire, Difficile, Très difficile ou Professionnel."
+            : "La difficulté doit correspondre à celle de l’onglet.",
+        );
         continue;
       }
       const parsed = questionInput.safeParse({
@@ -255,12 +286,13 @@ export async function readQuestionSheets(
   sheetId: string,
   request: typeof fetch = fetch,
   themeId: ThemeId = "one-piece",
+  layout: SheetLayout = "levels",
 ) {
   if (!/^[A-Za-z0-9_-]{20,100}$/.test(sheetId))
     throw new Error("Identifiant Google Sheet invalide.");
-  // All five reads must succeed before any database write. No change to Drive sharing.
+  // All required reads must succeed before any database write. No change to Drive sharing.
   const tabs = await Promise.all(
-    questionTabs.map(async (name) => {
+    (layout === "catalog" ? ["QUESTIONS"] : questionTabs).map(async (name) => {
       const url = new URL(
         `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq`,
       );
@@ -300,7 +332,7 @@ export async function readQuestionSheets(
       return { name, csv: Buffer.concat(chunks).toString("utf8") };
     }),
   );
-  return previewSheets(sheetId, tabs, themeId);
+  return previewSheets(sheetId, tabs, themeId, layout);
 }
 
 export async function applySheetPreview(
@@ -405,6 +437,7 @@ export function startQuestionSync(
   db: Sql,
   sheetId: string,
   themeId: ThemeId = "one-piece",
+  layout: SheetLayout = "levels",
 ) {
   let stopped = false,
     timer: ReturnType<typeof setTimeout> | undefined;
@@ -414,7 +447,7 @@ export function startQuestionSync(
       const report = await synchronizeQuestions(
         db,
         sheetId,
-        readQuestionSheets,
+        (id, request, theme) => readQuestionSheets(id, request, theme, layout),
         themeId,
       );
       const message = JSON.stringify(report);

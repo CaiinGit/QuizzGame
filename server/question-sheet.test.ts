@@ -12,6 +12,7 @@ import {
   readQuestionSheets,
   synchronizeQuestions,
   questionSources,
+  questionSheetLayout,
 } from "./question-sheet";
 
 const sheetId = "test_spreadsheet_identifier_12345";
@@ -73,6 +74,105 @@ const sheets = () =>
     name,
     csv: csv([headings, row(`OP-${i + 1}`, name)]),
   }));
+
+const catalogHeadings = [
+  "ID",
+  "Difficulté",
+  "Question",
+  "Bonne réponse",
+  "Proposition 2",
+  "Proposition 3",
+  "Proposition 4",
+  "Explication",
+  "Image (URL)",
+  "Statut",
+];
+const catalogRows = () => [
+  ["Nom du thème", "One Piece", "Préfixe ID", "OP"],
+  ["Les identifiants sont attribués lors de l’insertion."],
+  [...catalogHeadings],
+  [
+    "OP-0001",
+    "Facile",
+    "Une question ?",
+    "A",
+    "B",
+    "C",
+    "D",
+    "Explication",
+    "",
+    "Publié",
+  ],
+  ["OP-0002", "Professionnel", "", "", "", "", "", "", "", "Brouillon"],
+];
+test("catalog reads row-three headers, mixed levels and draft status without importing editor tabs", async () => {
+  assert.equal(questionSheetLayout(), "levels");
+  assert.equal(questionSheetLayout("catalog"), "catalog");
+  assert.throws(() => questionSheetLayout("other"));
+  const calls: string[] = [];
+  const request = (async (url: URL) => {
+    calls.push(url.searchParams.get("sheet")!);
+    return new Response(csv(catalogRows()), {
+      headers: { "content-type": "text/csv" },
+    });
+  }) as typeof fetch;
+  const result = await readQuestionSheets(
+    sheetId,
+    request,
+    "one-piece",
+    "catalog",
+  );
+  assert.deepEqual(calls, ["QUESTIONS"]);
+  assert.deepEqual(result.report, {
+    ok: true,
+    rows: 2,
+    imported: 2,
+    issues: [],
+  });
+  assert.equal(result.records[0].spoilerUntil, "");
+  assert.deepEqual(result.records[0].choices, ["A", "B", "C", "D"]);
+  assert.equal(result.records[1].status, "draft");
+  assert.equal(result.records[1].difficulty, "expert");
+  // Editing/reordering rows cannot change the stable ID.
+  const rows = catalogRows();
+  rows[3][2] = "Correction de texte";
+  const changed = previewSheets(
+    sheetId,
+    [{ name: "QUESTIONS", csv: csv(rows) }],
+    "one-piece",
+    "catalog",
+  );
+  assert.equal(changed.records[0].id, result.records[0].id);
+});
+test("catalog rejects duplicate IDs and malformed headers and reports physical row numbers", () => {
+  const preview = (rows: string[][]) =>
+    previewSheets(
+      sheetId,
+      [{ name: "QUESTIONS", csv: csv(rows) }],
+      "one-piece",
+      "catalog",
+    );
+  const rows = catalogRows();
+  rows[4][0] = rows[3][0];
+  assert.equal(preview(rows).report.ok, false);
+  assert.equal(preview(rows).records.length, 0);
+  const badHeaders = catalogRows();
+  badHeaders[2][4] = "Incorrect";
+  assert.equal(preview(badHeaders).report.ok, false);
+  const duplicates = catalogRows();
+  duplicates[2].push("Mauvaise réponse 1");
+  assert.equal(preview(duplicates).report.ok, false);
+  const invalid = catalogRows();
+  invalid[3][1] = "Inconnu";
+  assert.equal(preview(invalid).report.issues[0].row, 4);
+  assert.equal(preview(invalid).records.length, 1);
+  const firstTabFallback = [
+    ["Formulaire d’insertion"],
+    ["Ne pas importer"],
+    ["Question", "Réponse"],
+  ];
+  assert.equal(preview(firstTabFallback).report.ok, false);
+});
 
 test("sheet CSV preserves accents, quotes, commas and multiline cells", () => {
   assert.deepEqual(

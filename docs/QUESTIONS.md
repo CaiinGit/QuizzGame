@@ -26,6 +26,16 @@ Le salon sauvegarde une copie complète des questions tirées. Modifier la banqu
 
 ## Synchronisation Google Sheets
 
+### Nouveau format centralisé
+
+Avec `AKASHA_QUESTION_SHEET_LAYOUT=catalog`, le serveur lit uniquement l’onglet `QUESTIONS`. Les deux premières lignes décrivent le thème ; les en-têtes sont en ligne 3 et les données commencent en ligne 4. Colonnes requises : `ID`, `Difficulté`, `Question`, `Bonne réponse`, `Proposition 2`, `Proposition 3`, `Proposition 4`, `Explication`, `Statut`. Les trois propositions sont les mauvaises réponses. La colonne `Spoiler jusqu’à` devient facultative ; `Image (URL)` n’est pas utilisée par le jeu pour le moment. Les onglets `INSERTION` et `MODIFICATION` ne sont jamais importés.
+
+La difficulté provient de chaque ligne, avec les mêmes cinq niveaux et les mêmes validations. Les statuts restent explicites : `Brouillon` ne rend pas une question jouable, `Publié` la rend jouable après validation, `Archivé` la retire des tirages. Aucun changement de liaison ne doit publier des brouillons implicitement.
+
+Vérification en lecture seule : `npm run questions:preview -- IDENTIFIANT_DU_DOCUMENT one-piece catalog` (ou `mcu`). Le format `levels`, utilisé par défaut, conserve la lecture des cinq anciens onglets. Le format configuré s’applique aux documents associés aux thèmes.
+
+### Ancien format par difficulté
+
 Le connecteur lit les cinq onglets `Facile`, `Intermédiaire`, `Difficile`, `Très difficile` et `Professionnel`, avec la ligne d’en-tête en première ligne. Les colonnes peuvent être déplacées, mais doivent conserver ces noms :
 
 | Colonne | Utilisation |

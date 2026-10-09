@@ -1,8 +1,15 @@
 import { connectDatabase } from "./database";
 import { createApp } from "./app";
 import { durations } from "./engine";
-import { startQuestionSync, questionSources } from "./question-sheet";
+import {
+  startQuestionSync,
+  questionSources,
+  questionSheetLayout,
+} from "./question-sheet";
 const sources = questionSources(process.env);
+const sheetLayout = questionSheetLayout(
+  process.env.AKASHA_QUESTION_SHEET_LAYOUT,
+);
 const production = process.env.NODE_ENV === "production";
 if (production && !process.env.DATABASE_URL)
   throw new Error("DATABASE_URL est obligatoire en production.");
@@ -22,7 +29,7 @@ const server = await createApp(database, {
 });
 const port = Number(process.env.PORT ?? 3001);
 const syncStops = sources.map(({ sheetId, themeId }) =>
-  startQuestionSync(database, sheetId, themeId),
+  startQuestionSync(database, sheetId, themeId, sheetLayout),
 );
 const stopQuestionSync = async () => {
   await Promise.all(syncStops.map((stop) => stop()));
