@@ -359,12 +359,29 @@ export function AkaTour({
                 step={step}
                 reduced={reduced}
                 arriving={!arrived}
-                direction={
-                  placement &&
-                  placement.target.x + placement.target.width / 2 <
-                    innerWidth / 2
-                    ? "left"
-                    : "right"
+                look={
+                  placement
+                    ? {
+                        x: clamp(
+                          (placement.target.x +
+                            placement.target.width / 2 -
+                            placement.actorX -
+                            placement.size * 0.5) /
+                            placement.size,
+                          -1,
+                          1,
+                        ),
+                        y: clamp(
+                          (placement.target.y +
+                            placement.target.height / 2 -
+                            placement.actorY -
+                            placement.size * 0.36) /
+                            placement.size,
+                          -1,
+                          1,
+                        ),
+                      }
+                    : { x: 0, y: 0 }
                 }
               />
             )}

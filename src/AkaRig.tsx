@@ -1,32 +1,29 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import "./aka-rig.css";
 
 export const AKA_PARTS = [
   "tail",
   "wingLeft",
   "wingRight",
-  "torso",
-  "arm",
-  "capeLeft",
-  "capeRight",
+  "body",
   "head",
   "eyes",
   "crown",
 ] as const;
 export const akaPartUrl = (name: string) =>
-  `/art/aka-rig-${["tail", "wingLeft", "wingRight", "crown"].includes(name) ? "v3" : "v4"}/${name}.webp`;
+  `/art/aka-rig-${["wingLeft", "wingRight"].includes(name) ? "v3" : ["head", "eyes"].includes(name) ? "v4" : "v5"}/${name}.webp`;
 
-/** Arms stay behind the front cape. Only the selected panel opens for a gesture. */
+/** The original face turns as one layer; the cape/body is a single static sprite. */
 export function AkaRig({
   step,
   reduced,
   arriving,
-  direction,
+  look,
 }: {
   step: number;
   reduced: boolean;
   arriving: boolean;
-  direction: "left" | "right";
+  look: { x: number; y: number };
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [hidden, setHidden] = useState(document.hidden);
@@ -67,57 +64,14 @@ export function AkaRig({
       animation?.cancel();
     };
   }, [paused]);
-  useEffect(() => {
-    if (paused || arriving || step === 0) return;
-    const arm = root.current?.querySelector(
-      direction === "left" ? ".aka-arm-left-gesture" : ".aka-arm-right-gesture",
-    );
-    const cape = root.current?.querySelector(
-      direction === "left"
-        ? ".aka-cape-left-gesture"
-        : ".aka-cape-right-gesture",
-    );
-    const sign = direction === "left" ? 1 : -1;
-    // The selected cloth panel folds away before the oval arm emerges beneath its edge.
-    const fabric = cape?.animate(
-      [
-        { transform: "scaleX(1) rotate(0deg)" },
-        { offset: 0.16, transform: `scaleX(.62) rotate(${-sign * 10}deg)` },
-        { offset: 0.75, transform: `scaleX(.62) rotate(${-sign * 10}deg)` },
-        { transform: "scaleX(1) rotate(0deg)" },
-      ],
-      { duration: 1800, easing: "ease-in-out" },
-    );
-    const gesture = arm?.animate(
-      [
-        { transform: "translateX(0) rotate(0deg)", opacity: 0 },
-        { offset: 0.16, transform: "translateX(0) rotate(0deg)", opacity: 0 },
-        {
-          offset: 0.25,
-          transform: `translateX(0) rotate(${sign * 25}deg)`,
-          opacity: 1,
-        },
-        {
-          offset: 0.45,
-          transform: `translateX(0) rotate(${sign * 70}deg)`,
-          opacity: 1,
-        },
-        {
-          offset: 0.65,
-          transform: `translateX(0) rotate(${sign * 65}deg)`,
-          opacity: 1,
-        },
-        { offset: 0.83, transform: "translateX(0) rotate(0deg)", opacity: 1 },
-        { offset: 0.87, transform: "translateX(0) rotate(0deg)", opacity: 0 },
-        { transform: "translateX(0) rotate(0deg)", opacity: 0 },
-      ],
-      { duration: 1800, easing: "ease-in-out" },
-    );
-    return () => {
-      fabric?.cancel();
-      gesture?.cancel();
-    };
-  }, [step, direction, paused, arriving]);
+  const gaze = step === 0 || arriving ? { x: 0, y: 0 } : look;
+  const poseStyle = {
+    "--aka-yaw": `${gaze.x * 16}deg`,
+    "--aka-pitch": `${-gaze.y * 13}deg`,
+    "--aka-tilt": `${gaze.x * 7}deg`,
+    "--aka-eye-x": `${gaze.x * 2}%`,
+    "--aka-eye-y": `${gaze.y * 2}%`,
+  } as CSSProperties;
   return (
     <div
       ref={root}
@@ -134,35 +88,22 @@ export function AkaRig({
       <div className="aka-part aka-wing-right">
         <img src={akaPartUrl("wingRight")} alt="" draggable={false} />
       </div>
-      <div className="aka-part aka-torso">
-        <img src={akaPartUrl("torso")} alt="" draggable={false} />
+      <div className="aka-part aka-body">
+        <img src={akaPartUrl("body")} alt="" draggable={false} />
       </div>
-      <div className="aka-part aka-arm-left">
-        <div className="aka-arm-left-gesture">
-          <img src={akaPartUrl("arm")} alt="" draggable={false} />
+      <div
+        className="aka-head-pose"
+        style={poseStyle}
+        data-look-x={gaze.x}
+        data-look-y={gaze.y}
+      >
+        <div className="aka-part aka-head">
+          <img src={akaPartUrl("head")} alt="" draggable={false} />
         </div>
-      </div>
-      <div className="aka-part aka-arm-right">
-        <div className="aka-arm-right-gesture">
-          <img src={akaPartUrl("arm")} alt="" draggable={false} />
-        </div>
-      </div>
-      <div className="aka-part aka-cape-left">
-        <div className="aka-cape-left-gesture">
-          <img src={akaPartUrl("capeLeft")} alt="" draggable={false} />
-        </div>
-      </div>
-      <div className="aka-part aka-cape-right">
-        <div className="aka-cape-right-gesture">
-          <img src={akaPartUrl("capeRight")} alt="" draggable={false} />
-        </div>
-      </div>
-      <div className="aka-part aka-head">
-        <img src={akaPartUrl("head")} alt="" draggable={false} />
-      </div>
-      <div className="aka-part aka-eyes">
-        <div className="aka-eyelids">
-          <img src={akaPartUrl("eyes")} alt="" draggable={false} />
+        <div className="aka-part aka-eyes">
+          <div className="aka-eyelids">
+            <img src={akaPartUrl("eyes")} alt="" draggable={false} />
+          </div>
         </div>
       </div>
       <div className="aka-part aka-crown">

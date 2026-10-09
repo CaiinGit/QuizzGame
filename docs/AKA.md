@@ -1,6 +1,6 @@
 # Aka — guide de bienvenue
 
-L’apparence actuelle est décrite dans la [version 4](AKA_V4.md) : tête ronde, cape couvrant les bras ovales et ailes détachées. L’historique de la [version 3](AKA_RIG.md) et les prompts des premières illustrations restent conservés.
+L’apparence actuelle est décrite dans la [version 5](AKA_V5.md) : visage V4 conservé orienté vers les boutons, aucun bras, cape immobile, ventre et pattes visibles, queue courbe et couronne ouverte sans fond blanc. L’historique des [versions 4](AKA_V4.md) et [3](AKA_RIG.md) ainsi que les prompts des premières illustrations restent conservés.
 
 Aka apparaît sur l’accueil à la première visite d’un compte qui n’a pas encore terminé ou passé le tutoriel. Les comptes existants découvrent également la mascotte une fois à l’introduction de cette fonctionnalité. Les invités peuvent lancer la visite manuellement.
 

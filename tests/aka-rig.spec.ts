@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-test("cape hides both oval arms at rest and opens only on the gesturing side", async ({
+test("Aka keeps the approved face, a static cloak, and looks toward each actual target", async ({
   page,
 }) => {
   await page.goto("/");
@@ -8,7 +8,8 @@ test("cape hides both oval arms at rest and opens only on the gesturing side", a
   await page.getByRole("button", { name: "Revoir la visite avec Aka" }).click();
   await expect(page.locator(".aka-tour")).not.toHaveClass(/aka-preparing/);
   const rig = page.locator(".aka-rig");
-  await expect(rig.locator("img")).toHaveCount(11);
+  const head = rig.locator(".aka-head-pose");
+  await expect(rig.locator("img")).toHaveCount(7);
   expect(
     await rig
       .locator("img")
@@ -20,128 +21,120 @@ test("cape hides both oval arms at rest and opens only on the gesturing side", a
         ),
       ),
   ).toBe(true);
-  const order = await rig
-    .locator(":scope > div")
-    .evaluateAll((parts) => parts.map((p) => p.className));
-  expect(order.findIndex((c) => c.includes("aka-cape-left"))).toBeGreaterThan(
-    order.findIndex((c) => c.includes("aka-arm-left")),
-  );
-  expect(order.findIndex((c) => c.includes("aka-arm-right"))).toBeLessThan(
-    order.findIndex((c) => c.includes("aka-cape-right")),
-  );
-  await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS("opacity", "0");
-  await expect(rig.locator(".aka-arm-right-gesture")).toHaveCSS("opacity", "0");
-  await expect(rig.locator(".aka-crown img")).toHaveAttribute(
+  await expect(rig.locator(".aka-head img")).toHaveAttribute(
     "src",
-    "/art/aka-rig-v3/crown.webp",
+    "/art/aka-rig-v4/head.webp",
+  );
+  await expect(rig.locator(".aka-eyes img")).toHaveAttribute(
+    "src",
+    "/art/aka-rig-v4/eyes.webp",
   );
   await expect(rig.locator(".aka-wing-left img")).toHaveAttribute(
     "src",
     "/art/aka-rig-v3/wingLeft.webp",
   );
-  const art = await rig
-    .locator("img")
-    .evaluateAll((images) => images.map((i) => (i as HTMLImageElement).src));
-  await page.getByRole("button", { name: "Découvrir", exact: true }).click();
-  await expect
-    .poll(() =>
-      page
-        .locator(".aka-arm-right-gesture")
-        .evaluate((el) => el.getAnimations().length),
-    )
-    .toBe(1);
-  // Enlarge the exact in-app rig for visual inspection of shoulder/cape geometry.
-  await page
-    .locator(".aka-float")
-    .evaluate((el) =>
-      el.getAnimations().forEach((animation) => animation.pause()),
-    );
-  await page.locator(".aka-actor").evaluate((el) => {
-    const style = (el as HTMLElement).style;
-    style.width = "320px";
-    style.height = "320px";
-    style.transform = "translate(20px,130px)";
-    style.transition = "none";
-  });
-  await rig.evaluate(
-    (el) => ((el as HTMLElement).style.background = "#faf4df"),
+  await expect(rig.locator("[class*=aka-arm], [class*=aka-cape]")).toHaveCount(
+    0,
   );
-  for (const time of [0, 300, 800, 1300, 1800]) {
-    await rig.evaluate((el, time) => {
-      for (const part of el.querySelectorAll("*"))
-        for (const animation of part.getAnimations()) {
-          animation.pause();
-          animation.currentTime = part.className.includes("gesture") ? time : 0;
-        }
-    }, time);
-    if (time === 300) {
-      const lead = await rig.evaluate((el) => ({
-        arm: new DOMMatrix(
-          getComputedStyle(el.querySelector(".aka-arm-right-gesture")!)
-            .transform,
-        ).b,
-        cape: new DOMMatrix(
-          getComputedStyle(el.querySelector(".aka-cape-right-gesture")!)
-            .transform,
-        ).a,
-      }));
-      expect(Math.abs(lead.arm)).toBeLessThan(0.001);
-      expect(lead.cape).toBeLessThan(1);
+  await expect(head).toHaveAttribute("data-look-x", "0");
+  await expect(head).toHaveAttribute("data-look-y", "0");
+  // The actual renderer provides the preview: identical head/eyes, no AI-redrawn face.
+  await page.evaluate(() => {
+    const source = document.querySelector(".aka-rig")!;
+    const sheet = document.createElement("div");
+    sheet.id = "aka-sprite-preview";
+    sheet.style.cssText =
+      "position:fixed;inset:0 auto auto 0;background:#f4efdf;padding:24px;display:grid;grid-template-columns:repeat(3,280px);gap:18px;z-index:999999;font:18px sans-serif;color:#234737";
+    const poses = [
+      ["Face — tête conservée", 0, 0],
+      ["Regard à gauche", -1, 0],
+      ["Regard à droite", 1, 0],
+      ["Regard vers le haut", 0, -1],
+      ["Regard vers le bas", 0, 1],
+      ["Vers un bouton", 1, -1],
+    ] as const;
+    for (const [label, x, y] of poses) {
+      const card = document.createElement("div");
+      const clone = source.cloneNode(true) as HTMLElement;
+      clone.style.cssText = "width:280px;height:280px";
+      clone.classList.add("aka-rig-paused");
+      const face = clone.querySelector(".aka-head-pose") as HTMLElement;
+      face.style.setProperty("--aka-yaw", x * 16 + "deg");
+      face.style.setProperty("--aka-pitch", -y * 13 + "deg");
+      face.style.setProperty("--aka-tilt", x * 7 + "deg");
+      face.style.setProperty("--aka-eye-x", x * 2 + "%");
+      face.style.setProperty("--aka-eye-y", y * 2 + "%");
+      card.append(clone);
+      const caption = document.createElement("p");
+      caption.textContent = label;
+      caption.style.textAlign = "center";
+      card.append(caption);
+      sheet.append(card);
     }
-    await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS(
-      "opacity",
-      "0",
-    );
-    const opacity = await rig
-      .locator(".aka-arm-right-gesture")
-      .evaluate((el) => Number(getComputedStyle(el).opacity));
-    if (time === 0 || time === 300 || time === 1800) expect(opacity).toBe(0);
-    else if (time === 800) expect(opacity).toBe(1);
-    else expect(opacity).toBeGreaterThan(0);
-    await rig.screenshot({ path: `test-results/aka-rig-gesture-${time}.png` });
-  }
-  expect(
-    await rig
-      .locator("img")
-      .evaluateAll((images) => images.map((i) => (i as HTMLImageElement).src)),
-  ).toEqual(art);
-  for (let i = 0; i < 3; i++)
-    await page.getByRole("button", { name: "Suivant", exact: true }).click();
-  await expect
-    .poll(() =>
-      page
-        .locator(".aka-arm-left-gesture")
-        .evaluate((el) => el.getAnimations().length),
-    )
-    .toBe(1);
-  await rig.evaluate((el) => {
-    for (const part of el.querySelectorAll("*"))
-      for (const animation of part.getAnimations()) {
-        animation.pause();
-        animation.currentTime = part.className.includes("gesture") ? 800 : 0;
-      }
+    // Inside the dialog top layer, above the actual tour content.
+    document.querySelector(".aka-tour")!.append(sheet);
   });
-  await expect(rig.locator(".aka-arm-left-gesture")).toHaveCSS("opacity", "1");
-  await expect(rig.locator(".aka-arm-right-gesture")).toHaveCSS("opacity", "0");
-  await rig.screenshot({ path: "test-results/aka-rig-left-gesture.png" });
-  for (const time of [0, 600, 1200, 1800, 2400]) {
-    await rig.locator(".aka-wing-left,.aka-wing-right").evaluateAll(
-      (nodes, time) =>
-        nodes.forEach((node) =>
-          node.getAnimations().forEach((a) => {
-            a.pause();
-            a.currentTime = time;
-          }),
+  await page.setViewportSize({ width: 1000, height: 850 });
+  await page
+    .locator("#aka-sprite-preview")
+    .screenshot({ path: "test-results/aka-v5-sprites.png" });
+  await page.locator("#aka-sprite-preview").evaluate((el) => el.remove());
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (let step = 1; step < 6; step++) {
+    await page.locator(".aka-next").click();
+    await expect
+      .poll(() =>
+        page
+          .locator(".aka-actor, .aka-head-pose")
+          .evaluateAll((elements) =>
+            elements.reduce(
+              (total, el) =>
+                total +
+                el.getAnimations().filter((a) => a.playState === "running")
+                  .length,
+              0,
+            ),
+          ),
+      )
+      .toBe(0);
+    const measured = await page.evaluate(() => {
+      const actor = document
+        .querySelector(".aka-actor")!
+        .getBoundingClientRect();
+      const target = document
+        .querySelector('.aka-spotlight > rect[fill="none"]')!
+        .getBoundingClientRect();
+      const face = document.querySelector(".aka-head-pose") as HTMLElement;
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+      return {
+        x: Number(face.dataset.lookX),
+        y: Number(face.dataset.lookY),
+        expectedX: clamp(
+          (target.x + target.width / 2 - actor.x - actor.width * 0.5) /
+            actor.width,
         ),
-      time,
-    );
-    const head = (await rig.locator(".aka-head").boundingBox())!;
-    const left = (await rig.locator(".aka-wing-left").boundingBox())!;
-    const right = (await rig.locator(".aka-wing-right").boundingBox())!;
-    expect(head.x - left.x - left.width).toBeGreaterThan(3);
-    expect(right.x - head.x - head.width).toBeGreaterThan(3);
+        expectedY: clamp(
+          (target.y + target.height / 2 - actor.y - actor.height * 0.36) /
+            actor.height,
+        ),
+      };
+    });
+    expect(measured.x).toBeCloseTo(measured.expectedX, 2);
+    expect(measured.y).toBeCloseTo(measured.expectedY, 2);
+    expect(
+      await rig
+        .locator(".aka-body")
+        .evaluate((el) => el.getAnimations({ subtree: true }).length),
+    ).toBe(0);
+    await expect(rig.locator(".aka-body")).toHaveCSS("transform", "none");
   }
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await expect
+    .poll(() =>
+      rig.evaluate((el) => el.getAnimations({ subtree: true }).length),
+    )
+    .toBe(0);
+  await page.getByRole("button", { name: "Étape précédente" }).click();
   await expect
     .poll(() =>
       rig.evaluate((el) => el.getAnimations({ subtree: true }).length),
