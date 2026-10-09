@@ -32,6 +32,8 @@ Avec `AKASHA_QUESTION_SHEET_LAYOUT=catalog`, le serveur lit uniquement l’ongle
 
 La difficulté provient de chaque ligne, avec les mêmes cinq niveaux et les mêmes validations. Les statuts restent explicites : `Brouillon` ne rend pas une question jouable, `Publié` la rend jouable après validation, `Archivé` la retire des tirages. Aucun changement de liaison ne doit publier des brouillons implicitement.
 
+Le catalogue est la source de référence : une question retirée de `QUESTIONS` est archivée en base et n’est plus tirée. Cela n’est appliqué qu’après une lecture complète sans erreur, uniquement pour ce document et ce thème. Une ligne invalide empêche l’archivage des absences pour cette tentative ; une erreur d’accès ou de structure bloque toute la tentative. Réinsérer le même ID reprend la question avec le statut du fichier. Les résultats des parties passées restent inchangés. Lors du remplacement des sources, les anciennes questions sont sauvegardées puis archivées pour ne pas maintenir un second catalogue jouable.
+
 Vérification en lecture seule : `npm run questions:preview -- IDENTIFIANT_DU_DOCUMENT one-piece catalog` (ou `mcu`). Le format `levels`, utilisé par défaut, conserve la lecture des cinq anciens onglets. Le format configuré s’applique aux documents associés aux thèmes.
 
 ### Ancien format par difficulté

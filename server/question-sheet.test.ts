@@ -296,6 +296,61 @@ async function isolatedDatabase(): Promise<Sql> {
   };
 }
 
+test("catalog archives missing rows only after a clean read and restores reinserted IDs", async () => {
+  const db = await isolatedDatabase();
+  try {
+    await new QuestionBank(db).init();
+    const preview = (rows: string[][]) =>
+      previewSheets(
+        sheetId,
+        [{ name: "QUESTIONS", csv: csv(rows) }],
+        "one-piece",
+        "catalog",
+      );
+    await applySheetPreview(db, sheetId, preview(catalogRows()));
+    const status = async (id: string) =>
+      (
+        await db.query<{ status: string }>(
+          "SELECT status FROM akasha_questions WHERE sheet_id=$1 AND sheet_question_id=$2",
+          [sheetId, id],
+        )
+      ).rows[0].status;
+    const partial = catalogRows();
+    partial[3][1] = "INVALID";
+    await applySheetPreview(db, sheetId, preview(partial));
+    assert.equal(await status("OP-0001"), "published");
+    const remaining = catalogRows();
+    remaining.splice(3, 1);
+    assert.equal(
+      (await applySheetPreview(db, sheetId, preview(remaining))).archived,
+      1,
+    );
+    assert.equal(await status("OP-0001"), "archived");
+    assert.equal(await status("OP-0002"), "draft");
+    assert.equal(
+      (await applySheetPreview(db, sheetId, preview(remaining))).archived,
+      0,
+    );
+    await applySheetPreview(db, sheetId, preview(catalogRows()));
+    assert.equal(await status("OP-0001"), "published");
+    assert.equal(
+      (await applySheetPreview(db, sheetId, preview(catalogRows().slice(0, 3))))
+        .archived,
+      2,
+    );
+    assert.equal(
+      (
+        await db.query<{ n: number }>(
+          "SELECT count(*)::int AS n FROM akasha_questions WHERE sheet_id IS NULL AND status='published'",
+        )
+      ).rows[0].n,
+      10,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
 test("database sync is atomic, idempotent and preserves existing questions through errors, sorting and deletion", async () => {
   const db = await isolatedDatabase(),
     bank = new QuestionBank(db);

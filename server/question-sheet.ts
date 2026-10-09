@@ -92,11 +92,13 @@ export interface SheetReport {
   rows: number;
   imported: number;
   changed?: number;
+  archived?: number;
   issues: SheetIssue[];
 }
 export interface SheetPreview {
   records: SheetRecord[];
   report: SheetReport;
+  archiveMissing?: boolean;
 }
 
 /** RFC 4180 fields, including escaped quotes and multiline explanations. */
@@ -273,6 +275,7 @@ export function previewSheets(
   }
   return {
     records: fatal ? [] : records,
+    ...(catalog ? { archiveMissing: true } : {}),
     report: {
       ok: !fatal,
       rows: total,
@@ -358,7 +361,8 @@ export async function applySheetPreview(
   if (source.rows[0]?.theme_id !== themeId)
     throw new Error("Ce document est déjà associé à un autre thème.");
   // A single statement atomically updates the valid rows and the synchronization report.
-  // Missing IDs/rows never mean deletion. Namespaced IDs cannot overwrite native questions.
+  // The catalog is authoritative only after a complete, error-free read. Invalid rows
+  // must never cause the previous valid question to be archived. Legacy tabs stay additive.
   const { rows } = await db.query<{ report: SheetReport }>(
     `WITH changed AS (
     INSERT INTO akasha_questions(id,theme_id,text,choices,correct,explanation,difficulty,status,source,spoiler_until,sheet_id,sheet_question_id)
@@ -375,8 +379,14 @@ export async function applySheetPreview(
       IS DISTINCT FROM (excluded.text,excluded.choices,excluded.correct,excluded.explanation,
        excluded.difficulty,excluded.status,excluded.spoiler_until,excluded.source)
     RETURNING id
+  ), archived AS (
+    UPDATE akasha_questions SET status='archived',updated_at=now()
+    WHERE $5::boolean AND sheet_id=$1 AND theme_id=$4 AND status<>'archived'
+      AND id NOT IN (SELECT q.id FROM jsonb_to_recordset($2::jsonb) AS q(id text))
+    RETURNING id
   ) INSERT INTO akasha_question_sync(sheet_id,succeeded_at,report)
-    VALUES($1,now(),$3::jsonb || jsonb_build_object('changed',(SELECT count(*) FROM changed)))
+    VALUES($1,now(),$3::jsonb || jsonb_build_object('changed',(SELECT count(*) FROM changed))
+      || CASE WHEN $5::boolean THEN jsonb_build_object('archived',(SELECT count(*) FROM archived)) ELSE '{}'::jsonb END)
     ON CONFLICT(sheet_id) DO UPDATE SET attempted_at=now(),succeeded_at=now(),report=excluded.report
     RETURNING report`,
     [
@@ -384,6 +394,7 @@ export async function applySheetPreview(
       JSON.stringify(preview.records),
       JSON.stringify(preview.report),
       themeId,
+      preview.archiveMissing === true && preview.report.issues.length === 0,
     ],
   );
   return rows[0].report;
